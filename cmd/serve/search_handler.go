@@ -176,7 +176,7 @@ func runQuery(c *gin.Context, sri ServeRequestInput, limit int) (
 	}
 
 	duration := time.Since(start)
-	return res[0:limit], duration, err
+	return res[0:min(limit, len(res))], duration, err
 }
 
 // //////////////////////////
