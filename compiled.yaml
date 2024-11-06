@@ -36,7 +36,7 @@ services:
       ENV: "DOCKER"
       PORT: 8888
       API_KEY: lego
-      DEBUG_LEVEL: info
+      DEBUG_LEVEL: debug
       GIN_MODE: release
     restart: no
 

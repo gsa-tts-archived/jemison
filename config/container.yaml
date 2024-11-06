@@ -138,10 +138,10 @@ VCAP_SERVICES:
       syslog_drain_url: "https://ALPHA.drain.url"
       volume_mounts: ["no_mounts"]
   aws-rds:
-    - label: "experiment-eight-db"
+    - label: "jemison-db"
       provider: null
       plan: null
-      name: "experiment-eight-db"
+      name: "jemison-db"
       tags:
         - "AWS"
         - "RDS"
@@ -149,7 +149,7 @@ VCAP_SERVICES:
       instance_guid: "a994b2e4-947c-11ef-bbb9-cf99a893118f"
       binding_guid: "b3c7a0be-947c-11ef-b61f-077373830f35"
       binding_name: null
-      instance_name: "experiment-eight-db"
+      instance_name: "jemison-db"
       credentials:
         db_name: "postgres"
         host: "queue-db"

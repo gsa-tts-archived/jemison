@@ -150,7 +150,7 @@ VCAP_SERVICES:
     - label: "queue-db"
       provider: null
       plan: null
-      name: "experiment-eight-db"
+      name: "jemison-db"
       tags:
         - "AWS"
         - "RDS"

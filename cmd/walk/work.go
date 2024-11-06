@@ -51,11 +51,16 @@ func extract_links(JSON kv.JSON) []*url.URL {
 		log.Fatal(err)
 	}
 
+	// Pages that are javascript-only, or require javascript to display will
+	// have no links.
+	// zap.L().Debug("doc", zap.String("all", fmt.Sprintln(doc.Text())))
+
 	// Return a unique set
 	link_set := make(map[string]bool)
 
 	doc.Find("a[href]").Each(func(ndx int, sel *goquery.Selection) {
 		link, exists := sel.Attr("href")
+		zap.L().Debug("found link", zap.String("link", link), zap.Bool("exists", exists))
 
 		if exists {
 			link_to_crawl, err := is_crawlable(JSON, link)
