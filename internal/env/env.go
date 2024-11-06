@@ -16,8 +16,7 @@ var Env *env
 // Constants for the attached services
 // These reach into the VCAP_SERVICES and are
 // defined in the Terraform.
-const WorkingObjectStore = "experiment-eight-s3"
-const WorkingDatabase = "experiment-eight-db"
+const WorkingDatabase = "jemison-db"
 
 var validBucketNames = []string{
 	"extract",

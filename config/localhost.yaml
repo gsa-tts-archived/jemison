@@ -59,8 +59,8 @@ VCAP_SERVICES:
         uri: "http://localhost:9000"
         port: 9000
         insecure_skip_verify: false
-        access_key_id: "experimenteight"
-        secret_access_key: "experimenteight"
+        access_key_id: "numbernine"
+        secret_access_key: "numbernine"
         region: "us-east-1"
         bucket: "extract"
         endpoint: "localhost:9000"
@@ -85,8 +85,8 @@ VCAP_SERVICES:
         uri: "http://localhost:9000"
         port: 9000
         insecure_skip_verify: false
-        access_key_id: "experimenteight"
-        secret_access_key: "experimenteight"
+        access_key_id: "numbernine"
+        secret_access_key: "numbernine"
         region: "us-east-1"
         bucket: "fetch"
         endpoint: "localhost:9000"
@@ -111,8 +111,8 @@ VCAP_SERVICES:
         uri: "http://localhost:9000"
         port: 9000
         insecure_skip_verify: false
-        access_key_id: "experimenteight"
-        secret_access_key: "experimenteight"
+        access_key_id: "numbernine"
+        secret_access_key: "numbernine"
         region: "us-east-1"
         bucket: "pack"
         endpoint: "localhost:9000"
@@ -137,8 +137,8 @@ VCAP_SERVICES:
         uri: "http://localhost:9000"
         port: 9000
         insecure_skip_verify: false
-        access_key_id: "experimenteight"
-        secret_access_key: "experimenteight"
+        access_key_id: "numbernine"
+        secret_access_key: "numbernine"
         region: "us-east-1"
         bucket: "serve"
         endpoint: "localhost:9000"

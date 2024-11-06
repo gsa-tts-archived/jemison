@@ -228,8 +228,8 @@ services:
       - 9000:9000
       - 9001:9001
     environment:
-      MINIO_ROOT_USER: experimenteight
-      MINIO_ROOT_PASSWORD: experimenteight
+      MINIO_ROOT_USER: numbernine
+      MINIO_ROOT_PASSWORD: numbernine
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s

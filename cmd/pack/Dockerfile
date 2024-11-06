@@ -1,6 +1,6 @@
 #FROM golang:bookworm
 #FROM cloudfoundry/cflinuxfs4
-FROM eight/builder
+FROM jemison/builder
 
 # Copy in the binaries
 WORKDIR /home/vcap/app

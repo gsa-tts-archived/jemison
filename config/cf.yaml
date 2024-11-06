@@ -39,7 +39,7 @@ EIGHT_SERVICES:
         workers: 10
         external_port: 443
         external_scheme: https
-        external_host: search-eight.app.cloud.gov
+        external_host: jemison.app.cloud.gov
         static_files_path: "/home/vcap/app/static"
         database_files_path: "/home/vcap/app/assets/databases"
         results_per_query: 10
