@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/jadudm/eight/internal/util"
+	"github.com/GSA-TTS/jemison/internal/util"
 )
 
 type JSON map[string]string

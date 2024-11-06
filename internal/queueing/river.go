@@ -3,8 +3,8 @@ package queueing
 import (
 	"context"
 
+	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jadudm/eight/internal/env"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
 	"go.uber.org/zap"

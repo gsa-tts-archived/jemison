@@ -4,9 +4,9 @@ import (
 	"context"
 	"os"
 
+	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jadudm/eight/internal/env"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )

@@ -1,4 +1,4 @@
-module github.com/jadudm/eight
+module github.com/GSA-TTS/jemison
 
 go 1.23.2
 

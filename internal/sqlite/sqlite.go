@@ -9,7 +9,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 
-	search_db "github.com/jadudm/eight/internal/sqlite/schemas"
+	search_db "github.com/GSA-TTS/jemison/internal/sqlite/schemas"
 )
 
 //go:embed schema.sql

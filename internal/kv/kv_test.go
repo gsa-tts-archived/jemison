@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jadudm/eight/internal/env"
+	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/stretchr/testify/assert"
 )
 

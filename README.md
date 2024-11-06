@@ -6,7 +6,7 @@ It is based on a series of experiments in search and embedded database technolog
 
 * Experiment four explored the performance of SQLite databases for full-text retrieval via HTTP as well as comparisons between compressed and uncompressed databases.
 * Experiment [six](https://github.com/jadudm/six) explored the creation of an end-to-end web crawler/indexer/search server in 2000 lines of Go.
-* Experiment [eight](https://github.com/jadudm/eight) revisited this idea, focusing on the idea of search as an *observable data pipeline*. 
+* Experiment [eight](https://github.com/GSA-TTS/jemison) revisited this idea, focusing on the idea of search as an *observable data pipeline*. 
 
 `jemison` is named for Dr. Mae Jemison, the first African-American woman in space. 
 

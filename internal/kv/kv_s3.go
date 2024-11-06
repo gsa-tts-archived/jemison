@@ -14,8 +14,8 @@ import (
 	minio_credentials "github.com/minio/minio-go/v7/pkg/credentials"
 	"go.uber.org/zap"
 
-	"github.com/jadudm/eight/internal/env"
-	"github.com/jadudm/eight/internal/util"
+	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/util"
 )
 
 // Only open any given bucket once.
