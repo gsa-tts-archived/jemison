@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GSA-TTS/jemison/internal/env"
+	search_db "github.com/GSA-TTS/jemison/internal/sqlite/schemas"
 	"github.com/gin-gonic/gin"
-	"github.com/jadudm/eight/internal/env"
-	search_db "github.com/jadudm/eight/internal/sqlite/schemas"
 	"go.uber.org/zap"
 )
 

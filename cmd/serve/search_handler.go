@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/sqlite/schemas"
+	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/gin-gonic/gin"
-	"github.com/jadudm/eight/internal/env"
-	"github.com/jadudm/eight/internal/sqlite/schemas"
-	"github.com/jadudm/eight/internal/util"
 	"github.com/kljensen/snowball"
 	"go.uber.org/zap"
 )

@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jadudm/eight/internal/common"
-	"github.com/jadudm/eight/internal/env"
-	"github.com/jadudm/eight/internal/sqlite"
-	"github.com/jadudm/eight/internal/sqlite/schemas"
+	"github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/sqlite"
+	"github.com/GSA-TTS/jemison/internal/sqlite/schemas"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )

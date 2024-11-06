@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	common "github.com/jadudm/eight/internal/common"
-	"github.com/jadudm/eight/internal/env"
+	common "github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 )

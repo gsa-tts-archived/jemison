@@ -1,6 +1,6 @@
 package main
 
-import "github.com/jadudm/eight/internal/kv"
+import "github.com/GSA-TTS/jemison/internal/kv"
 
 var extractStorage kv.S3
 var serveStorage kv.S3

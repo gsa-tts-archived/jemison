@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/jadudm/eight/internal/common"
-	"github.com/jadudm/eight/internal/env"
+	"github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/env"
 	"go.uber.org/zap"
 )
 

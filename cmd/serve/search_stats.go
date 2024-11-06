@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jadudm/eight/internal/common"
+	"github.com/GSA-TTS/jemison/internal/common"
 )
 
 func runStats(sri ServeRequestInput, duration time.Duration) {

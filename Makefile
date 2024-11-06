@@ -8,7 +8,7 @@ generate:
 	cd internal/sqlite ; sqlc generate || exit 1
 
 docker: 
-	docker build -t eight/dev -f Dockerfile.base .
+	docker build -t jemison/dev -f Dockerfile.base .
 	
 .PHONY: build
 build: clean generate

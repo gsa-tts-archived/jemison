@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/jadudm/eight/internal/common"
-	"github.com/jadudm/eight/internal/env"
-	"github.com/jadudm/eight/internal/sqlite"
+	"github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/sqlite"
 )
 
 func main() {

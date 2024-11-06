@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/GSA-TTS/jemison/internal/common"
+	kv "github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/jadudm/eight/internal/common"
-	kv "github.com/jadudm/eight/internal/kv"
-	"github.com/jadudm/eight/internal/util"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )

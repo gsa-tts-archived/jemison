@@ -5,9 +5,9 @@ import (
 	"maps"
 	"runtime"
 
-	"github.com/jadudm/eight/internal/common"
-	kv "github.com/jadudm/eight/internal/kv"
-	"github.com/jadudm/eight/internal/util"
+	"github.com/GSA-TTS/jemison/internal/common"
+	kv "github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/johbar/go-poppler"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"

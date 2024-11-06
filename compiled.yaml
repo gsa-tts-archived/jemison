@@ -5,7 +5,7 @@ services:
   #-----------------------------------------------------
   fetch:
     container_name: fetch
-    image: eight/dev
+    image: jemison/dev
     deploy:
       resources:
         limits:
@@ -45,7 +45,7 @@ services:
   #-----------------------------------------------------
   extract:
     container_name: extract
-    image: eight/dev
+    image: jemison/dev
     # Simulate CF
     # https://stackoverflow.com/questions/42345235/how-to-specify-memory-cpu-limit-in-docker-compose-version-3
     deploy:
@@ -86,7 +86,7 @@ services:
   #-----------------------------------------------------
   walk:
     container_name: walk
-    image: eight/dev
+    image: jemison/dev
     build: 
       context: .
       dockerfile: ./cmd/walk/Dockerfile
@@ -121,7 +121,7 @@ services:
   #-----------------------------------------------------
   pack:
     container_name: pack
-    image: eight/dev
+    image: jemison/dev
     build: 
       context: .
       dockerfile: ./cmd/pack/Dockerfile
@@ -156,7 +156,7 @@ services:
   #-----------------------------------------------------
   serve:
     container_name: serve
-    image: eight/dev
+    image: jemison/dev
     build: 
       context: .
       dockerfile: ./cmd/serve/Dockerfile

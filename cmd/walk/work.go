@@ -9,11 +9,11 @@ import (
 	"os"
 	"strings"
 
+	common "github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
-	common "github.com/jadudm/eight/internal/common"
-	"github.com/jadudm/eight/internal/kv"
-	"github.com/jadudm/eight/internal/util"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )

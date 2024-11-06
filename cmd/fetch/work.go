@@ -12,10 +12,10 @@ import (
 	"strings"
 	"sync"
 
+	common "github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
-	common "github.com/jadudm/eight/internal/common"
-	"github.com/jadudm/eight/internal/util"
 	"github.com/pingcap/log"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"

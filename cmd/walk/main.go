@@ -8,8 +8,8 @@ import (
 	expirable "github.com/go-pkgz/expirable-cache/v3"
 	"github.com/patrickmn/go-cache"
 
-	"github.com/jadudm/eight/internal/common"
-	"github.com/jadudm/eight/internal/env"
+	"github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/env"
 	"go.uber.org/zap"
 )
 

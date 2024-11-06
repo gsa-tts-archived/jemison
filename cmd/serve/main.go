@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/gin-gonic/gin"
-	"github.com/jadudm/eight/internal/common"
-	"github.com/jadudm/eight/internal/env"
-	"github.com/jadudm/eight/internal/kv"
-	"github.com/jadudm/eight/internal/queueing"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
