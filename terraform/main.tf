@@ -18,7 +18,7 @@ module "database" {
   cf_space_name    = "matthew.jadud"
   name             = "experiment-eight-db"
   recursive_delete = false
-  tags             = ["eight"]
+  tags             = ["rds"]
   rds_plan_name    = "micro-psql"
 }
 
@@ -63,7 +63,7 @@ module "s3-private-serve" {
 resource "cloudfoundry_route" "fetch_route" {
   space    = data.cloudfoundry_space.app_space.id
   domain   = data.cloudfoundry_domain.public.id
-  hostname = "fetch-experiment-eight"
+  hostname = "jemison-fetch"
 }
 resource "cloudfoundry_app" "fetch" {
   name                 = "fetch"
@@ -190,7 +190,7 @@ resource "cloudfoundry_app" "pack" {
 resource "cloudfoundry_route" "serve_route" {
   space    = data.cloudfoundry_space.app_space.id
   domain   = data.cloudfoundry_domain.public.id
-  hostname = "search-eight"
+  hostname = "jemison"
 }
 resource "cloudfoundry_app" "serve" {
   name                 = "serve"
