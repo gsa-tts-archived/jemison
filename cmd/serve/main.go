@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
@@ -17,6 +18,7 @@ import (
 )
 
 var serveStorage kv.S3
+var Databases sync.Map //map[string]*sql.DB
 
 func ServeHost(c *gin.Context) {
 	s, _ := env.Env.GetUserService("serve")
@@ -94,6 +96,8 @@ func main() {
 	static_files_path := s.GetParamString("static_files_path")
 	external_host := s.GetParamString("external_host")
 	external_port := s.GetParamInt64("external_port")
+
+	// Databases = make(map[string]*sql.DB, 0)
 
 	log.Println("environment initialized")
 

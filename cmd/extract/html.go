@@ -68,6 +68,24 @@ func extractHtml(obj kv.Object) {
 	doc.Find("td").Each(func(ndx int, sel *goquery.Selection) {
 		content += scrape_sel(sel)
 	})
+	doc.Find("div").Each(func(ndx int, sel *goquery.Selection) {
+		content += scrape_sel(sel)
+	})
+	doc.Find("span").Each(func(ndx int, sel *goquery.Selection) {
+		content += scrape_sel(sel)
+	})
+	doc.Find("a").Each(func(ndx int, sel *goquery.Selection) {
+		content += scrape_sel(sel)
+	})
+	doc.Find("small").Each(func(ndx int, sel *goquery.Selection) {
+		content += scrape_sel(sel)
+	})
+	doc.Find("b").Each(func(ndx int, sel *goquery.Selection) {
+		content += scrape_sel(sel)
+	})
+	doc.Find("em").Each(func(ndx int, sel *goquery.Selection) {
+		content += scrape_sel(sel)
+	})
 
 	// Store everything
 	extracted_key := util.CreateS3Key(obj.GetValue("host"), obj.GetValue("path"), "json").Render()

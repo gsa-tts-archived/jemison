@@ -185,9 +185,9 @@ services:
       start_period: 60s
     environment:
       ENV: "DOCKER"
-      DEBUG_LEVEL: "debug"
+      DEBUG_LEVEL: "warn"
       PORT: 8888
-      GIN_MODE: debug
+      GIN_MODE: release
     restart: always
 
   #-----------------------------------------------------

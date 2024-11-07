@@ -8,7 +8,7 @@ It is based on a series of experiments in search and embedded database technolog
 * Experiment [six](https://github.com/jadudm/six) explored the creation of an end-to-end web crawler/indexer/search server in 2000 lines of Go.
 * Experiment [eight](https://github.com/GSA-TTS/jemison) revisited this idea, focusing on the idea of search as an *observable data pipeline*. 
 
-`jemison` is named for Dr. Mae Jemison, the first African-American woman in space. 
+`jemison` is named for the pioneering and innovating explorer of medicine and space, Dr. Mae Jemison, the first African-American woman in space. 
 
 ## running the experiment
 
@@ -132,3 +132,37 @@ Bourne Again Shell                1              2              3              6
 SUM:                             95            933            385          14744
 --------------------------------------------------------------------------------
 ```
+
+### local load testing
+
+Using k6, I ran queries against random databases with random queries of length 1-4. This is with the script running locally against localhost, where network effects are minimal. Ramping up to 400 VUs, we see a throughput of 222 rps (if I'm interpretaing the K6 output correctly). I think the `serve` component can do better. I also think 
+
+
+```
+     ✗ status was 200
+      ↳  91% — ✓ 10331 / ✗ 996
+
+     checks.........................: 91.20% 10331 out of 11327
+     data_received..................: 8.8 MB 172 kB/s
+     data_sent......................: 1.6 MB 32 kB/s
+     http_req_blocked...............: avg=64.22µs min=0s      med=7.73µs   max=17.45ms  p(90)=224.12µs p(95)=366.5µs 
+     http_req_connecting............: avg=41.35µs min=0s      med=0s       max=17.39ms  p(90)=149.31µs p(95)=244.1µs 
+   ✓ http_req_duration..............: avg=44.53ms min=0s      med=1.09ms   max=1.12s    p(90)=14.91ms  p(95)=33.88ms 
+       { expected_response:true }...: avg=48.74ms min=113.6µs med=1.2ms    max=1.12s    p(90)=16.28ms  p(95)=39.18ms 
+     http_req_failed................: 8.79%  996 out of 11327
+     http_req_receiving.............: avg=60.09µs min=0s      med=49.16µs  max=833.26µs p(90)=119.57µs p(95)=139.16µs
+     http_req_sending...............: avg=32.07µs min=0s      med=25.43µs  max=1.92ms   p(90)=60.44µs  p(95)=86.18µs 
+     http_req_tls_handshaking.......: avg=0s      min=0s      med=0s       max=0s       p(90)=0s       p(95)=0s      
+     http_req_waiting...............: avg=44.44ms min=0s      med=977.91µs max=1.12s    p(90)=14.82ms  p(95)=33.82ms 
+     http_reqs......................: 11327  222.08811/s
+     iteration_duration.............: avg=1.04s   min=1s      med=1s       max=2.12s    p(90)=1.01s    p(95)=1.03s   
+     iterations.....................: 11327  222.08811/s
+     vus............................: 4      min=4              max=399
+     vus_max........................: 400    min=400            max=400
+```
+
+Points of comparison:
+
+* https://stackoverflow.com/questions/373098/whats-the-average-requests-per-second-for-a-production-web-application
+* https://www.freecodecamp.org/news/million-websockets-and-go-cc58418460bb/
+* https://tleyden.github.io/blog/2016/11/21/tuning-the-go-http-client-library-for-load-testing/

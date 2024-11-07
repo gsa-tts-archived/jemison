@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -136,10 +135,24 @@ func runQuery(c *gin.Context, sri ServeRequestInput, limit int) (
 		return nil, time.Since(start), fmt.Errorf("search host not found")
 	}
 
-	db, err := sql.Open("sqlite3", sqlite_file)
-	if err != nil {
-		log.Fatal("SERVCE cannot open SQLite file", sqlite_file)
+	if _, ok := Databases.Load(sqlite_file); !ok { // Databases[sqlite_file]; !ok {
+		//https://go.dev/doc/database/manage-connections
+		db, err := sql.Open("sqlite3", sqlite_file+"?cache=shared&mode=ro")
+		db.SetMaxOpenConns(200)
+		db.SetConnMaxIdleTime(1000 * time.Millisecond)
+		db.SetMaxIdleConns(100)
+		db.SetConnMaxLifetime(2000 * time.Millisecond)
+
+		if err != nil {
+			zap.L().Fatal("service cannot open sqlite file", zap.String("file", sqlite_file))
+		}
+		// Databases[sqlite_file] = db
+		Databases.Store(sqlite_file, db)
 	}
+
+	// db := Databases[sqlite_file]
+	db, _ := Databases.Load(sqlite_file)
+	cast_db := db.(*sql.DB)
 
 	// Stem the terms and add wildcards.
 	improved_terms := make([]string, 0)
@@ -161,7 +174,7 @@ func runQuery(c *gin.Context, sri ServeRequestInput, limit int) (
 		zap.String("original", sri.Terms),
 		zap.String("improved", improved_terms_string))
 
-	queries := schemas.New(db)
+	queries := schemas.New(cast_db)
 	res, err := queries.SearchSiteIndexSnippets(context.Background(), schemas.SearchSiteIndexSnippetsParams{
 		Text:  improved_terms_string, //sri.Terms,
 		Limit: results_per_query,
@@ -184,12 +197,11 @@ func runQuery(c *gin.Context, sri ServeRequestInput, limit int) (
 // Handles the API requests as they come in.
 func SearchHandler(c *gin.Context) {
 	var sri ServeRequestInput
+
 	if err := c.BindJSON(&sri); err != nil {
 		return
 	}
 
-	// These are in another file, because this one should stay shorter.
-	// FIXME: the limit of 10 should not be hard-coded
 	rows, duration, err := runQuery(c, sri, 10)
 	runStats(sri, duration)
 
