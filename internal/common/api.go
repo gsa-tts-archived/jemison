@@ -58,7 +58,7 @@ func StatsHandler(stats_base string) func(c *gin.Context) {
 			"stats":    b.GetAll(),
 			"response": "ok",
 		})
-		c.Request.Close()
+
 	}
 }
 

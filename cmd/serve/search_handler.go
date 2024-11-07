@@ -154,17 +154,20 @@ func runQuery(c *gin.Context, sri ServeRequestInput, limit int) (
 	db, _ := Databases.Load(sqlite_file)
 	cast_db := db.(*sql.DB)
 
-	// Stem the terms and add wildcards.
+	// Don't only use the stemmed words
+	existing_terms := strings.Split(sri.Terms, " ")
 	improved_terms := make([]string, 0)
-	for _, t := range strings.Split(sri.Terms, " ") {
+	for _, t := range existing_terms {
+		// start by adding the existing terms to the list.
+		improved_terms = append(improved_terms, t)
 		stemmed, err := snowball.Stem(t, "english", true)
 		if err != nil {
 			// Pass. Keep the value as-is
 			improved_terms = append(improved_terms, t)
 		} else {
 			if len(stemmed) > 0 {
+				// Stem the terms and add wildcards.
 				improved_terms = append(improved_terms, stemmed+"*")
-
 			}
 		}
 	}
