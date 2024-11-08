@@ -112,7 +112,7 @@ func permuteSubqueries(queries *schemas.Queries,
 	return interleaved
 }
 
-func runQuery(c *gin.Context, sri ServeRequestInput, limit int) (
+func runQuery(sri ServeRequestInput, limit int) (
 	[]schemas.SearchSiteIndexSnippetsRow,
 	time.Duration,
 	error) {
@@ -185,7 +185,7 @@ func SearchHandler(c *gin.Context) {
 		return
 	}
 
-	rows, duration, err := runQuery(c, sri, 10)
+	rows, duration, err := runQuery(sri, 10)
 	runStats(sri, duration)
 
 	if err != nil {
