@@ -17,15 +17,15 @@ It is based on a series of experiments in search and embedded database technolog
 > `jemison` is:
 > 
 > 1. **MAINTAINABLE**: 20x fewer lines of code
-> 2. **AFFORDABLE** less resource intenstive (read: hosting costs) and 
+> 2. **AFFORDABLE** 10x less resource intenstive (read: hosting costs)
 > 3. **BLAZING FAST**: 10x more performant (and scales horitzontally)
 
 Why `jemison` is an MVP candidate for search:
 
 1. `jemison` can already crawl and index HTML and PDFs, handling diacritics (e.g. Español).
-1. `jemison` can deploy a full crawl/index/serve solution in 1GB of RAM on [cloud.gov](https://cloud.gov/).
-2. `jemison` is 2500 lines of code: easy to maintain, with an extensible, distributed architecture.
-3. `jemison` can handle 55K requests per minute (10x the current search.gov load) with 256**M**B of RAM.
+2. `jemison` can deploy a full crawl/index/serve solution in 1GB of RAM on [cloud.gov](https://cloud.gov/).
+3. `jemison` is 2500 lines of code: easy to maintain, with an extensible, distributed architecture.
+4. `jemison` can handle 55K requests per minute (10x the current search.gov load) with 256**M**B of RAM.
 
 I lied. There is no #5.
 
@@ -129,27 +129,25 @@ To
 ## by the numbers
 
 ```
- docker run --rm -v ${PWD}:/tmp aldanial/cloc --exclude-dir=assets --fullpath --not-match-d=terraform/zips/* --not-match-d=terraform/app/* --not-match-d=.terraform/* .
+cloc --exclude-ext=yml,yaml,html,css,less,js,json,svg,scss --fullpath --not-match-d=terraform/\.terraform .
 ```
 
 ```
 --------------------------------------------------------------------------------
 Language                      files          blank        comment           code
 --------------------------------------------------------------------------------
-Text                              2              0              0          10127
-Go                               46            553            250           2628
-YAML                              7             25            106            855
-Markdown                         13            207              0            347
-HTML                              1             43              0            254
-JSON                              1              0              0            199
-make                              8             41              1            129
-Python                            3             18              0             83
-Dockerfile                        6             26             15             61
+Go                               53            639            320           2985
+JSON                              2              0              0           2852
+Markdown                         17            257              0            451
+HCL                               5             48             37            291
+make                              9             60              3            240
+Python                            3             18              0             82
+Dockerfile                        6             27             15             64
 Bourne Shell                      5             10              0             30
-SQL                               2              8             10             25
-Bourne Again Shell                1              2              3              6
+SQL                               2              8             11             26
+Bourne Again Shell                2              3              5             11
 --------------------------------------------------------------------------------
-SUM:                             95            933            385          14744
+SUM:                            104           1070            391           7032
 --------------------------------------------------------------------------------
 ```
 
