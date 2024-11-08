@@ -1,5 +1,6 @@
 # jemison
 
+
 `jemison` is a prototype for a small, scalable, maintainable search platform. 
 
 It is based on a series of experiments in search and embedded database technologies.
@@ -9,6 +10,25 @@ It is based on a series of experiments in search and embedded database technolog
 * Experiment [eight](https://github.com/GSA-TTS/jemison) revisited this idea, focusing on the idea of search as an *observable data pipeline*. 
 
 `jemison` is named for the pioneering and innovating explorer of medicine and space, Dr. Mae Jemison, the first African-American woman in space. 
+
+
+> [!IMPORTANT]
+> 
+> `jemison` is:
+> 
+> 1. **MAINTAINABLE**: 20x fewer lines of code
+> 2. **AFFORDABLE** less resource intenstive (read: hosting costs) and 
+> 3. **BLAZING FAST**: 10x more performant (and scales horitzontally)
+
+Why `jemison` is an MVP candidate for search:
+
+1. `jemison` can already crawl and index HTML and PDFs, handling diacritics (e.g. Español).
+1. `jemison` can deploy a full crawl/index/serve solution in 1GB of RAM on [cloud.gov](https://cloud.gov/).
+2. `jemison` is 2500 lines of code: easy to maintain, with an extensible, distributed architecture.
+3. `jemison` can handle 55K requests per minute (10x the current search.gov load) with 256**M**B of RAM.
+
+I lied. There is no #5.
+
 
 ## running the experiment
 
