@@ -155,9 +155,9 @@ SUM:                            104           1070            391           7032
 
 Using k6, I ran queries against random databases with random queries of length 1-4. This is with the script running locally against localhost, where network effects are minimal. Ramping up to 1000 simultaneous users, we see a throughput of 930 requests per second. 
 
-That means that the search server can handle 55K (fifty-five thousand) requests per minute. The server in question **only has 256M of memory**. Or, if we wanted to scale to 200K requests per minute, we could do so by paying for 1GB of RAM/month, which has an annual cost of $130.
+That means that the search server can handle 55K (fifty-five thousand) requests per minute. The server in question **only has 512M of memory**. Scaling is linear with RAM, meaning that to double the number of simultaneous connections, we double the RAM.
 
-search.gov sees approximately 5K requests per minute; with a tiny fraction of the resources of the current infrastructre, this design can handle 10x the load without breaking a sweat.
+search.gov sees approximately 5K requests per minute; with a tiny fraction of the resources of the current infrastructure, this design can handle 10x the load without breaking a sweat.
 
 
 ```
