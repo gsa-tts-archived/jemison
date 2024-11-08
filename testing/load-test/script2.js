@@ -15,6 +15,7 @@ import { check, sleep } from "k6";
 //   ],
 // };
 
+// https://k6.io/blog/how-to-generate-a-constant-request-rate-with-the-new-scenarios-api/
 export const options = {
   scenarios: {
     constant_request_rate: {
