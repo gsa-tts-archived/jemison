@@ -135,30 +135,48 @@ SUM:                             95            933            385          14744
 
 ### local load testing
 
-Using k6, I ran queries against random databases with random queries of length 1-4. This is with the script running locally against localhost, where network effects are minimal. Ramping up to 400 VUs, we see a throughput of 222 rps (if I'm interpretaing the K6 output correctly). I think the `serve` component can do better. I also think 
+Using k6, I ran queries against random databases with random queries of length 1-4. This is with the script running locally against localhost, where network effects are minimal. Ramping up to 1000 simultaneous users, we see a throughput of 930 requests per second. 
+
+That means that the search server can handle 55K (fifty-five thousand) requests per minute. The server in question **only has 256M of memory**. Or, if we wanted to scale to 200K requests per minute, we could do so by paying for 1GB of RAM/month, which has an annual cost of $130.
+
+search.gov sees approximately 5K requests per minute; with a tiny fraction of the resources of the current infrastructre, this design can handle 10x the load without breaking a sweat.
 
 
 ```
-     ✗ status was 200
-      ↳  91% — ✓ 10331 / ✗ 996
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
 
-     checks.........................: 91.20% 10331 out of 11327
-     data_received..................: 8.8 MB 172 kB/s
-     data_sent......................: 1.6 MB 32 kB/s
-     http_req_blocked...............: avg=64.22µs min=0s      med=7.73µs   max=17.45ms  p(90)=224.12µs p(95)=366.5µs 
-     http_req_connecting............: avg=41.35µs min=0s      med=0s       max=17.39ms  p(90)=149.31µs p(95)=244.1µs 
-   ✓ http_req_duration..............: avg=44.53ms min=0s      med=1.09ms   max=1.12s    p(90)=14.91ms  p(95)=33.88ms 
-       { expected_response:true }...: avg=48.74ms min=113.6µs med=1.2ms    max=1.12s    p(90)=16.28ms  p(95)=39.18ms 
-     http_req_failed................: 8.79%  996 out of 11327
-     http_req_receiving.............: avg=60.09µs min=0s      med=49.16µs  max=833.26µs p(90)=119.57µs p(95)=139.16µs
-     http_req_sending...............: avg=32.07µs min=0s      med=25.43µs  max=1.92ms   p(90)=60.44µs  p(95)=86.18µs 
-     http_req_tls_handshaking.......: avg=0s      min=0s      med=0s       max=0s       p(90)=0s       p(95)=0s      
-     http_req_waiting...............: avg=44.44ms min=0s      med=977.91µs max=1.12s    p(90)=14.82ms  p(95)=33.82ms 
-     http_reqs......................: 11327  222.08811/s
-     iteration_duration.............: avg=1.04s   min=1s      med=1s       max=2.12s    p(90)=1.01s    p(95)=1.03s   
-     iterations.....................: 11327  222.08811/s
-     vus............................: 4      min=4              max=399
-     vus_max........................: 400    min=400            max=400
+     execution: local
+        script: script2.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 1200 max VUs, 1m0s max duration (incl. graceful stop):
+              * constant_request_rate: 1000.00 iterations/s for 30s (maxVUs: 100-1200, gracefulStop: 30s)
+
+
+     ✓ status was 200
+
+     checks.........................: 100.00% 28821 out of 28821
+     data_received..................: 25 MB   811 kB/s
+     data_sent......................: 4.5 MB  146 kB/s
+     dropped_iterations.............: 1180    38.051839/s
+     http_req_blocked...............: avg=12.03µs min=868ns    med=3.41µs  max=11.65ms  p(90)=7.7µs   p(95)=12.27µs
+     http_req_connecting............: avg=5.89µs  min=0s       med=0s      max=11.61ms  p(90)=0s      p(95)=0s     
+     http_req_duration..............: avg=5.65ms  min=285.16µs med=2.32ms  max=130.44ms p(90)=13.86ms p(95)=22.32ms
+       { expected_response:true }...: avg=5.65ms  min=285.16µs med=2.32ms  max=130.44ms p(90)=13.86ms p(95)=22.32ms
+     http_req_failed................: 0.00%   0 out of 28821
+     http_req_receiving.............: avg=33.72µs min=4.28µs   med=26.59µs max=3.18ms   p(90)=56.84µs p(95)=74.05µs
+     http_req_sending...............: avg=15.69µs min=2.6µs    med=10.73µs max=2.08ms   p(90)=26.83µs p(95)=36.41µs
+     http_req_tls_handshaking.......: avg=0s      min=0s       med=0s      max=0s       p(90)=0s      p(95)=0s     
+     http_req_waiting...............: avg=5.6ms   min=272.58µs med=2.26ms  max=130.36ms p(90)=13.78ms p(95)=22.23ms
+     http_reqs......................: 28821   929.400047/s
+     iteration_duration.............: avg=1s      min=1s       med=1s      max=1.13s    p(90)=1.01s   p(95)=1.02s  
+     iterations.....................: 28821   929.400047/s
+     vus............................: 11      min=11             max=1032
+     vus_max........................: 1041    min=485            max=1041
 ```
 
 Points of comparison:

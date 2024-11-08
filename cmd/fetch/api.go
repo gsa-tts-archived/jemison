@@ -49,6 +49,11 @@ func FetchRequestHandler(c *gin.Context) {
 	}
 }
 
+func SitemapRequestHandler(c *gin.Context) {
+
+}
+
 func ExtendApi(r *gin.Engine) {
 	r.PUT("/fetch", FetchRequestHandler)
+	r.PUT("/sitemap", SitemapRequestHandler)
 }

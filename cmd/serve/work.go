@@ -36,5 +36,6 @@ func (w *ServeWorker) Work(ctx context.Context, job *river.Job[common.ServeArgs]
 		zap.L().Error("could not download sqlite db",
 			zap.String("sqlite_filename", sqlite_filename), zap.String("destination", destination))
 	}
+
 	return nil
 }
