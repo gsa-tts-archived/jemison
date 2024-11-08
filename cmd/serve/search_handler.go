@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -69,14 +68,11 @@ func permuteSubqueries(queries *schemas.Queries,
 	improved_terms []string,
 	results_per_query int64) []schemas.SearchSiteIndexSnippetsRow {
 	permuted := permutate(improved_terms)
-	zap.L().Info("permutated", zap.String("permuted", fmt.Sprintln(permuted)))
 
 	shorter_queries := util.Map(permuted,
 		func(item []string) []string {
 			return item[0 : len(item)-1]
 		})
-
-	// zap.L().Info("shorter queries", zap.String("shorts", fmt.Sprintln(permuted)))
 
 	combined := make([][]schemas.SearchSiteIndexSnippetsRow, 0)
 	for _, q := range shorter_queries {
@@ -86,12 +82,6 @@ func permuteSubqueries(queries *schemas.Queries,
 		})
 		combined = append(combined, res2)
 	}
-
-	// zap.L().Info("combined results",
-	// 	zap.String("combos", fmt.Sprintln(permuted)),
-	// 	zap.String("result_combos", fmt.Sprintln(combined)),
-	// 	zap.Int("combo length", len(combined[0])),
-	// )
 
 	interleaved := make([]schemas.SearchSiteIndexSnippetsRow, 0)
 	max_result_set_length := 0

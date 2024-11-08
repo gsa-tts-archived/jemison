@@ -163,7 +163,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
     ulimits:
       nofile:
           soft: 65536

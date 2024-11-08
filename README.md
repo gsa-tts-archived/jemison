@@ -168,33 +168,43 @@ search.gov sees approximately 5K requests per minute; with a tiny fraction of th
  / __________ \  |_|\_\  \_____/ 
 
      execution: local
-        script: script2.js
+        script: search-stressor.js
         output: -
 
-     scenarios: (100.00%) 1 scenario, 1200 max VUs, 1m0s max duration (incl. graceful stop):
-              * constant_request_rate: 1000.00 iterations/s for 30s (maxVUs: 100-1200, gracefulStop: 30s)
+     scenarios: (100.00%) 4 scenarios, 1999 max VUs, 4m10s max duration (incl. graceful stop):
+              * one_is_such_a_lonely_number: 1.00 iterations/s for 10s (maxVUs: 10-100, gracefulStop: 30s)
+              * the_marching_100: 100.00 iterations/s for 30s (maxVUs: 100-200, startTime: 10s, gracefulStop: 30s)
+              * a_new_millenium: 1000.00 iterations/s for 1m0s (maxVUs: 100-1500, startTime: 40s, gracefulStop: 30s)
+              * teeter_totter: Up to 1200 looping VUs for 2m0s over 4 stages (gracefulRampDown: 10s, startTime: 1m40s, gracefulStop: 30s)
+
+     ✗ status was 200
+      ↳  99% — ✓ 135719 / ✗ 395
+
+     checks.........................: 99.70% 135719 out of 136114
+     data_received..................: 118 MB 535 kB/s
+     data_sent......................: 21 MB  97 kB/s
+     dropped_iterations.............: 1170   5.294314/s
+     http_req_blocked...............: avg=12.52µs min=0s       med=3.38µs  max=15.48ms p(90)=10.73µs p(95)=13.61µs 
+     http_req_connecting............: avg=5.7µs   min=0s       med=0s      max=15.41ms p(90)=0s      p(95)=0s      
+   ✓ http_req_duration..............: avg=27.51ms min=0s       med=8.1ms   max=1.82s   p(90)=64.57ms p(95)=94.26ms 
+       { expected_response:true }...: avg=27.41ms min=273.16µs med=8.13ms  max=1.82s   p(90)=64.46ms p(95)=93.81ms 
+   ✓ http_req_failed................: 0.29%  395 out of 136114
+     http_req_receiving.............: avg=41.6µs  min=0s       med=25.51µs max=11.79ms p(90)=82.76µs p(95)=118.74µs
+     http_req_sending...............: avg=18.56µs min=0s       med=10.18µs max=15.44ms p(90)=37.8µs  p(95)=48.56µs 
+     http_req_tls_handshaking.......: avg=0s      min=0s       med=0s      max=0s      p(90)=0s      p(95)=0s      
+     http_req_waiting...............: avg=27.45ms min=0s       med=8.03ms  max=1.82s   p(90)=64.48ms p(95)=94.18ms 
+     http_reqs......................: 136114 615.923323/s
+     iteration_duration.............: avg=1.02s   min=1s       med=1s      max=2.83s   p(90)=1.06s   p(95)=1.09s   
+     iterations.....................: 136114 615.923323/s
+     vus............................: 4      min=1                max=1199
+     vus_max........................: 1999   min=1200             max=1999
 
 
-     ✓ status was 200
-
-     checks.........................: 100.00% 28821 out of 28821
-     data_received..................: 25 MB   811 kB/s
-     data_sent......................: 4.5 MB  146 kB/s
-     dropped_iterations.............: 1180    38.051839/s
-     http_req_blocked...............: avg=12.03µs min=868ns    med=3.41µs  max=11.65ms  p(90)=7.7µs   p(95)=12.27µs
-     http_req_connecting............: avg=5.89µs  min=0s       med=0s      max=11.61ms  p(90)=0s      p(95)=0s     
-     http_req_duration..............: avg=5.65ms  min=285.16µs med=2.32ms  max=130.44ms p(90)=13.86ms p(95)=22.32ms
-       { expected_response:true }...: avg=5.65ms  min=285.16µs med=2.32ms  max=130.44ms p(90)=13.86ms p(95)=22.32ms
-     http_req_failed................: 0.00%   0 out of 28821
-     http_req_receiving.............: avg=33.72µs min=4.28µs   med=26.59µs max=3.18ms   p(90)=56.84µs p(95)=74.05µs
-     http_req_sending...............: avg=15.69µs min=2.6µs    med=10.73µs max=2.08ms   p(90)=26.83µs p(95)=36.41µs
-     http_req_tls_handshaking.......: avg=0s      min=0s       med=0s      max=0s       p(90)=0s      p(95)=0s     
-     http_req_waiting...............: avg=5.6ms   min=272.58µs med=2.26ms  max=130.36ms p(90)=13.78ms p(95)=22.23ms
-     http_reqs......................: 28821   929.400047/s
-     iteration_duration.............: avg=1s      min=1s       med=1s      max=1.13s    p(90)=1.01s   p(95)=1.02s  
-     iterations.....................: 28821   929.400047/s
-     vus............................: 11      min=11             max=1032
-     vus_max........................: 1041    min=485            max=1041
+running (3m41.0s), 0000/1999 VUs, 136114 complete and 0 interrupted iterations
+one_is_such_a_lonely_number ✓ [======================================] 000/010 VUs    10s   1.00 iters/s
+the_marching_100            ✓ [======================================] 000/104 VUs    30s   100.00 iters/s
+a_new_millenium             ✓ [======================================] 0000/1054 VUs  1m0s  1000.00 iters/s
+teeter_totter               ✓ [======================================] 0000/1200 VUs  2m0s 
 ```
 
 Points of comparison:
