@@ -1,10 +1,9 @@
 ---
-name: :party: Onboarding
+name: 🥳 Onboarding
 about: An onboarding checklist for folks joining the team!
 title: Onboarding checklist for {GitHub Username}
 labels: 'backlog'
 assignees: ''
-
 ---
 
 **Instructions for the issue creator:** 
