@@ -16,12 +16,13 @@ build: clean generate
 	cd cmd/fetch ; make build
 	cd cmd/pack ; make build
 	cd cmd/serve ; make build
+	cd cmd/validate ; make build
 	cd cmd/walk ; make build
 	cd assets ; rm -rf static/assets ; unzip static.zip
 
 .PHONY: up
 up: build
-	docker compose -f compiled.yaml up
+	docker compose up
 
 .PHONY: run
 run: clean generate

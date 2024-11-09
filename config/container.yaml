@@ -22,15 +22,6 @@ EIGHT_SERVICES:
         polite_sleep_milliseconds: 2000
         polite_cache_default_expiration_minutes: 360
         polite_cache_cleanup_interval_minutes: 10
-    - name: "walk"
-      credentials:
-        port: 8888
-      parameters:
-        workers: 10
-        cache-ttl-minutes: 30
-        cache-ttl-seconds: 0
-        polite_cache_default_expiration_minutes: 360
-        polite_cache_cleanup_interval_minutes: 10
     - name: "pack"
       credentials:
         port: 8888
@@ -48,6 +39,20 @@ EIGHT_SERVICES:
         static_files_path: "/home/vcap/app/assets/static"
         database_files_path: "/home/vcap/app/assets/databases"
         results_per_query: 10
+    - name: "validate"
+      credentials:
+        port: 8888
+      parameters:
+        workers: 10
+    - name: "walk"
+      credentials:
+        port: 8888
+      parameters:
+        workers: 10
+        cache-ttl-minutes: 30
+        cache-ttl-seconds: 0
+        polite_cache_default_expiration_minutes: 360
+        polite_cache_cleanup_interval_minutes: 10
 VCAP_SERVICES:
   s3:
     #################################

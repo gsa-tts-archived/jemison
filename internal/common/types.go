@@ -45,3 +45,14 @@ func (WalkArgs) Kind() string {
 }
 
 type HttpResponse func(w http.ResponseWriter, r *http.Request)
+
+// VALIDATOR TYPES
+var ValidateFetchQueue = "validate_fetch"
+
+type ValidateFetchArgs struct {
+	Fetch FetchArgs
+}
+
+func (ValidateFetchArgs) Kind() string {
+	return ValidateFetchQueue
+}
