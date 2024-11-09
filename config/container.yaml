@@ -36,7 +36,7 @@ EIGHT_SERVICES:
         port: 8888
       parameters:
         workers: 10
-        packing_timeout_seconds: 600
+        packing_timeout_seconds: 300
     - name: "serve"
       credentials:
         port: 8888

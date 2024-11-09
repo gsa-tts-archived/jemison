@@ -156,7 +156,7 @@ func runQuery(sri ServeRequestInput, limit int) (
 	// each search result with the terms that were used
 	//zap.L().Info("search results", zap.Int("count", len(res)))
 
-	if (len(res) < 3) && (len(improved_terms) > 2) {
+	if (len(res) < 2) && (len(improved_terms) > 1) {
 		res = permuteSubqueries(queries, improved_terms, results_per_query)
 	}
 
