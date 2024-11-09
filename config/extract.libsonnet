@@ -1,5 +1,5 @@
-local B = import 'base.jsonnet';
-local service = 'pack';
+local B = import 'base.libsonnet';
+local service = 'extract';
 
 local credentials = [
   [
@@ -14,8 +14,16 @@ local parameters = [
     { cf: 10, container: 10 },
   ],
   [
-    'packing_timeout_seconds',
-    { cf: B.minutes(10), container: B.minutes(3) },
+    'extract_pdf',
+    { cf: true, container: true },
+  ],
+  [
+    'extract_html',
+    { cf: true, container: true },
+  ],
+  [
+    'walkabout',
+    { cf: true, container: true },
   ],
 ];
 

@@ -1,5 +1,5 @@
-local B = import 'base.jsonnet';
-local service = 'extract';
+local B = import 'base.libsonnet';
+local service = 'fetch';
 
 local credentials = [
   [
@@ -14,16 +14,16 @@ local parameters = [
     { cf: 10, container: 10 },
   ],
   [
-    'extract_pdf',
-    { cf: true, container: true },
+    'polite_sleep',
+    { cf: 2, container: 2 },
   ],
   [
-    'extract_html',
-    { cf: true, container: true },
+    'polite_cache_default_expiration',
+    { cf: B.hours(10), container: B.minutes(10) },
   ],
   [
-    'walkabout',
-    { cf: true, container: true },
+    'polite_cache_cleanup_interval',
+    { cf: B.hours(3), container: B.minutes(5) },
   ],
 ];
 

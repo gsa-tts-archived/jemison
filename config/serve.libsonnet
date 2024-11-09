@@ -1,4 +1,4 @@
-local B = import 'base.jsonnet';
+local B = import 'base.libsonnet';
 local service = 'serve';
 
 local credentials = [

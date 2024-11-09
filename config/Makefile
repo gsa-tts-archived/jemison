@@ -1,9 +1,20 @@
-clean: $(wildcard .yaml)
-	rm -f $?
+SOURCES = $(wildcard *.jsonnet)
+DESTINATIONS = $(patsubst %.jsonnet, %.yaml, $(SOURCES))
 
-jsonnet: container.jsonnet, cf.jsonnet
-	# $(subst from,to,text)
-	jsonnet $? > $(subst "jsonnet","yaml",$?)
+clean: 
+	rm -f *.yaml
 
-all: clean jsonnet
-.PHONY: all
+jsonnet: $(SOURCES)
+	@echo $?
+	jsonnetfmt \
+		-i \
+		--indent 2 \
+		--max-blank-lines 2 \
+		--sort-imports \
+		--string-style s \
+		--comment-style s \
+		$?
+	jsonnet $? > $?.yaml
+
+$(EXEC): $(DESTINATIONS)
+		echo $^

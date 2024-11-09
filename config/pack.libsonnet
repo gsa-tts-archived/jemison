@@ -1,5 +1,5 @@
-local B = import 'base.jsonnet';
-local service = 'walk';
+local B = import 'base.libsonnet';
+local service = 'pack';
 
 local credentials = [
   [
@@ -14,16 +14,8 @@ local parameters = [
     { cf: 10, container: 10 },
   ],
   [
-    'cache-ttl',
-    { cf: B.minutes(30), container: B.minutes(30) },
-  ],
-    [
-    'polite_cache_default_expiration',
-    { cf: B.hours(10), container: B.hours(6) },
-  ],
-    [
-    'polite_cache_cleanup_interval',
-    { cf: B.minutes(120), container: B.minutes(10) },
+    'packing_timeout_seconds',
+    { cf: B.minutes(10), container: B.minutes(3) },
   ],
 ];
 

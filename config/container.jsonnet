@@ -1,10 +1,10 @@
-local E = import 'extract.jsonnet';
-local F = import 'fetch.jsonnet';
-local P = import 'pack.jsonnet';
-local S = import 'serve.jsonnet';
-local W = import 'walk.jsonnet';
+local E = import 'extract.libsonnet';
+local F = import 'fetch.libsonnet';
+local P = import 'pack.libsonnet';
+local S = import 'serve.libsonnet';
+local W = import 'walk.libsonnet';
 
-local VCAP = import 'vcap_services.jsonnet';
+local VCAP = import 'vcap_services.libsonnet';
 
 {
   // :: means "not visible in the output"

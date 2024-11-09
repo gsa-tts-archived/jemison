@@ -1,9 +1,7 @@
-local B = import 'base.jsonnet';
-
-local E = import 'extract.jsonnet';
-local F = import 'fetch.jsonnet';
-local P = import 'pack.jsonnet';
-local S = import 'serve.jsonnet';
+local E = import 'extract.libsonnet';
+local F = import 'fetch.libsonnet';
+local P = import 'pack.libsonnet';
+local S = import 'serve.libsonnet';
 
 {
   // :: means "not visible in the output"
