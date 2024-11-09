@@ -1,5 +1,5 @@
 local B = import 'base.jsonnet';
-local service = 'fetch';
+local service = 'pack';
 
 local credentials = [
   [
@@ -14,16 +14,8 @@ local parameters = [
     { cf: 10, container: 10 },
   ],
   [
-    'polite_sleep',
-    { cf: 2, container: 2 },
-  ],
-  [
-    'polite_cache_default_expiration',
-    { cf: B.hours(10), container: B.minutes(10) },
-  ],
-  [
-    'polite_cache_cleanup_interval',
-    { cf: B.hours(3), container: B.minutes(5) },
+    'packing_timeout_seconds',
+    { cf: B.minutes(10), container: B.minutes(3) },
   ],
 ];
 
