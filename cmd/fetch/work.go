@@ -26,7 +26,7 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	runtime.GC()
 
 	cache_key := host_and_path(job)
-	if _, found := recently_visited_cache.Get(cache_key); found {
+	if _, found := RecentlyVisitedCache.Get(cache_key); found {
 		zap.L().Debug("cached", zap.String("key", cache_key))
 		return nil
 	} else {
@@ -70,7 +70,7 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		zap.L().Debug("stored", zap.String("key", key))
 
 		// Update the cache
-		recently_visited_cache.Set(host_and_path(job), key, 0)
+		RecentlyVisitedCache.Set(host_and_path(job), key, 0)
 
 		zap.L().Debug("inserting extract job")
 		ctx, tx := common.CtxTx(extractPool)

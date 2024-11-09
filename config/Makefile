@@ -1,11 +1,10 @@
 SOURCES = $(wildcard *.jsonnet)
-DESTINATIONS = $(patsubst %.jsonnet, %.yaml, $(SOURCES))
 
 clean: 
 	rm -f *.yaml
 
-jsonnet: $(SOURCES)
-	@echo $?
+%.yaml: %.jsonnet
+	@echo "IN" $<  "OUT" $@
 	jsonnetfmt \
 		-i \
 		--indent 2 \
@@ -13,8 +12,7 @@ jsonnet: $(SOURCES)
 		--sort-imports \
 		--string-style s \
 		--comment-style s \
-		$?
-	jsonnet $? > $?.yaml
+		$<
+	jsonnet $< > $@
 
-$(EXEC): $(DESTINATIONS)
-		echo $^
+all: $(patsubst %.jsonnet,%.yaml, ${SOURCES})

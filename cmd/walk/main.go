@@ -14,20 +14,10 @@ import (
 )
 
 var expirable_cache expirable.Cache[string, int]
-var recently_visited_cache *cache.Cache
-var polite_sleep_milliseconds time.Duration
-
-func get_ttl() int64 {
-	ws, err := env.Env.GetUserService("walk")
-	if err != nil {
-		log.Println("WALK no service")
-	}
-	minutes := ws.GetParamInt64("cache-ttl-minutes")
-	seconds := ws.GetParamInt64("cache-ttl-seconds")
-	return (minutes * 60) + seconds
-}
+var RecentlyVisitedCache *cache.Cache
 
 func main() {
+
 	env.InitGlobalEnv()
 	InitializeStorage()
 	InitializeQueues()
@@ -37,12 +27,12 @@ func main() {
 
 	engine := common.InitializeAPI()
 
-	ttl := get_ttl()
-	expirable_cache = expirable.NewCache[string, int]().WithTTL(time.Second * time.Duration(ttl))
+	ttl := service.GetParamInt64("cache-ttl")
+	expirable_cache = expirable.NewCache[string, int]().WithTTL(time.Duration(ttl) * time.Second)
 
-	recently_visited_cache = cache.New(
-		time.Duration(service.GetParamInt64("polite_cache_default_expiration_minutes"))*time.Minute,
-		time.Duration(service.GetParamInt64("polite_cache_cleanup_interval_minutes"))*time.Minute)
+	RecentlyVisitedCache = cache.New(
+		time.Duration(service.GetParamInt64("polite_cache_default_expiration"))*time.Second,
+		time.Duration(service.GetParamInt64("polite_cache_cleanup_interval"))*time.Second)
 
 	log.Println("WALK listening on", env.Env.Port)
 

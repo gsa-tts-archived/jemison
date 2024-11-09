@@ -17,11 +17,11 @@ local parameters = [
     'cache-ttl',
     { cf: B.minutes(30), container: B.minutes(30) },
   ],
-    [
+  [
     'polite_cache_default_expiration',
     { cf: B.hours(10), container: B.hours(6) },
   ],
-    [
+  [
     'polite_cache_cleanup_interval',
     { cf: B.minutes(120), container: B.minutes(10) },
   ],
@@ -31,7 +31,8 @@ local parameters = [
   creds:: [[service] + x for x in credentials],
   params:: [[service] + x for x in parameters],
   cf: B.params('credentials', 'cf', service, self.creds) +
-            B.params('parameters', 'cf', service, self.params),
-  container: B.params('credentials', 'container', service, self.creds) +
-                   B.params('parameters','container', service, self.params),
+      B.params('parameters', 'cf', service, self.params),
+  container: { name: service } +
+             B.params('credentials', 'container', service, self.creds) +
+             B.params('parameters', 'container', service, self.params),
 }

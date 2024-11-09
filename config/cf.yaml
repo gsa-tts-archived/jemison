@@ -1,0 +1,70 @@
+{
+   "EIGHT_SERVICES": {
+      "user-provided": [
+         {
+            "credentials": {
+               "port": 8080
+            },
+            "parameters": {
+               "extract_html": true,
+               "extract_pdf": true,
+               "walkabout": true,
+               "workers": 10
+            }
+         },
+         {
+            "credentials": {
+               "port": 8080
+            },
+            "parameters": {
+               "polite_cache_cleanup_interval": 10800,
+               "polite_cache_default_expiration": 36000,
+               "polite_sleep": 2,
+               "workers": 10
+            }
+         },
+         {
+            "credentials": {
+               "port": 8080
+            },
+            "parameters": {
+               "packing_timeout_seconds": 600,
+               "workers": 10
+            }
+         },
+         {
+            "credentials": {
+               "port": 8080
+            },
+            "parameters": {
+               "database_files_path": "/home/vcap/app/assets/databases",
+               "external_host": "jemison.app.cloud.gov",
+               "external_port": 443,
+               "external_scheme": "https",
+               "results_per_query": 10,
+               "static_files_path": "/home/vcap/app/static",
+               "workers": 1
+            }
+         },
+         {
+            "credentials": {
+               "port": 8080
+            },
+            "parameters": {
+               "workers": 10
+            }
+         },
+         {
+            "credentials": {
+               "port": 8080
+            },
+            "parameters": {
+               "cache-ttl": 1800,
+               "polite_cache_cleanup_interval": 7200,
+               "polite_cache_default_expiration": 36000,
+               "workers": 10
+            }
+         }
+      ]
+   }
+}

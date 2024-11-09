@@ -13,8 +13,8 @@ import (
 
 var ServiceName = "validate"
 
-var recently_visited_cache *cache.Cache
-var polite_sleep_milliseconds int64
+var RecentlyVisitedCache *cache.Cache
+var polite_sleep int64
 
 func main() {
 	env.InitGlobalEnv()
@@ -29,12 +29,11 @@ func main() {
 	service, _ := env.Env.GetUserService("fetch")
 
 	// Pre-compute/lookup the sleep duration for backoff
-	millis := service.GetParamInt64("polite_sleep_milliseconds")
-	polite_sleep_milliseconds = millis
+	polite_sleep = service.GetParamInt64("polite_sleep")
 
-	recently_visited_cache = cache.New(
-		time.Duration(service.GetParamInt64("polite_cache_default_expiration_minutes"))*time.Minute,
-		time.Duration(service.GetParamInt64("polite_cache_cleanup_interval_minutes"))*time.Minute)
+	RecentlyVisitedCache = cache.New(
+		time.Duration(service.GetParamInt64("polite_cache_default_expiration"))*time.Second,
+		time.Duration(service.GetParamInt64("polite_cache_cleanup_interval"))*time.Second)
 
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))
