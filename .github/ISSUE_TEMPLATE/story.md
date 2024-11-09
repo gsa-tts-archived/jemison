@@ -29,7 +29,7 @@ We use [DRY](https://docs.behat.org/en/latest/user_guide/writing_scenarios.html#
 [comment]: # "Repeat scenarios as needed, or repeat behaviors and lists within a scenario as needed."
 
 [comment]: # "The scenario should be a short, plain language description."
-[comment]: # "Feeling repetative? Apply the DRY (Don't Repeat Yourself) principle!"
+[comment]: # "Feeling repetitive? Apply the DRY (Don't Repeat Yourself) principle!"
 
 ### Scenario: 
 
@@ -68,25 +68,23 @@ Required per [CM-4](https://nvd.nist.gov/800-53/Rev4/control/CM-4).
 <details>
   <summary>Process checklist</summary>
   
-## Getting things done
-
 - [ ] Has a clear story statement
 - [ ] Can reasonably be done in a few days (otherwise, split this up!)
 - [ ] Shepherds have been identified
-
 - [ ] UX youexes all the things
 - [ ] Design designs all the things
 - [ ] Engineering engineers all the things
-
-### If there's UI...
-- [ ] Screen reader - Listen to the experience with a screen reader extension, ensure the information presented in order
-- [ ] Keyboard navigation - Run through acceptance criteria with keyboard tabs, ensure it works. 
-- [ ] Text scaling - Adjust viewport to 1280 pixels wide and zoom to 200%, ensure everything renders as expected. Document 400% zoom issues with USWDS if appropriate.
-
 - [ ] Meets acceptance criteria
 - [ ] Meets [QASP conditions](https://derisking-guide.18f.gov/qasp/)
 - [ ] Presented in a review
 - [ ] Includes screenshots or references to artifacts
 - [ ] Tagged with the sprint where it was finished
 - [ ] Archived
+
+### If there's UI...
+- [ ] Screen reader - Listen to the experience with a screen reader extension, ensure the information presented in order
+- [ ] Keyboard navigation - Run through acceptance criteria with keyboard tabs, ensure it works. 
+- [ ] Text scaling - Adjust viewport to 1280 pixels wide and zoom to 200%, ensure everything renders as expected. Document 400% zoom issues with USWDS if appropriate.
+
+
 </details>
