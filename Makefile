@@ -7,11 +7,15 @@ clean:
 generate:
 	cd internal/sqlite ; sqlc generate || exit 1
 
+.PHONY: config
+config:
+	cd config ; make all || exit 1
+
 docker: 
 	docker build -t jemison/dev -f Dockerfile.base .
 	
 .PHONY: build
-build: clean generate
+build: clean config generate 
 	cd cmd/extract ; make build
 	cd cmd/fetch ; make build
 	cd cmd/pack ; make build

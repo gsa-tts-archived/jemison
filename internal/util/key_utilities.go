@@ -20,8 +20,8 @@ func (k *Key) Render() string {
 	return fmt.Sprintf("%s/%s.%s", k.Host, k.SHA1(), k.Extension)
 }
 
-func CreateS3Key(host string, path string, ext string) *Key {
-	return &Key{
+func CreateS3Key(host string, path string, ext string) Key {
+	return Key{
 		Host:      host,
 		Path:      path,
 		Extension: ext,

@@ -1,4 +1,4 @@
-local s3(service) = {
+local s3(service, host) = {
   label: 's3-' + service,
   provider: 'minio-local',
   plan: 'basic',
@@ -9,15 +9,15 @@ local s3(service) = {
   binding_name: null,
   instance_name: service + '-storage',
   credentials: {
-    uri: 'http://minio:9000',
+    uri: 'http://' + host + ':9000',
     port: 9000,
     insecure_skip_verify: false,
     access_key_id: 'numbernine',
     secret_access_key: 'numbernine',
     region: 'us-east-1',
     bucket: service,
-    endpoint: 'minio:9000',
-    fips_endpoint: 'http://minio:9000',
+    endpoint: host + ':9000',
+    fips_endpoint: 'http://' + host + ':9000',
     additional_buckets: [],
   },
   syslog_drain_url: 'https://ALPHA.drain.url',
@@ -47,13 +47,15 @@ local rds(db, host) = {
   volume_mounts: ['no_mounts'],
 };
 
-{
-  VCAP_SERVICES: {
+local VCAP_SERVICES(host, db_host) = {
     s3: [
-      s3('extract'),
-      s3('fetch'),
-      s3('serve'),
+      s3('extract', host),
+      s3('fetch', host),
+      s3('serve', host),
     ],
-    'aws-rds': [rds('jemison-db', 'queue-db')],
-  },
+    'aws-rds': [rds('jemison-db', host)]
+};
+
+{
+  VCAP_SERVICES:: VCAP_SERVICES,
 }

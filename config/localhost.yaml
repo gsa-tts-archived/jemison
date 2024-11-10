@@ -1,5 +1,5 @@
 {
-   "APPENV": "DOCKER",
+   "APPENV": "LOCALHOST",
    "EIGHT_SERVICES": {
       "user-provided": [
          {
@@ -42,13 +42,8 @@
             },
             "name": "serve",
             "parameters": {
-               "database_files_path": "/home/vcap/app/assets/databases",
-               "external_host": "localhost",
-               "external_port": 10000,
-               "external_scheme": "http",
-               "results_per_query": 10,
-               "static_files_path": "/home/vcap/app/assets/static",
-               "workers": 1
+               "database_files_path": "../../assets/databases",
+               "static_files_path": "../../assets/static"
             }
          },
          {
@@ -86,14 +81,14 @@
             "binding_name": null,
             "credentials": {
                "db_name": "postgres",
-               "host": "minio",
+               "host": "localhost",
                "name": "postgres",
                "password": "",
                "port": 5432,
-               "uri": "postgresql://postgres@minio:5432/postgres?sslmode=disable",
+               "uri": "postgresql://postgres@localhost:5432/postgres?sslmode=disable",
                "username": "postgres"
             },
-            "instance_guid": "amVtaXNvbi1kYm1p",
+            "instance_guid": "amVtaXNvbi1kYmxv",
             "instance_name": "jemison-db",
             "label": "jemison-db",
             "name": "jemison-db",
@@ -118,13 +113,13 @@
                "access_key_id": "numbernine",
                "additional_buckets": [ ],
                "bucket": "extract",
-               "endpoint": "minio:9000",
-               "fips_endpoint": "http://minio:9000",
+               "endpoint": "localhost:9000",
+               "fips_endpoint": "http://localhost:9000",
                "insecure_skip_verify": false,
                "port": 9000,
                "region": "us-east-1",
                "secret_access_key": "numbernine",
-               "uri": "http://minio:9000"
+               "uri": "http://localhost:9000"
             },
             "instance_guid": "czMtZXh0cmFjdGV4",
             "instance_name": "extract-storage",
@@ -149,13 +144,13 @@
                "access_key_id": "numbernine",
                "additional_buckets": [ ],
                "bucket": "fetch",
-               "endpoint": "minio:9000",
-               "fips_endpoint": "http://minio:9000",
+               "endpoint": "localhost:9000",
+               "fips_endpoint": "http://localhost:9000",
                "insecure_skip_verify": false,
                "port": 9000,
                "region": "us-east-1",
                "secret_access_key": "numbernine",
-               "uri": "http://minio:9000"
+               "uri": "http://localhost:9000"
             },
             "instance_guid": "czMtZmV0Y2hmZXRj",
             "instance_name": "fetch-storage",
@@ -180,13 +175,13 @@
                "access_key_id": "numbernine",
                "additional_buckets": [ ],
                "bucket": "serve",
-               "endpoint": "minio:9000",
-               "fips_endpoint": "http://minio:9000",
+               "endpoint": "localhost:9000",
+               "fips_endpoint": "http://localhost:9000",
                "insecure_skip_verify": false,
                "port": 9000,
                "region": "us-east-1",
                "secret_access_key": "numbernine",
-               "uri": "http://minio:9000"
+               "uri": "http://localhost:9000"
             },
             "instance_guid": "czMtc2VydmVzZXJ2",
             "instance_name": "serve-storage",

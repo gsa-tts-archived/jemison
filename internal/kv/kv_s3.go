@@ -1,9 +1,10 @@
+// kv provides an interface to key/value work in S3
+// It is specialized to the `jemison` architecture.
 package kv
 
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +13,8 @@ import (
 
 	minio "github.com/minio/minio-go/v7"
 	minio_credentials "github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"go.uber.org/zap"
 
 	"github.com/GSA-TTS/jemison/internal/env"
@@ -19,20 +22,137 @@ import (
 )
 
 // Only open any given bucket once.
+// FIXME: get rid of these long-lived globals.
+// Open and close things, until it becomes a performance concern.
 var buckets sync.Map
 
+// S3 holds a bucket structure (containing VCAP_SERVICES information)
+// and an S3 client connection from the min.io libraries.
 type S3 struct {
 	Bucket      env.Bucket
 	MinioClient *minio.Client
 }
 
-type Storage interface {
-	Store(string, JSON) error
-	List(string) ([]*ObjInfo, error)
-	Get(string) (Object, error)
+// S3JSON structs are JSON documents stored in S3.
+// This is because `jemison` shuttles JSON documents in-and-out of S3, and
+// we want to be able to find a document representing a host/path in
+// multiple, different buckets.
+type S3JSON struct {
+	Key   util.Key
+	raw   []byte
+	S3    S3
+	empty bool
 }
 
-func NewKV(bucket_name string) S3 {
+// NewFromBytes takes a []byte representation of a JSON document and constructs
+// a S3JSON document from it.
+func NewFromBytes(bucket_name string, host string, path string, m []byte) *S3JSON {
+	s3 := newS3FromBucketName(bucket_name)
+	key := util.CreateS3Key(host, path, "json")
+	return &S3JSON{
+		Key:   key,
+		raw:   m,
+		S3:    s3,
+		empty: false,
+	}
+}
+
+func NewEmptyS3JSON(bucket_name string, host string, path string) *S3JSON {
+	s3 := newS3FromBucketName(bucket_name)
+	key := util.CreateS3Key(host, path, "json")
+	return &S3JSON{
+		Key:   key,
+		raw:   []byte(`{}`),
+		S3:    s3,
+		empty: false,
+	}
+}
+
+func (s3json *S3JSON) IsEmpty() bool {
+	return s3json.empty
+}
+
+// BUG(jadudm): handle errors in store gracefully
+func (s3json *S3JSON) Save() error {
+	if s3json.IsEmpty() {
+		return fmt.Errorf("cannot save invalid S3JSON object bucket[%s] host[%s] path[%s]",
+			s3json.S3.Bucket.Name, s3json.Key.Host, s3json.Key.Path)
+	}
+
+	r := bytes.NewReader(s3json.raw)
+	size := int64(len(s3json.raw))
+	err := store(&s3json.S3, s3json.Key.Render(), size, r, "application/json")
+	if err != nil {
+		zap.L().Panic("could not store S3JSON",
+			zap.String("bucket_name", s3json.S3.Bucket.Name),
+			zap.String("key", s3json.Key.Render()))
+	}
+	return nil
+
+}
+
+func (s3json *S3JSON) Load() error {
+	if s3json.IsEmpty() {
+		return fmt.Errorf("will not save empty object bucket[%s] host[%s] path[%s]",
+			s3json.S3.Bucket.Name, s3json.Key.Host, s3json.Key.Path)
+	}
+
+	// GetObject(ctx context.Context, bucketName, objectName string, opts GetObjectOptions) (*Object, error)
+	// func (s3 *S3) Get(key string) (Object, error) {
+	ctx := context.Background()
+	key := s3json.Key.Render()
+	// The object has a channel interface that we have to empty.
+	object, err := s3json.S3.MinioClient.GetObject(
+		ctx,
+		s3json.S3.Bucket.CredentialString("bucket"),
+		key,
+		minio.GetObjectOptions{})
+
+	zap.L().Debug("retrieved S3 object", zap.String("key", key))
+
+	if err != nil {
+		zap.L().Error("could not retrieve object",
+			zap.String("bucket_name", s3json.S3.Bucket.CredentialString("bucket")),
+			zap.String("key", key),
+			zap.String("error", err.Error()))
+		return err
+	}
+
+	raw, err := io.ReadAll(object)
+	if err != nil {
+		zap.L().Error("could not read object bytes",
+			zap.String("bucket_name", s3json.S3.Bucket.CredentialString("bucket")),
+			zap.String("key", key),
+			zap.String("error", err.Error()))
+		return err
+	}
+
+	s3json.raw = raw
+	current_mime_type := s3json.GetString("content-type")
+	sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
+	s3json.empty = false
+	return nil
+}
+
+func (s3json *S3JSON) GetString(gjson_path string) string {
+	r := gjson.GetBytes(s3json.raw, gjson_path)
+	return r.String()
+}
+
+func (s3json *S3JSON) GetInt64(gjson_path string) int64 {
+	r := gjson.GetBytes(s3json.raw, gjson_path)
+	return int64(r.Int())
+}
+
+func (s3json *S3JSON) GetBool(gjson_path string) bool {
+	r := gjson.GetBytes(s3json.raw, gjson_path)
+	return r.Bool()
+}
+
+// NewS3FromBucketName creates an S3 object containing bucket information
+// from VCAP and a minio client ready to talk to the bucket. S3JSON objects
+// carry the information so they can load/save.
+func newS3FromBucketName(bucket_name string) S3 {
 	if !env.IsValidBucketName(bucket_name) {
 		log.Fatal("KV INVALID BUCKET NAME ", bucket_name)
 	}
@@ -125,100 +245,15 @@ func NewKV(bucket_name string) S3 {
 	return s3
 }
 
-// GetObject(ctx context.Context, bucketName, objectName string, opts GetObjectOptions) (*Object, error)
-func (s3 *S3) Get(key string) (Object, error) {
-	ctx := context.Background()
-	bucket_name := s3.Bucket.CredentialString("bucket")
+// store saves things to S3
+func store(s3 *S3, destination_key string, size int64, reader io.Reader, mime_type string) error {
+	// mime := "octet/binary"
 
-	// The object has a channel interface that we have to empty.
-	object, err := s3.MinioClient.GetObject(
-		ctx,
-		bucket_name,
-		key,
-		minio.GetObjectOptions{})
-
-	zap.L().Debug("retrieved S3 object", zap.String("key", key))
-
-	if err != nil {
-		log.Println(s3.Bucket.CredentialString("bucket"), key)
-		log.Println(err)
-		return nil, err
-	}
-
-	raw, err := io.ReadAll(object)
-	if err != nil {
-		log.Fatal("KV could not read object bytes ", bucket_name, " ", key)
-	}
-	jsonm := make(JSON)
-	json.Unmarshal(raw, &jsonm)
-	mime := "octet/binary"
-	if v, ok := jsonm["content-type"]; ok {
-		mime = util.CleanMimeType(v)
-	}
-	return Obj{
-		info: &ObjInfo{
-			Key:  key,
-			Size: int64(len(raw)),
-			Mime: mime,
-		},
-		value: jsonm,
-	}, nil
-}
-
-func (s3 *S3) GetFile(key string, dest_filename string) error {
-	ctx := context.Background()
-	err := s3.MinioClient.FGetObject(
-		ctx,
-		s3.Bucket.CredentialString("bucket"),
-		key,
-		dest_filename,
-		minio.GetObjectOptions{})
-
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	return nil
-}
-
-// //////////////////
-// LIST
-// Lists objects in the bucket, returning keys and sizes.
-func (s3 *S3) List(prefix string) ([]*ObjInfo, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	objectCh := s3.MinioClient.ListObjects(
-		ctx,
-		s3.Bucket.CredentialString("bucket"),
-		minio.ListObjectsOptions{
-			Prefix:    prefix,
-			Recursive: false,
-		})
-
-	objects := make([]*ObjInfo, 0)
-	for object := range objectCh {
-		if object.Err != nil {
-			fmt.Println(object.Err)
-			return nil, object.Err
-		}
-		objects = append(objects, NewObjInfo(object.Key, object.Size))
-	}
-	return objects, nil
-}
-
-// //////////////////
-// STORE
-// Stores a k,v to the bucket
-func store(s3 *S3, destination_key string, size int64, jsonm JSON, reader io.Reader) error {
-	mime := "octet/binary"
-
-	if jsonm != nil {
-		mime = "application/json"
-	}
+	// if mime_type != nil {
+	// 	mime = "application/json"
+	// }
 
 	ctx := context.Background()
-	log.Println("KV store", s3.Bucket.Name, destination_key, size)
 	_, err := s3.MinioClient.PutObject(
 		ctx,
 		s3.Bucket.CredentialString("bucket"),
@@ -226,44 +261,98 @@ func store(s3 *S3, destination_key string, size int64, jsonm JSON, reader io.Rea
 		reader,
 		size,
 		minio.PutObjectOptions{
-			ContentType: mime,
+			ContentType: mime_type,
 			// This seems to set the *minimum* partsize for multipart uploads.
 			// Which... makes writing JSON objects impossible.
 			// PartSize:    5000000
 		},
 	)
 	if err != nil {
-		log.Println("KV cannot store", destination_key, size, jsonm)
-		log.Println(err)
+		zap.L().Warn("S3JSON could not PUT object",
+			zap.String("destination_key", destination_key),
+			zap.String("error", err.Error()))
 	}
 	return err
-
 }
 
-func (s3 *S3) Store(key string, jsonm JSON) error {
-	reader, size := mapToReader(jsonm)
-	return store(s3, key, size, jsonm, reader)
-}
+//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
 
-func (s3 *S3) StoreFile(destination_key string, source_filename string) error {
-	reader, err := os.Open(source_filename)
-	if err != nil {
-		log.Fatal("KV cannot open file", source_filename)
-	}
-	fi, err := reader.Stat()
-	if err != nil {
-		log.Println("KV could not stat file")
-		log.Fatal(err)
-	}
+// type Storage interface {
+// 	Store(string, JSON) error
+// 	List(string) ([]*ObjInfo, error)
+// 	Get(string) (Object, error)
+// }
 
-	return store(s3, destination_key, fi.Size(), make(JSON, 0), reader)
-}
+// func (s3 *S3) GetFile(key string, dest_filename string) error {
+// 	ctx := context.Background()
+// 	err := s3.MinioClient.FGetObject(
+// 		ctx,
+// 		s3.Bucket.CredentialString("bucket"),
+// 		key,
+// 		dest_filename,
+// 		minio.GetObjectOptions{})
 
-////////////////////////////
-// SUPPORT
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return err
+// 	}
+// 	return nil
+// }
 
-func mapToReader(json_map JSON) (io.Reader, int64) {
-	b, _ := json.Marshal(json_map)
-	r := bytes.NewReader(b)
-	return r, int64(len(b))
-}
+// // //////////////////
+// // LIST
+// // Lists objects in the bucket, returning keys and sizes.
+// func (s3 *S3) List(prefix string) ([]*ObjInfo, error) {
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	defer cancel()
+
+// 	objectCh := s3.MinioClient.ListObjects(
+// 		ctx,
+// 		s3.Bucket.CredentialString("bucket"),
+// 		minio.ListObjectsOptions{
+// 			Prefix:    prefix,
+// 			Recursive: false,
+// 		})
+
+// 	objects := make([]*ObjInfo, 0)
+// 	for object := range objectCh {
+// 		if object.Err != nil {
+// 			fmt.Println(object.Err)
+// 			return nil, object.Err
+// 		}
+// 		objects = append(objects, NewObjInfo(object.Key, object.Size))
+// 	}
+// 	return objects, nil
+// }
+
+// func (s3 *S3) StoreFile(destination_key string, source_filename string) error {
+// 	reader, err := os.Open(source_filename)
+// 	if err != nil {
+// 		log.Fatal("KV cannot open file", source_filename)
+// 	}
+// 	fi, err := reader.Stat()
+// 	if err != nil {
+// 		log.Println("KV could not stat file")
+// 		log.Fatal(err)
+// 	}
+
+// 	return store(s3, destination_key, fi.Size(), make(JSON, 0), reader)
+// }
+
+// ////////////////////////////
+// // SUPPORT
+
+// func mapToReader(json_map JSON) (io.Reader, int64) {
+// 	b, _ := json.Marshal(json_map)
+// 	r := bytes.NewReader(b)
+// 	return r, int64(len(b))
+// }
