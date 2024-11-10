@@ -5,11 +5,11 @@ package kv
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"sync"
 
 	minio "github.com/minio/minio-go/v7"
 	minio_credentials "github.com/minio/minio-go/v7/pkg/credentials"
@@ -21,10 +21,21 @@ import (
 	"github.com/GSA-TTS/jemison/internal/util"
 )
 
+// NewFromBytes(bucket_name string, host string, path string, m []byte) *S3JSON
+// NewEmptyS3JSON(bucket_name string, host string, path string) *S3JSON
+// (s3json *S3JSON) IsEmpty() bool
+// (s3json *S3JSON) Save() error
+// (s3json *S3JSON) Load() error
+
 // Only open any given bucket once.
 // FIXME: get rid of these long-lived globals.
 // Open and close things, until it becomes a performance concern.
-var buckets sync.Map
+// It would be safer if...
+// Load() does an open and a close
+// Save() does an open and a close
+// Then, every object is self-contained. Slower, but self-contained.
+// The sync... is hell waiting to happen in terms of debugging.
+//var buckets sync.Map
 
 // S3 holds a bucket structure (containing VCAP_SERVICES information)
 // and an S3 client connection from the min.io libraries.
@@ -42,36 +53,76 @@ type S3JSON struct {
 	raw   []byte
 	S3    S3
 	empty bool
+	open  bool
+}
+
+func NewS3JSON(bucket_name string) *S3JSON {
+	s3 := newS3FromBucketName(bucket_name)
+	return &S3JSON{
+		Key:   util.Key{},
+		raw:   nil,
+		S3:    s3,
+		empty: true,
+		open:  false,
+	}
 }
 
 // NewFromBytes takes a []byte representation of a JSON document and constructs
 // a S3JSON document from it.
+// Inserts _key
 func NewFromBytes(bucket_name string, host string, path string, m []byte) *S3JSON {
 	s3 := newS3FromBucketName(bucket_name)
 	key := util.CreateS3Key(host, path, "json")
+	w_key, _ := sjson.SetBytes(m, "_key", key.Render())
 	return &S3JSON{
 		Key:   key,
-		raw:   m,
+		raw:   w_key,
 		S3:    s3,
 		empty: false,
+		open:  true,
 	}
 }
 
+// Inserts _key
+func NewFromMap(bucket_name string, host string, path string, m map[string]string) *S3JSON {
+	s3 := newS3FromBucketName(bucket_name)
+	key := util.CreateS3Key(host, path, "json")
+	m["_key"] = key.Render()
+	b, _ := json.Marshal(m)
+	return &S3JSON{
+		Key:   key,
+		raw:   b,
+		S3:    s3,
+		empty: false,
+		open:  true,
+	}
+}
+
+// Creates a new, empty S3JSON struct, setting it as `empty`.
+// `Load()` must be called on it before we can use it.
 func NewEmptyS3JSON(bucket_name string, host string, path string) *S3JSON {
 	s3 := newS3FromBucketName(bucket_name)
 	key := util.CreateS3Key(host, path, "json")
 	return &S3JSON{
 		Key:   key,
-		raw:   []byte(`{}`),
+		raw:   nil,
 		S3:    s3,
-		empty: false,
+		empty: true,
+		open:  true,
 	}
 }
 
+// IsEmpty() Checks if the S3JSON struct is empty.
+// Should be `true` before a call to `Load()`, `false` after.
 func (s3json *S3JSON) IsEmpty() bool {
 	return s3json.empty
 }
 
+func (s3json *S3JSON) IsOpen() bool {
+	return s3json.open
+}
+
+// Save() will do a `Put` of the JSON to S3.
 // BUG(jadudm): handle errors in store gracefully
 func (s3json *S3JSON) Save() error {
 	if s3json.IsEmpty() {
@@ -88,9 +139,10 @@ func (s3json *S3JSON) Save() error {
 			zap.String("key", s3json.Key.Render()))
 	}
 	return nil
-
 }
 
+// Load() uses the bucket/path information in the underlying S3 struct
+// to do a `Get` against S3 and retrieve the JSON document.
 func (s3json *S3JSON) Load() error {
 	if s3json.IsEmpty() {
 		return fmt.Errorf("will not save empty object bucket[%s] host[%s] path[%s]",
@@ -107,6 +159,14 @@ func (s3json *S3JSON) Load() error {
 		s3json.S3.Bucket.CredentialString("bucket"),
 		key,
 		minio.GetObjectOptions{})
+	// https://rezakhademix.medium.com/defer-functions-in-golang-common-mistakes-and-best-practices-96eacdb551f0
+	defer func(obj *minio.Object) {
+		err := obj.Close()
+		if err != nil {
+			zap.L().Error("deferred close on S3 object encountered error",
+				zap.String("key", key))
+		}
+	}(object)
 
 	zap.L().Debug("retrieved S3 object", zap.String("key", key))
 
@@ -159,12 +219,12 @@ func newS3FromBucketName(bucket_name string) S3 {
 
 	// Check if we already have this in the map, so reconnects don't create
 	// new S3 objects/etc.
-	if s3, ok := buckets.Load(bucket_name); ok {
-		zap.L().Debug("in the sync map", zap.String("bucket_name", bucket_name))
-		return s3.(S3)
-	} else {
-		zap.L().Debug("not in the sync map", zap.String("bucket_name", bucket_name))
-	}
+	// if s3, ok := buckets.Load(bucket_name); ok {
+	// 	zap.L().Debug("in the sync map", zap.String("bucket_name", bucket_name))
+	// 	return s3.(S3)
+	// } else {
+	// 	zap.L().Debug("not in the sync map", zap.String("bucket_name", bucket_name))
+	// }
 
 	s3 := S3{}
 
@@ -216,8 +276,7 @@ func newS3FromBucketName(bucket_name string) S3 {
 			zap.String("bucket_name", bucket_name))
 		// Make sure to insert the metadata into the sync.Map
 		// when we find a bucket that already exists.
-		buckets.Store(bucket_name, s3)
-		zap.L().Info("found pre-existing bucket in S3")
+		// buckets.Store(bucket_name, s3)
 		return s3
 	}
 
@@ -237,10 +296,10 @@ func newS3FromBucketName(bucket_name string) S3 {
 	} // Skip container creation in CF
 
 	// Put a pointer to this object in our syncmap.
-	buckets.Store(bucket_name, &s3)
+	// buckets.Store(bucket_name, &s3)
 
-	loaded, _ := buckets.Load(bucket_name)
-	zap.L().Info("bucket ready", zap.String("bucket_name", loaded.(*S3).Bucket.Name))
+	// loaded, _ := buckets.Load(bucket_name)
+	//zap.L().Info("bucket ready", zap.String("bucket_name", loaded.(*S3).Bucket.Name))
 
 	return s3
 }

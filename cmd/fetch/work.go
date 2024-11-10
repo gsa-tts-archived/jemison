@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	common "github.com/GSA-TTS/jemison/internal/common"
-	"github.com/GSA-TTS/jemison/internal/util"
+	kv "github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
@@ -40,11 +40,8 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			)
 		}
 
-		// FIXME
-		// in the grand scheme, we may at this point want to have a queue for
-		// coming back a day or two later. But, in terms of fetching... if you can't
-		// get to the content... you're not going to store it. So, this
-		// bails without sending it back to the queue (for now)
+		// The queueing system retries should save us here; bail if we
+		// can't get the content now.
 		if err != nil {
 			u := url.URL{
 				Scheme: job.Args.Scheme,
@@ -55,43 +52,53 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			return nil
 		}
 
-		key := util.CreateS3Key(job.Args.Host, job.Args.Path, "json").Render()
-		page_json["key"] = key
+		// FIXME
+		// We can insert _key automatically into every map, letting the library
+		// handle this based on host/path
+		// key := util.CreateS3Key(job.Args.Host, job.Args.Path, "json").Render()
+		// page_json["key"] = key
+		// We can always do it ourselves for special cases, but this feels better.
 
-		zap.L().Debug("storing", zap.String("key", key))
-		err = fetchStorage.Store(key, page_json)
+		cloudmap := kv.NewFromMap(
+			"fetch",
+			job.Args.Host,
+			job.Args.Path,
+			page_json,
+		)
+
+		err = cloudmap.Save()
 		// We get an error if we can't write to S3
 		if err != nil {
-			zap.L().Warn("could not store k/v",
-				zap.String("key", key),
+			zap.L().Warn("could not Save() s3json k/v",
+				zap.String("key", cloudmap.Key.Render()),
 			)
 			return err
 		}
-		zap.L().Debug("stored", zap.String("key", key))
+		zap.L().Debug("stored", zap.String("key", cloudmap.Key.Render()))
 
 		// Update the cache
-		RecentlyVisitedCache.Set(host_and_path(job), key, 0)
+		RecentlyVisitedCache.Set(host_and_path(job), cloudmap.Key.Render(), 0)
 
 		zap.L().Debug("inserting extract job")
 		ctx, tx := common.CtxTx(extractPool)
 		defer tx.Rollback(ctx)
 		extractClient.InsertTx(ctx, tx, common.ExtractArgs{
-			Key: key,
+			Key: cloudmap.Key.Render(),
 		}, &river.InsertOpts{Queue: "extract"})
 		if err := tx.Commit(ctx); err != nil {
 			zap.L().Panic("cannot commit insert tx",
-				zap.String("key", key))
+				zap.String("key", cloudmap.Key.Render()))
 		}
 
 		zap.L().Debug("Inserting walk job")
 		ctx2, tx2 := common.CtxTx(walkPool)
 		defer tx2.Rollback(ctx)
 		walkClient.InsertTx(ctx2, tx2, common.WalkArgs{
-			Key: key,
+			Key: cloudmap.Key.Render(),
 		}, &river.InsertOpts{Queue: "walk"})
 		if err := tx2.Commit(ctx2); err != nil {
 			zap.L().Panic("cannot commit insert tx",
-				zap.String("key", key), zap.String("error", err.Error()))
+				zap.String("key", cloudmap.Key.Render()), zap.String("error", err.Error()))
 		}
 	}
 
