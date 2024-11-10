@@ -21,10 +21,10 @@ type PackTable struct {
 	Context  context.Context
 	DB       *sql.DB
 	Queries  *search_db.Queries
-	JSON     map[string]string
+	JSON     []byte
 }
 
-func CreatePackTable(db_filename string, JSON map[string]string) (*PackTable, error) {
+func CreatePackTable(db_filename string, JSON []byte) (*PackTable, error) {
 
 	pt := PackTable{}
 	pt.Filename = db_filename

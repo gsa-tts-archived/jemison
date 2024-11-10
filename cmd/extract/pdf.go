@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"maps"
 	"runtime"
 
 	"github.com/GSA-TTS/jemison/internal/common"
@@ -13,13 +12,10 @@ import (
 	"go.uber.org/zap"
 )
 
-func extractPdf(obj kv.Object) {
-	jsonm := obj.GetJson()
-	rawFilename := jsonm["raw"]
-	// This gives us a key to a raw file in S3.
-	// The key is a UUID that ends in ".raw"
-	// use it for the local file
-	fetchStorage.GetFile(rawFilename, rawFilename)
+func extractPdf(obj *kv.S3JSON) {
+	rawFilename := obj.GetString("raw")
+	s3 := kv.NewS3(ThisServiceName)
+	s3.S3ToFile(obj.Key, rawFilename)
 
 	doc, err := poppler.Open(rawFilename)
 
@@ -29,20 +25,23 @@ func extractPdf(obj kv.Object) {
 		for page_no := 0; page_no < doc.GetNPages(); page_no++ {
 
 			page_number_anchor := fmt.Sprintf("#page=%d", page_no+1)
-			extracted_key := util.CreateS3Key(
-				obj.GetValue("host"),
-				obj.GetValue("path")+page_number_anchor, "json").Render()
+			copied_key := obj.Key.Copy()
+			copied_key.Path = copied_key.Path + page_number_anchor
+			copied_key.Extension = util.JSON
 
 			page := doc.GetPage(page_no)
-			new := make(map[string]string, 0)
-			// dst, src
-			maps.Copy(new, jsonm)
-			new["content"] = util.RemoveStopwords(page.Text())
+			obj.Set("content", util.RemoveStopwords(page.Text()))
+			obj.Set("path", copied_key.Path)
+			obj.Set("pdf_page_number", fmt.Sprintf("%d", page_no+1))
 
-			new["path"] = new["path"] + page_number_anchor
-			new["pdf_page_number"] = fmt.Sprintf("%d", page_no+1)
-
-			extractStorage.Store(extracted_key, new)
+			new_obj := kv.NewFromBytes(
+				ThisServiceName,
+				obj.Key.Scheme,
+				obj.Key.Host,
+				obj.Key.Path,
+				obj.GetJSON(),
+			)
+			new_obj.Save()
 			page.Close()
 			// e.Stats.Increment("page_count")
 
@@ -51,11 +50,13 @@ func extractPdf(obj kv.Object) {
 			defer tx.Rollback(ctx)
 
 			packClient.InsertTx(ctx, tx, common.PackArgs{
-				Key: extracted_key,
+				Scheme: obj.Key.Scheme.String(),
+				Host:   obj.Key.Host,
+				Path:   obj.Key.Path,
 			}, &river.InsertOpts{Queue: "pack"})
 			if err := tx.Commit(ctx); err != nil {
 				zap.L().Panic("cannot commit insert tx",
-					zap.String("key", extracted_key))
+					zap.String("key", obj.Key.Render()))
 			}
 
 			// https://weaviate.io/blog/gomemlimit-a-game-changer-for-high-memory-applications

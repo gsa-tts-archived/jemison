@@ -5,6 +5,28 @@ import (
 	"strings"
 )
 
+type MimeType int
+
+const (
+	HTML MimeType = iota
+	Plain
+	PDF
+	SQLite3
+)
+
+func (mt MimeType) String() string {
+	return [...]string{
+		"text/html",
+		"text/plain",
+		"application/pdf",
+		"application/vnd.sqlite3",
+	}[mt]
+}
+
+func (mt MimeType) EnumIndex() int {
+	return int(mt)
+}
+
 func AtoZOnly(s string) string {
 	var result strings.Builder
 	for i := 0; i < len(s); i++ {
@@ -22,7 +44,7 @@ var mime_types = []string{
 	"text/html",
 	"text/plain",
 	"application/pdf",
-	"application/x-sqlite3",
+	"application/vnd.sqlite3",
 }
 
 func CleanMimeType(mime string) string {
@@ -41,8 +63,8 @@ func GetMimeType(path string) string {
 		"txt":     "text/plain",
 		"md":      "text/plain",
 		"pdf":     "application/pdf",
-		"sqlite":  "application/x-sqlite3",
-		"sqlite3": "application/x-sqlite3",
+		"sqlite":  "application/vnd.sqlite3",
+		"sqlite3": "application/vnd.sqlite3",
 		// https://www.iana.org/assignments/media-types/application/zstd
 		"zstd": "application/zstd",
 	}

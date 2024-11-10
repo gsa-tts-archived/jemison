@@ -24,5 +24,5 @@ local VCAP = import 'vcap_services.libsonnet';
       W.container,
     ],
   },
-  VCAP_SERVICES: VCAP.VCAP_SERVICES('minio', 'queue-db'),
+  VCAP_SERVICES: VCAP.VCAP_SERVICES('minio', 'jemison-queues-db'),
 }

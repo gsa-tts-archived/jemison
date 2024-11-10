@@ -2,6 +2,7 @@ package queueing
 
 import (
 	"context"
+	"log"
 
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -11,6 +12,8 @@ import (
 )
 
 func InitializeRiverQueues() {
+	RunRiverMigrator()
+
 	// Set up a pool
 	connection_string, err := env.Env.GetDatabaseUrl(env.WorkingDatabase)
 	if err != nil {
@@ -33,5 +36,33 @@ func InitializeRiverQueues() {
 	_, err = migrator.Migrate(ctx, rivermigrate.DirectionUp, &rivermigrate.MigrateOpts{})
 	if err != nil {
 		zap.L().Info("could not run the river migrator")
+	}
+}
+
+func RunRiverMigrator() {
+	ctx := context.Background()
+	// Set up a pool
+	connection_string, err := env.Env.GetDatabaseUrl(env.WorkingDatabase)
+
+	if err != nil {
+		log.Println("RIVER cannot find connection string for", env.WorkingDatabase)
+		log.Fatal(err)
+	}
+	pool, err := pgxpool.New(ctx, connection_string)
+	if err != nil {
+		zap.L().Fatal("could not get pool for river migrator")
+	}
+	defer pool.Close()
+
+	// Run the migrations, always.
+	migrator, err := rivermigrate.New(riverpgxv5.New(pool), nil)
+	if err != nil {
+		zap.L().Error("river could not create river migrator. exiting.")
+		zap.L().Fatal(err.Error())
+	}
+	_, err = migrator.Migrate(ctx, rivermigrate.DirectionUp, &rivermigrate.MigrateOpts{})
+	if err != nil {
+		zap.L().Error("river could not run river migrations. exiting.")
+		zap.L().Fatal(err.Error())
 	}
 }

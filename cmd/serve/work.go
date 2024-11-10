@@ -5,6 +5,7 @@ import (
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/sqlite"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
@@ -12,7 +13,7 @@ import (
 
 func (w *ServeWorker) Work(ctx context.Context, job *river.Job[common.ServeArgs]) error {
 
-	s, _ := env.Env.GetUserService("serve")
+	s, _ := env.Env.GetUserService(ThisServiceName)
 
 	databases_file_path := s.GetParamString("database_files_path")
 
@@ -30,12 +31,7 @@ func (w *ServeWorker) Work(ctx context.Context, job *river.Job[common.ServeArgs]
 	)
 
 	// Downloads content to the destination
-	err := serveStorage.GetFile(sqlite_filename, destination)
-
-	if err != nil {
-		zap.L().Error("could not download sqlite db",
-			zap.String("sqlite_filename", sqlite_filename), zap.String("destination", destination))
-	}
-
+	s3 := kv.NewS3(ThisServiceName)
+	s3.S3PathToFile(sqlite_filename, destination)
 	return nil
 }

@@ -11,7 +11,6 @@ import (
 
 func main() {
 	env.InitGlobalEnv()
-	InitializeStorage()
 	InitializeQueues()
 	engine := common.InitializeAPI()
 

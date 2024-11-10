@@ -9,9 +9,12 @@ import (
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/sqlite"
 	"github.com/GSA-TTS/jemison/internal/sqlite/schemas"
+	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/riverqueue/river"
+	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 )
 
@@ -50,7 +53,8 @@ func FinalizeTimer(in <-chan *sqlite.PackTable) {
 
 					tables[sqlite_filename].PrepForNetwork()
 
-					err := serveStorage.StoreFile(sqlite_filename, sqlite_filename)
+					s3 := kv.NewS3("serve")
+					err := s3.FileToS3Path(sqlite_filename, sqlite_filename, util.SQLite3.String())
 					if err != nil {
 						log.Println("PACK could not store to file", sqlite_filename)
 						log.Fatal(err)
@@ -82,16 +86,15 @@ func FinalizeTimer(in <-chan *sqlite.PackTable) {
 func (w *PackWorker) Work(ctx context.Context, job *river.Job[common.PackArgs]) error {
 	zap.L().Debug("packing")
 
-	obj, err := extractStorage.Get(job.Args.Key)
-	if err != nil {
-		zap.L().Fatal("cannot get object from S3",
-			zap.String("key", job.Args.Key),
-		)
-	}
-	JSON := obj.GetJson()
+	s3json := kv.NewEmptyS3JSON("extract",
+		util.ToScheme(job.Args.Scheme),
+		job.Args.Host,
+		job.Args.Path)
+	s3json.Load()
 
-	host := JSON["host"]
+	host := s3json.GetString("host")
 
+	JSON := s3json.GetJSON()
 	pt, err := sqlite.CreatePackTable(sqlite.SqliteFilename(host), JSON)
 	if err != nil {
 		log.Println("Could not create pack table for", host)
@@ -99,9 +102,9 @@ func (w *PackWorker) Work(ctx context.Context, job *river.Job[common.PackArgs]) 
 	}
 
 	_, err = pt.Queries.CreateSiteEntry(pt.Context, schemas.CreateSiteEntryParams{
-		Host: JSON["host"],
-		Path: JSON["path"],
-		Text: JSON["content"],
+		Host: gjson.GetBytes(JSON, "host").String(),
+		Path: gjson.GetBytes(JSON, "path").String(),
+		Text: gjson.GetBytes(JSON, "content").String(),
 	})
 	if err != nil {
 		log.Println("Insert into site entry table failed")
@@ -109,8 +112,8 @@ func (w *PackWorker) Work(ctx context.Context, job *river.Job[common.PackArgs]) 
 	}
 	zap.L().Info("packed entry",
 		zap.String("database", host),
-		zap.String("path", JSON["path"]),
-		zap.Int("length", len(JSON["content"])))
+		zap.String("path", gjson.GetBytes(JSON, "path").String()),
+		zap.Int("length", len(gjson.GetBytes(JSON, "content").String())))
 
 	pt.DB.Close()
 

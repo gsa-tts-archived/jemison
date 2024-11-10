@@ -2,28 +2,26 @@ package main
 
 import (
 	"context"
-	"log"
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
-func extract(obj kv.Object) {
-	mime_type := obj.GetMimeType()
-	s, _ := env.Env.GetUserService("extract")
+func extract(obj *kv.S3JSON) {
+	mime_type := obj.GetString("content-type")
+	s, _ := env.Env.GetUserService(ThisServiceName)
 
 	switch mime_type {
 	case "text/html":
 		if s.GetParamBool("extract_html") {
-			log.Println("EXTRACT HTML")
 			extractHtml(obj)
 		}
 	case "application/pdf":
 		if s.GetParamBool("extract_pdf") {
-			log.Println("EXTRACT PDF")
 			extractPdf(obj)
 		}
 	}
@@ -31,16 +29,14 @@ func extract(obj kv.Object) {
 
 func (w *ExtractWorker) Work(ctx context.Context, job *river.Job[common.ExtractArgs]) error {
 
-	zap.L().Debug("extracting", zap.String("key", job.Args.Key))
+	zap.L().Debug("extracting",
+		zap.String("host", job.Args.Host),
+		zap.String("path", job.Args.Path))
 
-	obj, err := fetchStorage.Get(job.Args.Key)
-	if err != nil {
-		zap.L().Error("could not fetch key from bucket",
-			zap.String("key", job.Args.Key))
-		return err
-	}
+	s3json := kv.NewEmptyS3JSON("fetch", util.ToScheme(job.Args.Scheme), job.Args.Host, job.Args.Path)
+	s3json.Load()
 
-	extract(obj)
+	extract(s3json)
 
 	zap.L().Debug("extraction finished")
 	return nil

@@ -20,11 +20,11 @@ import (
 
 // //////////////////////////////////////
 // go_for_a_walk
-func go_for_a_walk(JSON kv.JSON) {
-	cleaned_mime_type := util.CleanMimeType(JSON["content-type"])
+func go_for_a_walk(s3json *kv.S3JSON) {
+	cleaned_mime_type := util.CleanMimeType(s3json.GetString("content-type"))
 	switch cleaned_mime_type {
 	case "text/html":
-		walk_html(JSON)
+		walk_html(s3json)
 	case "application/pdf":
 		log.Println("PDFs do not walk")
 	}
@@ -32,13 +32,15 @@ func go_for_a_walk(JSON kv.JSON) {
 
 // //////////////////////////////////////
 // extract_links
-func extract_links(JSON kv.JSON) []*url.URL {
+func extract_links(s3json *kv.S3JSON) []*url.URL {
 
-	raw := JSON["raw"]
+	raw := s3json.GetString("raw")
 	// This is a key to a file.
 	tempFilename := uuid.NewString()
 
-	fetchStorage.GetFile(raw, tempFilename)
+	s3 := kv.NewS3("fetch")
+	s3.S3PathToFile(raw, tempFilename)
+
 	tFile, err := os.Open(tempFilename)
 	if err != nil {
 		zap.L().Error("cannot open temporary file", zap.String("filename", tempFilename))
@@ -63,7 +65,7 @@ func extract_links(JSON kv.JSON) []*url.URL {
 		zap.L().Debug("found link", zap.String("link", link), zap.Bool("exists", exists))
 
 		if exists {
-			link_to_crawl, err := is_crawlable(JSON, link)
+			link_to_crawl, err := is_crawlable(s3json, link)
 			if err != nil {
 				log.Println(err)
 			} else {
@@ -98,20 +100,20 @@ func extract_links(JSON kv.JSON) []*url.URL {
 
 // //////////////////////////////////////
 // walk_html
-func walk_html(JSON kv.JSON) {
+func walk_html(s3json *kv.S3JSON) {
 	// func process_pdf_bytes(db string, url string, b []byte) {
 	// We need a byte array of the original file.
-	links := extract_links(JSON)
+	links := extract_links(s3json)
 	log.Println("WALK looking at links", links)
 	for _, link := range links {
 		// Queue the next step
-		log.Println("FETCH ENQ", JSON["host"], link)
+		log.Println("FETCH ENQ", s3json.GetString("host"), link)
 
 		ctx, tx := common.CtxTx(dbPool)
 		defer tx.Rollback(ctx)
 		zap.L().Debug("inserting fetch job")
 		fetchClient.InsertTx(context.Background(), tx, common.FetchArgs{
-			Host:   JSON["host"],
+			Host:   s3json.GetString("host"),
 			Scheme: link.Scheme,
 			Path:   link.Path,
 		}, &river.InsertOpts{Queue: "fetch"})
@@ -123,21 +125,21 @@ func walk_html(JSON kv.JSON) {
 	}
 }
 
-func to_link(JSON map[string]string) string {
+func to_link(s3json *kv.S3JSON) string {
 	// FIXME: stop assuming the scheme...
 	u, _ := url.Parse(
 		"https://" +
-			JSON["host"] +
+			s3json.GetString("host") +
 			"/" +
-			JSON["path"])
+			s3json.GetString("path"))
 	return u.String()
 }
 
-func is_crawlable(JSON kv.JSON, link string) (string, error) {
-	host := JSON["host"]
+func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
+	host := s3json.GetString("host")
 	// FIXME: we should have the scheme in the host?
 	scheme := "https"
-	path := JSON["path"]
+	path := s3json.GetString("path")
 	base := url.URL{
 		Scheme: scheme,
 		Host:   host,
@@ -201,22 +203,20 @@ func trimSuffix(s, suffix string) string {
 }
 
 func (w *WalkWorker) Work(ctx context.Context, job *river.Job[common.WalkArgs]) error {
-	obj, err := fetchStorage.Get(job.Args.Key)
-	JSON := obj.GetJson()
-
-	if err != nil {
-		log.Println("WALK cannot grab fetch object", job.Args.Key)
-		log.Fatal(err)
-	}
-	log.Println(JSON["path"], JSON["content-type"])
+	s3json := kv.NewEmptyS3JSON("fetch",
+		util.ToScheme(job.Args.Scheme),
+		job.Args.Host,
+		job.Args.Path)
+	s3json.Load()
 
 	// If we're here, we already fetched the content.
 	// So, add ourselves to the cache. Don't re-crawl ourselves
 	// FIXME: figure out if the scheme ends up in the JSON
-	expirable_cache.Set(to_link(JSON), 0, 0)
+	expirable_cache.Set(s3json.Key.Render(), 0, 0)
 
-	go_for_a_walk(JSON)
+	go_for_a_walk(s3json)
 
-	log.Println("WALK DONE", job.Args.Key)
+	zap.L().Debug("walk done", zap.String("key", s3json.Key.Render()))
+
 	return nil
 }

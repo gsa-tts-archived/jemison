@@ -3,7 +3,9 @@ package common
 import "net/http"
 
 type ExtractArgs struct {
-	Key string `json:"key"`
+	Scheme string `json:"scheme"`
+	Host   string `json:"host"`
+	Path   string `json:"path"`
 }
 
 func (ExtractArgs) Kind() string {
@@ -21,7 +23,9 @@ func (FetchArgs) Kind() string {
 }
 
 type PackArgs struct {
-	Key string `json:"key"`
+	Scheme string `json:"scheme"`
+	Host   string `json:"host"`
+	Path   string `json:"path"`
 }
 
 func (PackArgs) Kind() string {
@@ -37,7 +41,9 @@ func (ServeArgs) Kind() string {
 }
 
 type WalkArgs struct {
-	Key string `json:"key"`
+	Scheme string `json:"scheme"`
+	Host   string `json:"host"`
+	Path   string `json:"path"`
 }
 
 func (WalkArgs) Kind() string {

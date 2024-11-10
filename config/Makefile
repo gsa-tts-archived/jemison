@@ -1,7 +1,7 @@
 SOURCES = $(wildcard *.jsonnet)
 
 
-all: $(patsubst %.jsonnet,%.yaml, ${SOURCES})
+all: clean $(patsubst %.jsonnet,%.yaml, ${SOURCES})
 
 clean: 
 	rm -f *.yaml

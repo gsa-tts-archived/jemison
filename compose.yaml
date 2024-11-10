@@ -26,7 +26,7 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-      queue-db:
+      jemison-queues-db:
         condition: service_healthy
     healthcheck:
       test: curl --fail http://extract:8888/heartbeat || exit 1
@@ -65,7 +65,7 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-      queue-db:
+      jemison-queues-db:
         condition: service_healthy
     healthcheck:
       test: curl --fail http://fetch:8888/heartbeat || exit 1
@@ -101,7 +101,7 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-      queue-db:
+      jemison-queues-db:
         condition: service_healthy
     healthcheck:
       test: curl --fail http://pack:8888/heartbeat || exit 1
@@ -144,7 +144,7 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-      queue-db:
+      jemison-queues-db:
         condition: service_healthy
     healthcheck:
       test: curl --fail http://serve:8888/heartbeat || exit 1
@@ -179,7 +179,7 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-      queue-db:
+      jemison-queues-db:
         condition: service_healthy
     healthcheck:
       test: curl --fail http://validate:8888/heartbeat || exit 1
@@ -214,7 +214,7 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-      queue-db:
+      jemison-queues-db:
         condition: service_healthy
     healthcheck:
       test: curl --fail http://walk:8888/heartbeat || exit 1
@@ -237,22 +237,22 @@ services:
     ports:
       - 11111:8080
     environment:
-      DATABASE_URL: postgresql://postgres@queue-db:5432/postgres
+      DATABASE_URL: postgresql://postgres@jemison-queues-db:5432/postgres
       RIVER_LOG_LEVEL: ERROR
       RIVER_DEBUG: 0
     depends_on:
-      queue-db:
+      jemison-queues-db:
         condition: service_healthy
 
   #-----------------------------------------------------
-  # postgres/queue-db :5432
+  # postgres/jemison-queues-db :5432
   #-----------------------------------------------------
-  queue-db:
+  jemison-queues-db:
     image: postgres:16-alpine
     ports:
       - 5432:5432
     volumes:
-      - queue-data:/var/lib/postgresql/data
+      - jemison-queues-db-vol:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: postgres
       POSTGRES_DB: postgres
@@ -299,11 +299,11 @@ services:
     ports: 
       - 22222:8081
     environment:
-      PGWEB_DATABASE_URL: postgresql://postgres@queue-db:5432/postgres?sslmode=disable
+      PGWEB_DATABASE_URL: postgresql://postgres@jemison-queues-db:5432/postgres?sslmode=disable
     depends_on:
-      queue-db:
+      jemison-queues-db:
         condition: service_healthy
 
 volumes:
-  queue-data:
+  jemison-queues-db-vol:
   minio-data:

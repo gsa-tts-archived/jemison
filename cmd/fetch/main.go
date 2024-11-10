@@ -13,10 +13,10 @@ import (
 
 var RecentlyVisitedCache *cache.Cache
 var polite_sleep int64
+var ThisServiceName = "fetch"
 
 func main() {
 	env.InitGlobalEnv()
-	InitializeStorage()
 	InitializeQueues()
 
 	engine := common.InitializeAPI()
@@ -25,7 +25,7 @@ func main() {
 	log.Println("environment initialized")
 
 	// Init a cache for the workers
-	service, _ := env.Env.GetUserService("fetch")
+	service, _ := env.Env.GetUserService(ThisServiceName)
 
 	// Pre-compute/lookup the sleep duration for backoff
 	polite_sleep = service.GetParamInt64("polite_sleep")

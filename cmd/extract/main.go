@@ -9,9 +9,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var ThisServiceName = "extract"
+
 func main() {
 	env.InitGlobalEnv()
-	InitializeStorage()
 	InitializeQueues()
 	log.Println("environment initialized")
 

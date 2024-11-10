@@ -16,7 +16,7 @@ var Env *env
 // Constants for the attached services
 // These reach into the VCAP_SERVICES and are
 // defined in the Terraform.
-const WorkingDatabase = "jemison-db"
+const WorkingDatabase = "jemison-queues-db"
 
 var validBucketNames = []string{
 	"extract",

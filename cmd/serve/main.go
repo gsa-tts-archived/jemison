@@ -20,6 +20,8 @@ import (
 var serveStorage kv.S3
 var Databases sync.Map //map[string]*sql.DB
 
+var ThisServiceName = "serve"
+
 func ServeHost(c *gin.Context) {
 	s, _ := env.Env.GetUserService("serve")
 	external_scheme := s.GetParamString("external_scheme")
@@ -61,7 +63,7 @@ func MultiStatsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-func CheckS3ForDatabases(storage kv.S3) {
+func CheckS3ForDatabases(storage *kv.S3) {
 	objects, err := storage.List("")
 	if err != nil {
 		zap.L().Error("problem listing objects")
@@ -87,12 +89,13 @@ func CheckS3ForDatabases(storage kv.S3) {
 
 func main() {
 	env.InitGlobalEnv()
-	serveStorage = kv.NewKV("serve")
+	s3 := kv.NewS3(ThisServiceName)
+	CheckS3ForDatabases(s3)
+
 	InitializeQueues()
-	CheckS3ForDatabases(serveStorage)
 	queueing.InitializeRiverQueues()
 
-	s, _ := env.Env.GetUserService("serve")
+	s, _ := env.Env.GetUserService(ThisServiceName)
 	static_files_path := s.GetParamString("static_files_path")
 	external_host := s.GetParamString("external_host")
 	external_port := s.GetParamInt64("external_port")

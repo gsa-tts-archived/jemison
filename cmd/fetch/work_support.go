@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	common "github.com/GSA-TTS/jemison/internal/common"
+	kv "github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
@@ -100,7 +101,7 @@ func getUrlToFile(u url.URL) (string, int64, []byte) {
 // }
 
 func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, error) {
-	url := url.URL{
+	u := url.URL{
 		Scheme: job.Args.Scheme,
 		Host:   job.Args.Host,
 		Path:   job.Args.Path,
@@ -111,7 +112,7 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 
 	zap.L().Debug("checking the hit cache")
 
-	headResp, err := retryablehttp.Head(url.String())
+	headResp, err := retryablehttp.Head(u.String())
 	if err != nil {
 		return nil, err
 	}
@@ -119,20 +120,28 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 	contentType := headResp.Header.Get("content-type")
 	log.Debug("checking HEAD MIME type", zap.String("content-type", contentType))
 	if !util.IsSearchableMimeType(contentType) {
-		return nil, fmt.Errorf("non-indexable MIME type: %s", url.String())
+		return nil, fmt.Errorf("non-indexable MIME type: %s", u.String())
 	}
 
 	// Write the raw content to a file.
-	tempFilename, bytesRead, theSHA := getUrlToFile(url)
-	defer func() { os.Remove(tempFilename) }()
+	tempFilename, bytesRead, theSHA := getUrlToFile(u)
+	key := util.CreateS3Key(util.ToScheme(job.Args.Scheme), job.Args.Host, job.Args.Path, util.Raw)
+
+	defer func(u url.URL, key *util.Key) {
+		err := os.Remove(tempFilename)
+		if err != nil {
+			zap.L().Error("could not remove temp file",
+				zap.String("url", u.String()),
+				zap.String("key", key.Render()))
+		}
+	}(u, key)
 
 	// Stream that file over to S3
-	key := util.CreateS3Key(job.Args.Host, job.Args.Path, "raw").Render()
-
-	fetchStorage.StoreFile(key, tempFilename)
+	s3 := kv.NewS3(ThisServiceName)
+	s3.FileToS3(key, tempFilename, util.GetMimeType(contentType))
 
 	response := map[string]string{
-		"raw":            key,
+		"raw":            key.Render(),
 		"sha1":           fmt.Sprintf("%x", theSHA),
 		"content-length": fmt.Sprintf("%d", bytesRead),
 		"host":           job.Args.Host,

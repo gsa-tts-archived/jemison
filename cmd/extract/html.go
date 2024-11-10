@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"maps"
 	"os"
 	"strings"
 
@@ -31,27 +30,17 @@ func scrape_sel(sel *goquery.Selection) string {
 	return content
 }
 
-func extractHtml(obj kv.Object) {
-	extract_bucket := kv.NewKV("extract")
-
-	jsonm := obj.GetJson()
-	rawFilename := jsonm["raw"]
-	// This gives us a key to a raw file in S3.
-	// The key is a UUID that ends in ".raw"
-	// use it for the local file
-	fetchStorage.GetFile(rawFilename, rawFilename)
+func extractHtml(obj *kv.S3JSON) {
+	rawFilename := obj.GetString("raw")
+	s3 := kv.NewS3(ThisServiceName)
+	s3.S3ToFile(obj.Key, rawFilename)
 	rawFile, err := os.Open(rawFilename)
 	if err != nil {
 		zap.L().Error("cannot open tempfile", zap.String("filename", rawFilename))
 	}
 	defer rawFile.Close()
 
-	//reader := bytes.NewReader(rawFile)
 	content := ""
-
-	// Delete the raw
-	// (This made sense when it was a huge blob. Now it is a file path.)
-	// delete(jsonm, "raw")
 
 	doc, err := goquery.NewDocumentFromReader(rawFile)
 	if err != nil {
@@ -59,52 +48,57 @@ func extractHtml(obj kv.Object) {
 		log.Fatal(err)
 	}
 
-	doc.Find("p").Each(func(ndx int, sel *goquery.Selection) {
-		content += scrape_sel(sel)
-	})
-	doc.Find("li").Each(func(ndx int, sel *goquery.Selection) {
-		content += scrape_sel(sel)
-	})
-	doc.Find("td").Each(func(ndx int, sel *goquery.Selection) {
-		content += scrape_sel(sel)
-	})
-	doc.Find("div").Each(func(ndx int, sel *goquery.Selection) {
-		content += scrape_sel(sel)
-	})
-	doc.Find("span").Each(func(ndx int, sel *goquery.Selection) {
-		content += scrape_sel(sel)
-	})
-	doc.Find("a").Each(func(ndx int, sel *goquery.Selection) {
-		content += scrape_sel(sel)
-	})
-	doc.Find("small").Each(func(ndx int, sel *goquery.Selection) {
-		content += scrape_sel(sel)
-	})
-	doc.Find("b").Each(func(ndx int, sel *goquery.Selection) {
-		content += scrape_sel(sel)
-	})
-	doc.Find("em").Each(func(ndx int, sel *goquery.Selection) {
-		content += scrape_sel(sel)
-	})
+	for _, elem := range [...]string{
+		"p",
+		"li",
+		"td",
+		"div",
+		"span",
+		"a",
+		"small",
+		"b",
+		"bold",
+		"em",
+		"i",
+		"title",
+		"h1",
+		"h2",
+		"h3",
+		"h4",
+		"h5",
+		"h6",
+		"h7",
+		"h8",
+	} {
+		doc.Find(elem).Each(func(ndx int, sel *goquery.Selection) {
+			content += scrape_sel(sel)
+		})
+	}
 
 	// Store everything
-	extracted_key := util.CreateS3Key(obj.GetValue("host"), obj.GetValue("path"), "json").Render()
-	new := make(map[string]string, 0)
-	maps.Copy(new, jsonm)
-	new["content"] = util.RemoveStopwords(content)
-
-	extract_bucket.Store(extracted_key, new)
+	copied_key := obj.Key.Copy()
+	copied_key.Extension = util.JSON
+	obj.Set("content", util.RemoveStopwords(content))
+	// This is because we were holding an object from the "fetch" bucket.
+	new_obj := kv.NewFromBytes(
+		ThisServiceName,
+		obj.Key.Scheme,
+		obj.Key.Host,
+		obj.Key.Path,
+		obj.GetJSON())
+	new_obj.Save()
 
 	// Enqueue next steps
-	zap.L().Info("enqueueing pack", zap.String("key", extracted_key))
 	ctx, tx := common.CtxTx(packPool)
 	defer tx.Rollback(ctx)
 	packClient.InsertTx(ctx, tx, common.PackArgs{
-		Key: extracted_key,
+		Scheme: obj.Key.Scheme.String(),
+		Host:   obj.Key.Host,
+		Path:   obj.Key.Path,
 	}, &river.InsertOpts{Queue: "pack"})
 	if err := tx.Commit(ctx); err != nil {
 		zap.L().Panic("cannot commit insert tx",
-			zap.String("key", extracted_key))
+			zap.String("key", obj.Key.Render()))
 	}
 
 }

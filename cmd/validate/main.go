@@ -18,7 +18,6 @@ var polite_sleep int64
 
 func main() {
 	env.InitGlobalEnv()
-	InitializeStorage()
 	InitializeQueues()
 
 	engine := common.InitializeAPI()

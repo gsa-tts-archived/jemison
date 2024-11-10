@@ -8,6 +8,7 @@ import (
 
 	common "github.com/GSA-TTS/jemison/internal/common"
 	kv "github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
@@ -60,7 +61,8 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		// We can always do it ourselves for special cases, but this feels better.
 
 		cloudmap := kv.NewFromMap(
-			"fetch",
+			ThisServiceName,
+			util.ToScheme(job.Args.Scheme),
 			job.Args.Host,
 			job.Args.Path,
 			page_json,
@@ -83,7 +85,9 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		ctx, tx := common.CtxTx(extractPool)
 		defer tx.Rollback(ctx)
 		extractClient.InsertTx(ctx, tx, common.ExtractArgs{
-			Key: cloudmap.Key.Render(),
+			Scheme: job.Args.Scheme,
+			Host:   job.Args.Host,
+			Path:   job.Args.Path,
 		}, &river.InsertOpts{Queue: "extract"})
 		if err := tx.Commit(ctx); err != nil {
 			zap.L().Panic("cannot commit insert tx",
@@ -94,7 +98,9 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		ctx2, tx2 := common.CtxTx(walkPool)
 		defer tx2.Rollback(ctx)
 		walkClient.InsertTx(ctx2, tx2, common.WalkArgs{
-			Key: cloudmap.Key.Render(),
+			Scheme: job.Args.Scheme,
+			Host:   job.Args.Host,
+			Path:   job.Args.Path,
 		}, &river.InsertOpts{Queue: "walk"})
 		if err := tx2.Commit(ctx2); err != nil {
 			zap.L().Panic("cannot commit insert tx",

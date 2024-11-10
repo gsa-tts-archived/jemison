@@ -19,7 +19,6 @@ var RecentlyVisitedCache *cache.Cache
 func main() {
 
 	env.InitGlobalEnv()
-	InitializeStorage()
 	InitializeQueues()
 
 	log.Println("environment initialized")
