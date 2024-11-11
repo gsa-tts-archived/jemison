@@ -1,25 +1,17 @@
 local B = import 'base.libsonnet';
-local service = 'pack';
+local service = 'admin';
 
 local credentials = [
   [
     'port',
-    { cf: 8080, container: 8888 },
+    { cf: 8080, container: 8888, localhost: 8888 },
   ],
 ];
 
 local parameters = [
   [
-    'workers',
-    { cf: 10, container: 50 },
-  ],
-  [
     'debug_level',
-    { cf: 'warn', container: 'info' },
-  ],
-  [
-    'packing_timeout_seconds',
-    { cf: B.minutes(10), container: B.minutes(1) },
+    { cf: 'warn', container: 'debug', localhost: 'debug'},
   ],
 ];
 

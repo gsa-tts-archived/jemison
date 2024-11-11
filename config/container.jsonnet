@@ -1,3 +1,4 @@
+local A = import 'admin.libsonnet';
 local E = import 'extract.libsonnet';
 local F = import 'fetch.libsonnet';
 local P = import 'pack.libsonnet';
@@ -16,6 +17,7 @@ local VCAP = import 'vcap_services.libsonnet';
   USER: 'vcap',
   EIGHT_SERVICES: {
     'user-provided': [
+      A.container,
       E.container,
       F.container,
       P.container,
@@ -24,5 +26,5 @@ local VCAP = import 'vcap_services.libsonnet';
       W.container,
     ],
   },
-  VCAP_SERVICES: VCAP.VCAP_SERVICES('minio', 'jemison-queues-db'),
+  VCAP_SERVICES: VCAP.VCAP_SERVICES('minio', 'jemison-queues-db', 'jemison-queues-db'),
 }

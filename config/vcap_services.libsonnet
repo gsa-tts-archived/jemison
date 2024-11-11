@@ -24,36 +24,36 @@ local s3(service, host) = {
   volume_mounts: ['no_mounts'],
 };
 
-local rds(db) = {
-  label: db,
+local rds(db_host, db_name) = {
+  label: db_name,
   provider: null,
   plan: null,
-  name: db,
+  name: db_name,
   tags: ['aws', 'rds', 'postgres'],
-  instance_guid: std.substr(std.base64(self.label+db), 0, 16),
+  instance_guid: std.substr(std.base64(self.label+db_name), 0, 16),
   binding_guid: std.substr(std.base64(self.credentials.uri), 0, 16),
   binding_name: null,
-  instance_name: db,
+  instance_name: db_name,
   credentials: {
     db_name: 'postgres',
-    host: db,
+    host: db_host,
     name: 'postgres',
     password: '',
     port: 5432,
     username: 'postgres',
-    uri: 'postgresql://' + self.username + '@' + db + ':' + self.port + '/' + self.db_name + '?sslmode=disable',
+    uri: 'postgresql://' + self.username + '@' + db_host + ':' + self.port + '/' + self.db_name + '?sslmode=disable',
   },
   syslog_drain_url: 'https://BRAVO.drain.url',
   volume_mounts: ['no_mounts'],
 };
 
-local VCAP_SERVICES(s3_host, db_host) = {
+local VCAP_SERVICES(s3_host, db_host, db_name) = {
     s3: [
       s3('extract', s3_host),
       s3('fetch', s3_host),
       s3('serve', s3_host),
     ],
-    'aws-rds': [rds(db_host)]
+    'aws-rds': [rds(db_host, db_name)]
 };
 
 {

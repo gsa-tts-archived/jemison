@@ -1,3 +1,4 @@
+local A = import 'admin.libsonnet';
 local E = import 'extract.libsonnet';
 local F = import 'fetch.libsonnet';
 local P = import 'pack.libsonnet';
@@ -9,6 +10,7 @@ local W = import 'walk.libsonnet';
   // :: means "not visible in the output"
   EIGHT_SERVICES: {
     'user-provided': [
+      A.cf,
       E.cf,
       F.cf,
       P.cf,

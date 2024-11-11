@@ -108,6 +108,7 @@ func InitGlobalEnv(this_service string) {
 	if IsLocalTestEnv() {
 		log.Println("IsLocalTestEnv")
 		viper.AddConfigPath("../../config")
+		viper.AddConfigPath("config")
 		viper.SetConfigName("localhost")
 	}
 
