@@ -1,5 +1,5 @@
 SOURCES = $(wildcard *.jsonnet)
-
+POLITE_SLEEP ?= 2
 
 all: clean $(patsubst %.jsonnet,%.yaml, ${SOURCES})
 

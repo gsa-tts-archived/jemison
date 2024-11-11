@@ -15,7 +15,7 @@ local parameters = [
   ],
   [
     'packing_timeout_seconds',
-    { cf: B.minutes(10), container: B.minutes(3) },
+    { cf: B.minutes(10), container: B.minutes(1) },
   ],
 ];
 
