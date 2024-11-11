@@ -22,7 +22,7 @@ build: clean config generate
 	cd cmd/serve ; make build
 	cd cmd/validate ; make build
 	cd cmd/walk ; make build
-	cd assets ; rm -rf static/assets ; unzip static.zip
+	cd assets ; rm -rf static/assets ; unzip -qq static.zip
 
 .PHONY: up
 up: build
@@ -30,7 +30,7 @@ up: build
 
 .PHONY: run
 run: clean generate
-	cd assets ; unzip -o static.zip > /dev/null 2>&1
+	cd assets ; unzip -qq -o static.zip > /dev/null 2>&1
 	docker compose up
 
 # I need to delete_all every time, because there is not enough RAM

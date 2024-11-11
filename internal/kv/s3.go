@@ -9,6 +9,7 @@ import (
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/util"
 	minio "github.com/minio/minio-go/v7"
+	"go.uber.org/zap"
 )
 
 // S3 holds a bucket structure (containing VCAP_SERVICES information)
@@ -66,7 +67,11 @@ func (s3 *S3) S3ToFile(key *util.Key, local_filename string) error {
 		minio.GetObjectOptions{})
 
 	if err != nil {
-		fmt.Println(err)
+		zap.L().Error("could not FGetObject",
+			zap.String("bucket", s3.Bucket.Name),
+			zap.String("key", key.Render()),
+			zap.String("local_filename", local_filename),
+		)
 		return err
 	}
 	return nil

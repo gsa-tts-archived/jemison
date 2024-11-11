@@ -9,8 +9,11 @@ import (
 	"github.com/GSA-TTS/jemison/internal/sqlite"
 )
 
+var ThisServiceName = "pack"
+
 func main() {
-	env.InitGlobalEnv()
+	env.InitGlobalEnv(ThisServiceName)
+
 	InitializeQueues()
 	engine := common.InitializeAPI()
 

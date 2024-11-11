@@ -75,7 +75,7 @@ func CheckS3ForDatabases(storage *kv.S3) {
 }
 
 func main() {
-	env.InitGlobalEnv()
+	env.InitGlobalEnv(ThisServiceName)
 	s3 := kv.NewS3(ThisServiceName)
 	CheckS3ForDatabases(s3)
 

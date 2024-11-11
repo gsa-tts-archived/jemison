@@ -11,11 +11,15 @@ local credentials = [
 local parameters = [
   [
     'workers',
-    { cf: 10, container: 10 },
+    { cf: 10, container: 50 },
+  ],
+  [
+    'debug_level',
+    { cf: 'warn', container: 'info' },
   ],
   [
     'packing_timeout_seconds',
-    { cf: B.minutes(10), container: B.minutes(1) },
+    { cf: B.minutes(10), container: B.minutes(2) },
   ],
 ];
 

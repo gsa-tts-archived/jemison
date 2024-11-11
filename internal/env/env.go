@@ -91,9 +91,8 @@ var container_envs = []string{"DOCKER", "GH_ACTIONS"}
 var cf_envs = []string{"SANDBOX", "PREVIEW", "DEV", "STAGING", "PROD"}
 var test_envs = []string{"LOCALHOST"}
 
-func InitGlobalEnv() {
+func InitGlobalEnv(this_service string) {
 	Env = &env{}
-	SetupLogging()
 
 	viper.AddConfigPath("/home/vcap/app/config")
 	viper.SetConfigType("yaml")
@@ -164,16 +163,9 @@ func InitGlobalEnv() {
 	Env.Databases = Env.VcapServices["aws-rds"]
 	Env.UserServices = Env.EightServices["user-provided"]
 
-	// if IsLocalTestEnv() {
-	// 	log.Println("-----------", "Env", "-----------")
-	// 	log.Println(Env)
-	// 	log.Println("-----------", "ObjectStores", "-----------")
-	// 	log.Println(Env.ObjectStores)
-	// 	log.Println("-----------", "Databases", "-----------")
-	// // 	log.Println(Env.Databases)
-	// log.Println("-----------", "UserServices", "-----------")
-	// log.Println(Env.UserServices)
-	// }
+	SetupLogging(this_service)
+	SetGinReleaseMode(this_service)
+
 }
 
 // https://stackoverflow.com/questions/3582552/what-is-the-format-for-the-postgresql-connection-string-url

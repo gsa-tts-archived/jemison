@@ -110,7 +110,8 @@ func (w *PackWorker) Work(ctx context.Context, job *river.Job[common.PackArgs]) 
 		log.Println("Insert into site entry table failed")
 		log.Fatal(err)
 	}
-	zap.L().Info("packed entry",
+
+	zap.L().Debug("packed entry",
 		zap.String("database", host),
 		zap.String("path", gjson.GetBytes(JSON, "path").String()),
 		zap.Int("length", len(gjson.GetBytes(JSON, "content").String())))

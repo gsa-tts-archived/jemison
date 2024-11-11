@@ -12,7 +12,7 @@ import (
 var ThisServiceName = "extract"
 
 func main() {
-	env.InitGlobalEnv()
+	env.InitGlobalEnv(ThisServiceName)
 	InitializeQueues()
 	log.Println("environment initialized")
 

@@ -14,8 +14,12 @@ local parameters = [
     { cf: 10, container: 10 },
   ],
   [
+    'debug_level',
+    { cf: 'warn', container: 'info' },
+  ],
+  [
     'polite_sleep',
-    { cf: 2, container: 2 },
+    { cf: 2, container: 0 },
   ],
   [
     'polite_cache_default_expiration',

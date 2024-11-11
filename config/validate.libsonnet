@@ -13,6 +13,10 @@ local parameters = [
     'workers',
     { cf: 10, container: 10 },
   ],
+  [
+    'debug_level',
+    { cf: 'warn', container: 'info' },
+  ],
 ];
 
 {

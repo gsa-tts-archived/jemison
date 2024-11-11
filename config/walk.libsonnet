@@ -14,12 +14,16 @@ local parameters = [
     { cf: 10, container: 10 },
   ],
   [
+    'debug_level',
+    { cf: 'warn', container: 'info' },
+  ],
+  [
     'cache-ttl',
-    { cf: B.minutes(30), container: B.minutes(30) },
+    { cf: B.minutes(30), container: B.minutes(5) },
   ],
   [
     'polite_cache_default_expiration',
-    { cf: B.hours(10), container: B.hours(6) },
+    { cf: B.hours(10), container: B.minutes(10) },
   ],
   [
     'polite_cache_cleanup_interval',

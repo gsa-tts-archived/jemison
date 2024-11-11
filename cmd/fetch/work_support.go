@@ -13,7 +13,6 @@ import (
 	kv "github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pingcap/log"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
@@ -61,7 +60,7 @@ func chunkwiseSHA1(filename string) []byte {
 }
 
 func getUrlToFile(u url.URL) (string, int64, []byte) {
-	getResponse, err := retryablehttp.Get(u.String())
+	getResponse, err := RetryClient.Get(u.String())
 	if err != nil {
 		zap.L().Fatal("cannot GET content",
 			zap.String("url", u.String()),
@@ -112,7 +111,7 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 
 	zap.L().Debug("checking the hit cache")
 
-	headResp, err := retryablehttp.Head(u.String())
+	headResp, err := RetryClient.Head(u.String())
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +119,9 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 	contentType := headResp.Header.Get("content-type")
 	log.Debug("checking HEAD MIME type", zap.String("content-type", contentType))
 	if !util.IsSearchableMimeType(contentType) {
-		return nil, fmt.Errorf("non-indexable MIME type: %s", u.String())
+		return nil, fmt.Errorf(
+			common.NonIndexableContentType.String()+
+				"non-indexable MIME type: %s", u.String())
 	}
 
 	// Write the raw content to a file.

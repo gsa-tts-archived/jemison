@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"runtime"
+	"strings"
 	"sync"
 
 	common "github.com/GSA-TTS/jemison/internal/common"
@@ -34,11 +35,13 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		// If it is not cached, we have work to do.
 		page_json, err := fetch_page_content(job)
 		if err != nil {
-			zap.L().Warn("could not fetch page content",
-				zap.String("scheme", job.Args.Scheme),
-				zap.String("host", job.Args.Host),
-				zap.String("path", job.Args.Path),
-			)
+			if !strings.Contains(err.Error(), common.NonIndexableContentType.String()) {
+				zap.L().Warn("could not fetch page content",
+					zap.String("scheme", job.Args.Scheme),
+					zap.String("host", job.Args.Host),
+					zap.String("path", job.Args.Path),
+				)
+			}
 		}
 
 		// The queueing system retries should save us here; bail if we
@@ -48,7 +51,7 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 				Scheme: job.Args.Scheme,
 				Host:   job.Args.Host,
 				Path:   job.Args.Path}
-			zap.L().Info("could not fetch content; not requeueing",
+			zap.L().Debug("could not fetch content; not requeueing",
 				zap.String("url", u.String()))
 			return nil
 		}
@@ -116,7 +119,7 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			zap.String("error", err.Error()))
 	}
 
-	zap.L().Info("fetched",
+	zap.L().Debug("fetched",
 		zap.String("scheme", job.Args.Scheme),
 		zap.String("host", job.Args.Host),
 		zap.String("path", job.Args.Path),

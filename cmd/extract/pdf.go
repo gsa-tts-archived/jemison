@@ -2,25 +2,48 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	kv "github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/util"
+	"github.com/google/uuid"
 	"github.com/johbar/go-poppler"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
 func extractPdf(obj *kv.S3JSON) {
-	rawFilename := obj.GetString("raw")
-	s3 := kv.NewS3(ThisServiceName)
-	s3.S3ToFile(obj.Key, rawFilename)
+	//rawFilename := obj.GetString("raw")
+	tempFilename := uuid.NewString()
+	// s3 := kv.NewS3(ThisServiceName)
+	raw_copy := obj.Key.Copy()
+	raw_copy.Extension = util.Raw
+	obj.S3.S3ToFile(raw_copy, tempFilename)
 
-	doc, err := poppler.Open(rawFilename)
+	fi, err := os.Stat(tempFilename)
+	if err != nil {
+		zap.L().Fatal(err.Error())
+	}
+	size := fi.Size()
+	zap.L().Debug("tempFilename size", zap.Int64("size", size))
+
+	doc, err := poppler.Open(tempFilename)
+
+	defer func() {
+		err := os.Remove(tempFilename)
+		if err != nil {
+			zap.L().Error("could not remove temp file",
+				zap.String("filename", tempFilename))
+		}
+	}()
 
 	if err != nil {
-		fmt.Println("Failed to convert body to Document")
+		zap.L().Warn("poppler failed to open pdf",
+			zap.String("raw_filename", tempFilename),
+			zap.String("key", obj.Key.Render()))
+		return
 	} else {
 		for page_no := 0; page_no < doc.GetNPages(); page_no++ {
 
@@ -65,7 +88,8 @@ func extractPdf(obj *kv.S3JSON) {
 		}
 	}
 
+	doc.Close()
+
 	//e.Stats.Increment("document_count")
 
-	doc.Close()
 }

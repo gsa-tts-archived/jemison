@@ -11,7 +11,11 @@ local credentials = [
 local parameters = [
   [
     'workers',
-    { cf: 1, container: 1 },
+    { cf: 10, container: 10 },
+  ],
+  [
+    'debug_level',
+    { cf: 'warn', container: 'info' },
   ],
   [
     'external_port',

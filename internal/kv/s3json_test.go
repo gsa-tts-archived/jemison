@@ -16,7 +16,7 @@ import (
 
 func setup( /* t *testing.T */ ) func(t *testing.T) {
 	os.Setenv("ENV", "LOCALHOST")
-	env.InitGlobalEnv()
+	env.InitGlobalEnv("testing_env") // we need to pass something
 	return func(t *testing.T) {
 		// t.Log("teardown test case")
 	}

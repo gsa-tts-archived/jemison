@@ -11,13 +11,13 @@ import (
 	"go.uber.org/zap"
 )
 
-var ServiceName = "validate"
+var ThisServiceName = "validate"
 
 var RecentlyVisitedCache *cache.Cache
 var polite_sleep int64
 
 func main() {
-	env.InitGlobalEnv()
+	env.InitGlobalEnv(ThisServiceName)
 	InitializeQueues()
 
 	engine := common.InitializeAPI()

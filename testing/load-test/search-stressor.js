@@ -74,7 +74,7 @@ export default function () {
   let data = { host: which_host, terms: terms};
 
   let res = http.post(
-    "http://localhost:10004/api/search",
+    "http://localhost:10000/api/search",
     JSON.stringify(data)
   )
 

@@ -2,18 +2,21 @@ package env
 
 import (
 	"os"
-	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-func createLogger() *zap.Logger {
+func createLogger(this_service string) *zap.Logger {
 	encoderCfg := zap.NewProductionEncoderConfig()
 	encoderCfg.TimeKey = "timestamp"
 	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
 
-	level := strings.ToLower(os.Getenv("DEBUG_LEVEL"))
+	// level := strings.ToLower(os.Getenv("DEBUG_LEVEL"))
+	// WARNING: THIS MUST RUN AFTER THE ENV IS PARSED/SET UP
+	s, _ := Env.GetUserService(this_service)
+	level := s.GetParamString("debug_level")
+
 	zap_level := zap.InfoLevel
 	switch level {
 	case "debug":
@@ -50,6 +53,6 @@ func createLogger() *zap.Logger {
 	return zap.Must(config.Build())
 }
 
-func SetupLogging() {
-	zap.ReplaceGlobals(zap.Must(createLogger(), nil))
+func SetupLogging(this_service string) {
+	zap.ReplaceGlobals(zap.Must(createLogger(this_service), nil))
 }

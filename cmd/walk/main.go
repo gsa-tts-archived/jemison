@@ -16,9 +16,11 @@ import (
 var expirable_cache expirable.Cache[string, int]
 var RecentlyVisitedCache *cache.Cache
 
+var ThisServiceName = "walk"
+
 func main() {
 
-	env.InitGlobalEnv()
+	env.InitGlobalEnv(ThisServiceName)
 	InitializeQueues()
 
 	log.Println("environment initialized")

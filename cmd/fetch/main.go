@@ -7,6 +7,7 @@ import (
 
 	common "github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 )
@@ -15,12 +16,19 @@ var RecentlyVisitedCache *cache.Cache
 var polite_sleep int64
 var ThisServiceName = "fetch"
 
+var RetryClient *http.Client
+
 func main() {
-	env.InitGlobalEnv()
+	env.InitGlobalEnv(ThisServiceName)
 	InitializeQueues()
 
 	engine := common.InitializeAPI()
 	ExtendApi(engine)
+
+	retryableClient := retryablehttp.NewClient()
+	retryableClient.RetryMax = 10
+	//retryableClient.Logger = zap.L()
+	RetryClient = retryableClient.StandardClient()
 
 	log.Println("environment initialized")
 

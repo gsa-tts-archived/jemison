@@ -70,13 +70,13 @@ type ValidateFetchWorker struct {
 }
 
 func (w ValidateFetchWorker) Work(ctx context.Context, job *river.Job[common.ValidateFetchArgs]) error {
-	zap.L().Info("MADE IT HERE")
+	zap.L().Info("VALIDATE IS RUNNING AND DOING NOTHING")
 	return nil
 }
 
 func InitializeQueues() {
 	queueing.InitializeRiverQueues()
-	initX(ServiceName, common.ValidateFetchQueue, ValidateFetchWorker{})
+	initX(ThisServiceName, common.ValidateFetchQueue, ValidateFetchWorker{})
 
 	// Insert-only client
 	_, pool, _ := common.CommonQueueInit()

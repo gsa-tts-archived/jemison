@@ -68,7 +68,7 @@ serve: app
 	echo "web: ./serve.exe" > app/Procfile
 	cp ../assets/apt.yml app/apt.yml
 	cp ../assets/static.zip app/static.zip
-	cd app ; unzip static.zip ; rm static.zip 
+	cd app ; unzip -qq static.zip ; rm static.zip 
 	mkdir app/databases ;
 	cp ../assets/static/index.html app/static/index.html
 	cd app ; zip -r -X ../zips/serve.zip . \

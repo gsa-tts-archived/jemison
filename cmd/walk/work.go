@@ -26,7 +26,7 @@ func go_for_a_walk(s3json *kv.S3JSON) {
 	case "text/html":
 		walk_html(s3json)
 	case "application/pdf":
-		log.Println("PDFs do not walk")
+		// log.Println("PDFs do not walk")
 	}
 }
 
@@ -70,15 +70,17 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 
 	doc.Find("a[href]").Each(func(ndx int, sel *goquery.Selection) {
 		link, exists := sel.Attr("href")
-		zap.L().Debug("found link", zap.String("link", link), zap.Bool("exists", exists))
+		// zap.L().Debug("found link", zap.String("link", link), zap.Bool("exists", exists))
 
 		if exists {
 			link_to_crawl, err := is_crawlable(s3json, link)
 			if err != nil {
-				zap.L().Warn("error checking crawlability", zap.String("url", link))
+				zap.L().Debug("error checking crawlability",
+					zap.String("url", link),
+					zap.String("error", err.Error()))
 			} else {
 				if _, ok := expirable_cache.Get(link_to_crawl); ok {
-					log.Println("CACHE HIT", link)
+					// PASS ON LOGGING IF IT IS A CACHE HIT
 				} else {
 					// CRAWL BOTH HTTPS AND HTTP?
 					if strings.HasPrefix(link_to_crawl, "http") {
@@ -109,13 +111,12 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 // //////////////////////////////////////
 // walk_html
 func walk_html(s3json *kv.S3JSON) {
-	// func process_pdf_bytes(db string, url string, b []byte) {
-	// We need a byte array of the original file.
 	links := extract_links(s3json)
-	log.Println("WALK looking at links", links)
+	zap.L().Debug("walk considering links",
+		zap.Int("count", len(links)))
 	for _, link := range links {
 		// Queue the next step
-		log.Println("FETCH ENQ", s3json.GetString("host"), link)
+		// log.Println("FETCH ENQ", s3json.GetString("host"), link)
 
 		ctx, tx := common.CtxTx(dbPool)
 		defer tx.Rollback(ctx)

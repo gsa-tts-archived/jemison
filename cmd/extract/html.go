@@ -38,6 +38,7 @@ func extractHtml(obj *kv.S3JSON) {
 
 	raw_key := obj.Key.Copy()
 	raw_key.Extension = util.Raw
+	zap.L().Debug("looking up raw key", zap.String("raw_key", raw_key.Render()))
 	s3.S3ToFile(raw_key, rawFilename)
 	rawFile, err := os.Open(rawFilename)
 	if err != nil {
