@@ -13,11 +13,9 @@ import (
 	"github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/gin-gonic/gin"
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
-var serveStorage kv.S3
 var Databases sync.Map //map[string]*sql.DB
 
 var ThisServiceName = "serve"
@@ -72,19 +70,8 @@ func CheckS3ForDatabases(storage *kv.S3) {
 	// Why? Because we have the machinery in the worker, and it
 	// might as well do the work that way.
 	for _, obj := range objects {
-		zap.L().Info("downloading database at startup",
-			zap.String("object_key", obj.Key), zap.Int64("size", obj.Size))
-		ctx, tx := common.CtxTx(servePool)
-		serveClient.InsertTx(ctx, tx, common.ServeArgs{
-			Filename: obj.Key,
-		}, &river.InsertOpts{Queue: "serve"})
-		if err := tx.Commit(ctx); err != nil {
-			tx.Rollback(ctx)
-			zap.L().Panic("cannot commit insert tx",
-				zap.String("filename", obj.Key))
-		}
+		queueing.InsertServe(obj.Key)
 	}
-
 }
 
 func main() {
