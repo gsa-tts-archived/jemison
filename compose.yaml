@@ -304,6 +304,18 @@ services:
       jemison-queues-db:
         condition: service_healthy
 
+  test.gov:
+    image: jemison/dev
+    container_name: test.gov
+    restart: always
+    ports: 
+      - 11112:80
+    entrypoint: python3 -m http.server 80 --directory /home/vcap/app/testing/sherlock/sherlock-holm.es
+    volumes:
+      - type: bind
+        source: .
+        target: /home/vcap/app
+
 volumes:
   jemison-queues-db-vol:
   minio-data:

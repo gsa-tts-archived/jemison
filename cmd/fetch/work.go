@@ -53,13 +53,6 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			return nil
 		}
 
-		// FIXME
-		// We can insert _key automatically into every map, letting the library
-		// handle this based on host/path
-		// key := util.CreateS3Key(job.Args.Host, job.Args.Path, "json").Render()
-		// page_json["key"] = key
-		// We can always do it ourselves for special cases, but this feels better.
-
 		cloudmap := kv.NewFromMap(
 			ThisServiceName,
 			util.ToScheme(job.Args.Scheme),
@@ -126,7 +119,8 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	zap.L().Info("fetched",
 		zap.String("scheme", job.Args.Scheme),
 		zap.String("host", job.Args.Host),
-		zap.String("path", job.Args.Path))
+		zap.String("path", job.Args.Path),
+	)
 
 	return nil
 }

@@ -144,6 +144,7 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 		"raw":            key.Render(),
 		"sha1":           fmt.Sprintf("%x", theSHA),
 		"content-length": fmt.Sprintf("%d", bytesRead),
+		"scheme":         job.Args.Scheme,
 		"host":           job.Args.Host,
 		"path":           job.Args.Path,
 	}

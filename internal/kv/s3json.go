@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 
 	minio "github.com/minio/minio-go/v7"
 	"github.com/tidwall/gjson"
@@ -102,6 +103,14 @@ func (s3json *S3JSON) IsEmpty() bool {
 	return s3json.empty
 }
 
+func (s3json *S3JSON) URL() *url.URL {
+	return &url.URL{
+		Scheme: s3json.Key.Scheme.String(),
+		Host:   s3json.Key.Host,
+		Path:   s3json.Key.Path,
+	}
+}
+
 // Save() will do a `Put` of the JSON to S3.
 // BUG(jadudm): handle errors in store gracefully
 func (s3json *S3JSON) Save() error {
@@ -148,8 +157,6 @@ func (s3json *S3JSON) Load() error {
 		}
 	}(object)
 
-	zap.L().Debug("retrieved S3 object", zap.String("key", key))
-
 	if err != nil {
 		zap.L().Error("could not retrieve object",
 			zap.String("bucket_name", s3json.S3.Bucket.CredentialString("bucket")),
@@ -158,7 +165,10 @@ func (s3json *S3JSON) Load() error {
 		return err
 	}
 
+	zap.L().Debug("retrieved S3 object", zap.String("key", key))
+
 	raw, err := io.ReadAll(object)
+
 	if err != nil {
 		zap.L().Error("could not read object bytes",
 			zap.String("bucket_name", s3json.S3.Bucket.CredentialString("bucket")),
@@ -194,7 +204,13 @@ func (s3json *S3JSON) GetBool(gjson_path string) bool {
 }
 
 func (s3json *S3JSON) Set(sjson_path string, value string) {
-	sjson.SetBytes(s3json.raw, sjson_path, value)
+	b, err := sjson.SetBytes(s3json.raw, sjson_path, value)
+	if err != nil {
+		zap.L().Error("could not set JSON path in Set()",
+			zap.String("sjson_path", sjson_path),
+			zap.String("value", value))
+	}
+	s3json.raw = b
 }
 
 // type Storage interface {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"strings"
 
@@ -9,6 +8,7 @@ import (
 	kv "github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/google/uuid"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
@@ -31,24 +31,38 @@ func scrape_sel(sel *goquery.Selection) string {
 }
 
 func extractHtml(obj *kv.S3JSON) {
-	rawFilename := obj.GetString("raw")
-	s3 := kv.NewS3(ThisServiceName)
-	s3.S3ToFile(obj.Key, rawFilename)
+	// rawFilename := obj.GetString("raw")
+	rawFilename := uuid.NewString()
+	// The file is not in this service... it's in the `fetch` bucket.`
+	s3 := kv.NewS3("fetch")
+
+	raw_key := obj.Key.Copy()
+	raw_key.Extension = util.Raw
+	s3.S3ToFile(raw_key, rawFilename)
 	rawFile, err := os.Open(rawFilename)
 	if err != nil {
 		zap.L().Error("cannot open tempfile", zap.String("filename", rawFilename))
 	}
-	defer rawFile.Close()
-
-	content := ""
+	defer func() {
+		rawFile.Close()
+		os.Remove(rawFilename)
+	}()
 
 	doc, err := goquery.NewDocumentFromReader(rawFile)
 	if err != nil {
-		log.Println("HTML cannot create new document")
-		log.Fatal(err)
+		zap.L().Fatal("cannot create new doc from raw file")
 	}
 
-	for _, elem := range [...]string{
+	// fi, err := os.Stat(rawFilename)
+	// if err != nil {
+	// 	zap.L().Fatal(err.Error())
+	// }
+	// // get the size
+	// size := fi.Size()
+	// zap.L().Debug("size", zap.Int64("size", size))
+
+	content := ""
+	for _, elem := range []string{
 		"p",
 		"li",
 		"td",
@@ -70,7 +84,9 @@ func extractHtml(obj *kv.S3JSON) {
 		"h7",
 		"h8",
 	} {
+		// zap.L().Debug("looking for", zap.String("elem", elem))
 		doc.Find(elem).Each(func(ndx int, sel *goquery.Selection) {
+			// zap.L().Debug("element", zap.String("sel", scrape_sel(sel)))
 			content += scrape_sel(sel)
 		})
 	}
@@ -78,7 +94,6 @@ func extractHtml(obj *kv.S3JSON) {
 	// Store everything
 	copied_key := obj.Key.Copy()
 	copied_key.Extension = util.JSON
-	obj.Set("content", util.RemoveStopwords(content))
 	// This is because we were holding an object from the "fetch" bucket.
 	new_obj := kv.NewFromBytes(
 		ThisServiceName,
@@ -86,6 +101,8 @@ func extractHtml(obj *kv.S3JSON) {
 		obj.Key.Host,
 		obj.Key.Path,
 		obj.GetJSON())
+	// zap.L().Debug("content check", zap.String("content", util.RemoveStopwords(content)))
+	new_obj.Set("content", util.RemoveStopwords(content))
 	new_obj.Save()
 
 	// Enqueue next steps

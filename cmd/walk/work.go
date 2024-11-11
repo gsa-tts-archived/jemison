@@ -47,6 +47,14 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 	}
 	defer func() { tFile.Close(); os.Remove(tempFilename) }()
 
+	fi, err := os.Stat(tempFilename)
+	if err != nil {
+		zap.L().Fatal(err.Error())
+	}
+	// get the size
+	size := fi.Size()
+	zap.L().Debug("tempFilename size", zap.Int64("size", size))
+
 	doc, err := goquery.NewDocumentFromReader(tFile)
 	if err != nil {
 		log.Println("WALK cannot convert to document")
@@ -67,14 +75,14 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 		if exists {
 			link_to_crawl, err := is_crawlable(s3json, link)
 			if err != nil {
-				log.Println(err)
+				zap.L().Warn("error checking crawlability", zap.String("url", link))
 			} else {
 				if _, ok := expirable_cache.Get(link_to_crawl); ok {
 					log.Println("CACHE HIT", link)
 				} else {
-					if strings.HasPrefix(link_to_crawl, "https") {
-						//log.Println("YES", e.JSON["host"], link_to_crawl)
-						// Don't hit these again
+					// CRAWL BOTH HTTPS AND HTTP?
+					if strings.HasPrefix(link_to_crawl, "http") {
+						zap.L().Debug("link to crawl", zap.String("url", link_to_crawl))
 						expirable_cache.Set(link_to_crawl, 0, 0)
 						link_set[link_to_crawl] = true
 					}
@@ -125,26 +133,26 @@ func walk_html(s3json *kv.S3JSON) {
 	}
 }
 
-func to_link(s3json *kv.S3JSON) string {
-	// FIXME: stop assuming the scheme...
-	u, _ := url.Parse(
-		"https://" +
-			s3json.GetString("host") +
-			"/" +
-			s3json.GetString("path"))
-	return u.String()
-}
+// func to_link(s3json *kv.S3JSON) string {
+// 	// FIXME: stop assuming the scheme...
+// 	u, _ := url.Parse(
+// 		s3json.GetString("scheme") +
+// 			"://" +
+// 			s3json.GetString("host") +
+// 			"/" +
+// 			s3json.GetString("path"))
+// 	return u.String()
+// }
 
 func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
-	host := s3json.GetString("host")
-	// FIXME: we should have the scheme in the host?
-	scheme := "https"
-	path := s3json.GetString("path")
 	base := url.URL{
-		Scheme: scheme,
-		Host:   host,
-		Path:   path,
+		Scheme: s3json.GetString("scheme"),
+		Host:   s3json.GetString("host"),
+		Path:   s3json.GetString("path"),
 	}
+
+	zap.L().Debug("considering the url",
+		zap.String("url", link))
 
 	// Is the URL at least length 1?
 	if len(link) < 1 {
@@ -152,9 +160,12 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 	}
 
 	// Is it a relative URL? Then it is OK.
-	if string([]rune(link)[0]) == "/" {
+	if strings.HasPrefix(link, "/") || !strings.HasPrefix(link, "http") {
 		u, _ := url.Parse(link)
 		u = base.ResolveReference(u)
+		zap.L().Debug("looks good to crawl",
+			zap.String("base", base.String()),
+			zap.String("resolved", u.String()))
 		return u.String(), nil
 	}
 
@@ -183,8 +194,9 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 	// FIXME: There seem to be whitespace URLs coming through. I don't know why.
 	// This could be revisited, as it is expensive.
 	// Do we still have garbage?
-	if !bytes.HasSuffix([]byte(lu.String()), []byte("https")) {
-		return "", errors.New("crawler: link does not start with https")
+	if !bytes.HasPrefix([]byte(lu.String()), []byte("https")) ||
+		!bytes.HasPrefix([]byte(lu.String()), []byte("http")) {
+		return "", errors.New("crawler: link does not start with http(s)")
 	}
 	// Is it pure whitespace?
 	if len(strings.Replace(lu.String(), " ", "", -1)) < 5 {
@@ -203,6 +215,11 @@ func trimSuffix(s, suffix string) string {
 }
 
 func (w *WalkWorker) Work(ctx context.Context, job *river.Job[common.WalkArgs]) error {
+	zap.L().Debug("walk job",
+		zap.String("scheme", job.Args.Scheme),
+		zap.String("host", job.Args.Host),
+		zap.String("path", job.Args.Path),
+	)
 	s3json := kv.NewEmptyS3JSON("fetch",
 		util.ToScheme(job.Args.Scheme),
 		job.Args.Host,
@@ -214,6 +231,7 @@ func (w *WalkWorker) Work(ctx context.Context, job *river.Job[common.WalkArgs]) 
 	// FIXME: figure out if the scheme ends up in the JSON
 	expirable_cache.Set(s3json.Key.Render(), 0, 0)
 
+	zap.L().Debug("starting to work walk on", zap.String("url", s3json.URL().String()))
 	go_for_a_walk(s3json)
 
 	zap.L().Debug("walk done", zap.String("key", s3json.Key.Render()))
