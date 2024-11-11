@@ -11,7 +11,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512m
     build: 
       context: .
       dockerfile: ./cmd/extract/Dockerfile
@@ -39,7 +39,7 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
-    restart: always
+    restart: no
 
   #-----------------------------------------------------
   # fetch :10002
@@ -114,7 +114,7 @@ services:
       DEBUG_LEVEL: "debug"
       GIN_MODE: debug
       PORT: 8888
-    restart: always
+    restart: no
 
   #-----------------------------------------------------
   # serve :10000
@@ -147,7 +147,7 @@ services:
       jemison-queues-db:
         condition: service_healthy
     healthcheck:
-      test: curl --fail http://serve:8888/heartbeat || exit 1
+      test: curl --fail http://serve:8888/api/heartbeat || exit 1
       interval: 60s
       timeout: 180s
       retries: 3
@@ -157,7 +157,7 @@ services:
       DEBUG_LEVEL: "warn"
       PORT: 8888
       GIN_MODE: release
-    restart: always
+    restart: no
 
   #-----------------------------------------------------
   # validate :10004
@@ -192,7 +192,7 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
-    restart: always
+    restart: no
 
   #-----------------------------------------------------
   # walk :10005
@@ -227,7 +227,7 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
-    restart: always
+    restart: no
 
   #-----------------------------------------------------
   # river queue watcher :11111
@@ -304,6 +304,12 @@ services:
       jemison-queues-db:
         condition: service_healthy
 
+  #-----------------------------------------------------
+  # test.gov :11112
+  #-----------------------------------------------------
+  # This is a python on-liner that serves up the complete
+  # works of Sherlock Holmes. It serves as a pathological
+  # crawling target for local testing.
   test.gov:
     image: jemison/dev
     container_name: test.gov
@@ -315,7 +321,14 @@ services:
       - type: bind
         source: .
         target: /home/vcap/app
-
+    external_links:
+      - test.gov:t2.gov
+    networks:
+      default:
+        aliases:
+          - t1.gov
+          - t2.gov
+          - t3.gov
 volumes:
   jemison-queues-db-vol:
   minio-data:
