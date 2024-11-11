@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -8,7 +9,10 @@ import (
 	common "github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/queueing"
+	"github.com/GSA-TTS/jemison/internal/sqlite/pg_schemas"
 	"github.com/gin-gonic/gin"
+
+	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -39,6 +43,35 @@ func CrawlRequestHandler(c *gin.Context) {
 	}
 }
 
+func JobCountHandler(c *gin.Context) {
+	ctx := context.Background()
+	db_url, _ := env.Env.GetDatabaseUrl(env.WorkingDatabase)
+
+	conn, err := pgx.Connect(ctx, db_url)
+	if err != nil {
+	}
+	defer conn.Close(ctx)
+
+	queries := pg_schemas.New(conn)
+	counts := make(map[string]map[string]int64)
+	for _, service := range []string{"fetch", "extract", "pack", "validate", "walk", "serve"} {
+		service_counts := make(map[string]int64)
+		for _, state := range []string{"completed", "running", "retryable"} {
+			count, _ := queries.CountJobs(ctx, pg_schemas.CountJobsParams{
+				Kind:  service,
+				State: state,
+			})
+			service_counts[state] = count
+		}
+		counts[service] = service_counts
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"counts": counts,
+	})
+}
+
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
 	InitializeQueues()
@@ -49,6 +82,7 @@ func main() {
 	{
 		v1.GET("/heartbeat", common.Heartbeat)
 		v1.PUT("/crawl", CrawlRequestHandler)
+		v1.GET("/jobs", JobCountHandler)
 	}
 
 	log.Println("environment initialized")
