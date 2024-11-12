@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/GSA-TTS/jemison/cmd/admin-cli/pages"
 	"github.com/spf13/viper"
 )
 
@@ -24,7 +25,7 @@ func main() {
 		log.Fatal("Could not read config.")
 	}
 
-	g := NewGui()
+	g := pages.NewGui()
 	g.MainPage("main")
 	g.CrawlPage("crawl")
 	g.MonitorJobQueues("monitor")
