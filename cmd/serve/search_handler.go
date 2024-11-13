@@ -19,6 +19,7 @@ import (
 // FIXME This becomes the API search interface
 type ServeRequestInput struct {
 	Host  string `json:"host"`
+	Path  string `json:"path"`
 	Terms string `json:"terms"`
 }
 
@@ -65,6 +66,7 @@ func permutate[T any](data []T) [][]T {
 // 6. Interleave, and return
 
 func permuteSubqueries(queries *schemas.Queries,
+	path string,
 	improved_terms []string,
 	results_per_query int64) []schemas.SearchSiteIndexSnippetsRow {
 	permuted := permutate(improved_terms)
@@ -78,6 +80,7 @@ func permuteSubqueries(queries *schemas.Queries,
 	for _, q := range shorter_queries {
 		res2, _ := queries.SearchSiteIndexSnippets(context.Background(), schemas.SearchSiteIndexSnippetsParams{
 			Text:  strings.Join(q, " "),
+			Path:  path,
 			Limit: results_per_query,
 		})
 		combined = append(combined, res2)
@@ -145,9 +148,11 @@ func runQuery(sri ServeRequestInput, limit int) (
 	db.SetMaxIdleConns(100)
 	db.SetConnMaxLifetime(10000 * time.Millisecond)
 
+	path := sri.Path + "%"
 	queries := schemas.New(db)
 	res, err := queries.SearchSiteIndexSnippets(context.Background(), schemas.SearchSiteIndexSnippetsParams{
 		Text:  improved_terms_string, //sri.Terms,
+		Path:  path,
 		Limit: results_per_query,
 	})
 	db.Close()
@@ -157,7 +162,7 @@ func runQuery(sri ServeRequestInput, limit int) (
 	//zap.L().Info("search results", zap.Int("count", len(res)))
 
 	if (len(res) < 2) && (len(improved_terms) > 1) {
-		res = permuteSubqueries(queries, improved_terms, results_per_query)
+		res = permuteSubqueries(queries, path, improved_terms, results_per_query)
 	}
 
 	duration := time.Since(start)
@@ -181,6 +186,7 @@ func SearchHandler(c *gin.Context) {
 	if err != nil {
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"result":  "err",
+			"message": err.Error(),
 			"elapsed": duration,
 			"results": nil,
 		})

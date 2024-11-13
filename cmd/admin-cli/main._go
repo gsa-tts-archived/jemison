@@ -1,0 +1,28 @@
+package main
+
+import (
+	"log"
+
+	"github.com/GSA-TTS/jemison/cmd/admin-cli/pages"
+	"github.com/spf13/viper"
+)
+
+func main() {
+	viper.SetConfigName("config")
+	viper.SetConfigType("json")
+	// For local execution
+	viper.AddConfigPath(".")
+	// This path is for when run under the debugger
+	viper.AddConfigPath("cmd/admin-cli")
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatal("Could not read config.")
+	}
+
+	g := pages.NewGui()
+	g.MainPage("main")
+	g.CrawlPage("crawl")
+	g.MonitorJobQueues("monitor")
+
+	g.Run()
+}

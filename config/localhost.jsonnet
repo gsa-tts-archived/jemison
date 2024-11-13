@@ -1,5 +1,4 @@
 local A = import 'admin.libsonnet';
-local ACLI = import 'admin_cli.libsonnet';
 local E = import 'extract.libsonnet';
 local F = import 'fetch.libsonnet';
 local P = import 'pack.libsonnet';
@@ -19,7 +18,6 @@ local VCAP = import 'vcap_services.libsonnet';
   USER: 'vcap',
   EIGHT_SERVICES: {
     'user-provided': [
-      ACLI.localhost,
       A.container,
       E.container,
       F.container,

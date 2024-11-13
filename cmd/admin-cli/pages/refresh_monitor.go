@@ -27,19 +27,24 @@ func Ping(wait chan int) {
 	}
 }
 
-func RefreshMonitor(wait chan int, f *tview.Flex, g *GUI) {
-
+func RefreshMonitor(wait chan int, mainflex *tview.Flex, g *GUI) {
+	first := true
 	for {
 
-		if is_refreshing {
-			f.Clear()
+		if first || is_refreshing {
+			first = false
+			mainflex.Clear()
+			upperflex := tview.NewFlex()
+			upperflex.SetDirection(tview.FlexColumn)
+			mainflex.AddItem(upperflex, 0, 1, true)
+
 			views := make([]*tview.TextView, 0)
 
 			for range 3 {
 				t := tview.NewTextView()
 				//t.SetChangedFunc(func() { g.App.Draw() })
 				t.SetBorder(true)
-				f.AddItem(t, 0, 1, false)
+				upperflex.AddItem(t, 0, 1, false)
 				views = append(views, t)
 			}
 
@@ -57,6 +62,22 @@ func RefreshMonitor(wait chan int, f *tview.Flex, g *GUI) {
 				return true
 			})
 		}
+
+		t := tview.NewTextView()
+		t.SetBorder(true)
+		t.SetDynamicColors(true)
+
+		fmt.Fprintf(t, "Press [yellow]Enter[white] to toggle refresh, [yellow](m)[white] for main menu.\n")
+		onoff := ""
+
+		if is_refreshing {
+			onoff = "on"
+		} else {
+			onoff = "off"
+		}
+		fmt.Fprintf(t, "Refresh is [green]"+onoff+"[white]\n")
+		mainflex.AddItem(t, 5, 1, false)
+
 		g.App.Draw()
 		<-wait
 	}
@@ -66,9 +87,14 @@ func (g *GUI) MonitorJobQueues(name string) {
 	var wait = make(chan int, 1)
 
 	flex := tview.NewFlex().SetFullScreen(true)
+	flex.SetDirection(tview.FlexRow)
+
 	flex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEnter {
+		switch e := event.Key(); true {
+		case e == tcell.KeyEnter:
 			is_refreshing = !is_refreshing
+		case tcell.Key(event.Rune()) == 'm':
+			g.Pages.SwitchToPage(fmt.Sprintf("page-%d", g.PagesByName["main"]))
 		}
 		return nil
 	})

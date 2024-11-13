@@ -6,6 +6,7 @@ clean:
 .PHONY: generate
 generate:
 	cd internal/sqlite ; sqlc generate || exit 1
+	cd internal/postgres ; sqlc generate || exit 1
 
 .PHONY: config
 config:
@@ -13,9 +14,9 @@ config:
 
 docker: 
 	docker build -t jemison/dev -f Dockerfile.base .
-	
+
 .PHONY: build
-build: clean config generate 
+build: clean config generate
 	cd cmd/admin ; make build
 	cd cmd/extract ; make build
 	cd cmd/fetch ; make build

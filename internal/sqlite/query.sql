@@ -20,8 +20,18 @@ SELECT * FROM site_index
 SELECT path, snippet(site_index, 2, '<b>', '</b>', '...', 16)
     FROM site_index 
     WHERE text MATCH ?
+    AND path LIKE ?
     ORDER BY rank
     LIMIT ?;
+
+-- name: SearchSiteIndexSnippetsWithPath :many
+SELECT path, snippet(site_index, 2, '<b>', '</b>', '...', 16)
+    FROM site_index 
+    WHERE text MATCH ?
+    AND path LIKE ?
+    ORDER BY rank
+    LIMIT ?;
+
 
 -- name: CountSiteIndex :one
 SELECT count(*) FROM site_index;

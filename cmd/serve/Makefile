@@ -12,6 +12,7 @@ generate:
 
 build: generate
 	go build --tags fts5 -buildvcs=false -o service.exe
+	# cd hostsets ; make
 
 clean:
 	rm -f fetch.exe
