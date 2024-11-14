@@ -307,6 +307,27 @@ services:
       start_period: 80s  
 
   #-----------------------------------------------------
+  # postgres/jemison-db :6543
+  #-----------------------------------------------------
+  jemison-db:
+    image: postgres:16-alpine
+    ports:
+      - 6543:5432
+    volumes:
+      - jemison-db-vol:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+    healthcheck:
+      # test: ["CMD-SHELL", "pg_isready", "-d", "postgres", "-U", "postgres"]
+      test: ["CMD-SHELL", "pg_isready -d postgres -U postgres"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s  
+
+  #-----------------------------------------------------
   # minio :9001
   #-----------------------------------------------------
   minio:
@@ -351,25 +372,27 @@ services:
   # This is a python on-liner that serves up the complete
   # works of Sherlock Holmes. It serves as a pathological
   # crawling target for local testing.
-  test.gov:
-    image: jemison/dev
-    container_name: test.gov
-    restart: always
-    ports: 
-      - 11112:80
-    entrypoint: python3 -m http.server 80 --directory /home/vcap/app/testing/sherlock/sherlock-holm.es
-    volumes:
-      - type: bind
-        source: .
-        target: /home/vcap/app
-    external_links:
-      - test.gov:t2.gov
-    networks:
-      default:
-        aliases:
-          - t1.gov
-          - t2.gov
-          - t3.gov
+  # test.gov:
+  #   image: jemison/dev
+  #   container_name: test.gov
+  #   restart: always
+  #   ports: 
+  #     - 11112:80
+  #   entrypoint: python3 -m http.server 80 --directory /home/vcap/app/testing/sherlock/sherlock-holm.es
+  #   volumes:
+  #     - type: bind
+  #       source: .
+  #       target: /home/vcap/app
+  #   external_links:
+  #     - test.gov:t2.gov
+  #   networks:
+  #     default:
+  #       aliases:
+  #         - t1.gov
+  #         - t2.gov
+  #         - t3.gov
+  
 volumes:
   jemison-queues-db-vol:
+  jemison-db-vol:
   minio-data:

@@ -5,8 +5,7 @@ clean:
 
 .PHONY: generate
 generate:
-	cd internal/sqlite ; sqlc generate || exit 1
-	cd internal/postgres ; sqlc generate || exit 1
+	cd internal/sqlite ; make generate
 
 .PHONY: config
 config:

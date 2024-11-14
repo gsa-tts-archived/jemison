@@ -3,12 +3,14 @@ package kv
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/util"
 	minio "github.com/minio/minio-go/v7"
+	"github.com/tidwall/sjson"
 	"go.uber.org/zap"
 )
 
@@ -32,7 +34,7 @@ func NewS3(bucket_name string) *S3 {
 func (s3 *S3) FileToS3(key *util.Key, local_filename string, mime_type string) error {
 	reader, err := os.Open(local_filename)
 	if err != nil {
-		log.Fatal("KV cannot open file", local_filename)
+		log.Fatal("FileToS3 cannot open file ", local_filename)
 	}
 	fi, err := reader.Stat()
 	if err != nil {
@@ -46,7 +48,7 @@ func (s3 *S3) FileToS3(key *util.Key, local_filename string, mime_type string) e
 func (s3 *S3) FileToS3Path(key string, local_filename string, mime_type string) error {
 	reader, err := os.Open(local_filename)
 	if err != nil {
-		log.Fatal("KV cannot open file", local_filename)
+		log.Fatal("FileToS3Path cannot open file ", local_filename)
 	}
 	fi, err := reader.Stat()
 	if err != nil {
@@ -91,6 +93,53 @@ func (s3 *S3) S3PathToFile(path string, local_filename string) error {
 		return err
 	}
 	return nil
+}
+
+func (s3 *S3) S3PathToS3JSON(key string) (*S3JSON, error) {
+
+	// The object has a channel interface that we have to empty.
+	ctx := context.Background()
+	object, err := s3.MinioClient.GetObject(
+		ctx,
+		s3.Bucket.CredentialString("bucket"),
+		key,
+		minio.GetObjectOptions{})
+
+	// https://rezakhademix.medium.com/defer-functions-in-golang-common-mistakes-and-best-practices-96eacdb551f0
+	defer func(obj *minio.Object) {
+		err := obj.Close()
+		if err != nil {
+			zap.L().Error("deferred close on S3 object encountered error",
+				zap.String("key", key))
+		}
+	}(object)
+
+	if err != nil {
+		zap.L().Error("could not retrieve object",
+			zap.String("bucket_name", s3.Bucket.CredentialString("bucket")),
+			zap.String("key", key),
+			zap.String("error", err.Error()))
+		return nil, err
+	}
+
+	zap.L().Debug("retrieved S3 object", zap.String("key", key))
+
+	raw, err := io.ReadAll(object)
+
+	if err != nil {
+		zap.L().Error("could not read object bytes",
+			zap.String("bucket_name", s3.Bucket.CredentialString("bucket")),
+			zap.String("key", key),
+			zap.String("error", err.Error()))
+		return nil, err
+	}
+
+	s3json := NewS3JSON("extract")
+	s3json.raw = raw
+	current_mime_type := s3json.GetString("content-type")
+	sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
+	s3json.empty = false
+	return s3json, nil
 }
 
 // Lists objects in the bucket, returning keys and sizes.

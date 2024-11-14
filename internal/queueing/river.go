@@ -15,10 +15,10 @@ func InitializeRiverQueues() {
 	RunRiverMigrator()
 
 	// Set up a pool
-	connection_string, err := env.Env.GetDatabaseUrl(env.WorkingDatabase)
+	connection_string, err := env.Env.GetDatabaseUrl(env.QueueDatabase)
 	if err != nil {
 		zap.L().Fatal("cannot find db connection string",
-			zap.String("database", env.WorkingDatabase))
+			zap.String("database", env.QueueDatabase))
 	}
 
 	ctx := context.Background()
@@ -42,10 +42,10 @@ func InitializeRiverQueues() {
 func RunRiverMigrator() {
 	ctx := context.Background()
 	// Set up a pool
-	connection_string, err := env.Env.GetDatabaseUrl(env.WorkingDatabase)
+	connection_string, err := env.Env.GetDatabaseUrl(env.QueueDatabase)
 
 	if err != nil {
-		log.Println("RIVER cannot find connection string for", env.WorkingDatabase)
+		log.Println("RIVER cannot find connection string for", env.QueueDatabase)
 		log.Fatal(err)
 	}
 	pool, err := pgxpool.New(ctx, connection_string)

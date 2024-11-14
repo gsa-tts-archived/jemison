@@ -11,6 +11,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// WARNING
+// This doesn't work. It was left in the tree for reference.
+// It may want to come out until such time as it wants to be tackled.
 func extractJavascriptHTML(obj kv.Object) string {
 
 	// initialize a chrome instance

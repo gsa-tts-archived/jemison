@@ -19,15 +19,15 @@ local parameters = [
   ],
   [
     'polite_sleep',
-    { cf: 2, container: 0 },
+    { cf: 2, container: 1 },
   ],
   [
     'polite_cache_default_expiration',
-    { cf: B.hours(10), container: B.minutes(10) },
+    { cf: B.hours(10), container: B.hours(10) },
   ],
   [
     'polite_cache_cleanup_interval',
-    { cf: B.hours(3), container: B.minutes(5) },
+    { cf: B.hours(3), container: B.minutes(30) },
   ],
 ];
 

@@ -26,10 +26,10 @@ func GetPool(database_url string) (context.Context, *pgxpool.Pool) {
 
 func CommonQueueInit() (context.Context, *pgxpool.Pool, *river.Workers) {
 	var err error
-	database_url, err := env.Env.GetDatabaseUrl(env.WorkingDatabase)
+	database_url, err := env.Env.GetDatabaseUrl(env.QueueDatabase)
 	if err != nil {
 		zap.L().Error("unable to get connection string; exiting",
-			zap.String("database", env.WorkingDatabase),
+			zap.String("database", env.QueueDatabase),
 		)
 		os.Exit(1)
 	}

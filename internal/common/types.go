@@ -2,6 +2,16 @@ package common
 
 import "net/http"
 
+type EntreeArgs struct {
+	Scheme string `json:"scheme"`
+	Host   string `json:"host"`
+	Path   string `json:"path"`
+}
+
+func (EntreeArgs) Kind() string {
+	return "entree"
+}
+
 type ExtractArgs struct {
 	Scheme string `json:"scheme"`
 	Host   string `json:"host"`

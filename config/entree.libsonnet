@@ -1,33 +1,21 @@
 local B = import 'base.libsonnet';
-local service = 'walk';
+local service = 'entree';
 
 local credentials = [
   [
     'port',
-    { cf: 8080, container: 8888 },
+    { cf: 8080, container: 8888, localhost: 8888 },
   ],
 ];
 
 local parameters = [
   [
     'workers',
-    { cf: 10, container: 10 },
+    { cf: 10, container: 10, localhost: 10},
   ],
   [
     'debug_level',
-    { cf: 'warn', container: 'into' },
-  ],
-  [
-    'cache-ttl',
-    { cf: B.minutes(120), container: B.minutes(120) },
-  ],
-  [
-    'polite_cache_default_expiration',
-    { cf: B.hours(10), container: B.hours(10) },
-  ],
-  [
-    'polite_cache_cleanup_interval',
-    { cf: B.minutes(120), container: B.minutes(120) },
+    { cf: 'warn', container: 'debug', localhost: 'debug'},
   ],
 ];
 

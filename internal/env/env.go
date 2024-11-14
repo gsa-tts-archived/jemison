@@ -16,7 +16,8 @@ var Env *env
 // Constants for the attached services
 // These reach into the VCAP_SERVICES and are
 // defined in the Terraform.
-const WorkingDatabase = "jemison-queues-db"
+const QueueDatabase = "jemison-queues-db"
+const DB1 = "jemison-db"
 
 var validBucketNames = []string{
 	"extract",
@@ -97,8 +98,8 @@ func InitGlobalEnv(this_service string) {
 	viper.AddConfigPath("/home/vcap/app/config")
 	viper.SetConfigType("yaml")
 
-	// log.Println("ENV is", os.Getenv("ENV"))
-	// log.Println("ENV", IsContainerEnv(), IsLocalTestEnv(), IsCloudEnv())
+	log.Println("ENV is", os.Getenv("ENV"))
+	log.Println("ENV", "LOCAL", IsLocalTestEnv(), "CONT", IsContainerEnv(), "CLOUD", IsCloudEnv())
 
 	if IsContainerEnv() {
 		log.Println("IsContainerEnv")
@@ -163,6 +164,10 @@ func InitGlobalEnv(this_service string) {
 	Env.ObjectStores = Env.VcapServices["s3"]
 	Env.Databases = Env.VcapServices["aws-rds"]
 	Env.UserServices = Env.EightServices["user-provided"]
+
+	if IsLocalTestEnv() {
+		log.Println(Env.Databases)
+	}
 
 	SetupLogging(this_service)
 	SetGinReleaseMode(this_service)

@@ -21,14 +21,12 @@ type PackTable struct {
 	Context  context.Context
 	DB       *sql.DB
 	Queries  *search_db.Queries
-	JSON     []byte
 }
 
-func CreatePackTable(db_filename string, JSON []byte) (*PackTable, error) {
+func CreatePackTable(db_filename string) (*PackTable, error) {
 
 	pt := PackTable{}
 	pt.Filename = db_filename
-	pt.JSON = JSON
 
 	ctx := context.Background()
 
@@ -40,8 +38,10 @@ func CreatePackTable(db_filename string, JSON []byte) (*PackTable, error) {
 	db.Exec("pragma synchronous = normal")
 	db.Exec("pragma temp_store = file")
 	db.Exec("pragma temp_store_directory = /home/vcap/app/tmp")
-	db.Exec("pragma mmap_size = 30000000000")
-	db.Exec("pragma page_size = 32768")
+	// We don't have much RAM. No.
+	//db.Exec("pragma mmap_size = 30000000000")
+	// Unsure how this effects final filesize or performance on read.
+	// db.Exec("pragma page_size = 32768")
 
 	if err != nil {
 		return nil, err
@@ -66,7 +66,8 @@ func (pt *PackTable) PrepForNetwork() {
 	db, _ := sql.Open("sqlite3", pt.Filename)
 	pt.DB = db
 	pt.DB.ExecContext(pt.Context, "PRAGMA wal_checkpoint(TRUNCATE)")
-	pt.DB.ExecContext(pt.Context, "VACUUM")
+	pt.DB.ExecContext(pt.Context, "PRAGMA vacuum")
+	pt.DB.ExecContext(pt.Context, "PRAGMA optimize")
 	pt.DB.Close()
 }
 

@@ -138,11 +138,9 @@ func (s3json *S3JSON) Load() error {
 			s3json.S3.Bucket.Name, s3json.Key.Host, s3json.Key.Path)
 	}
 
-	// GetObject(ctx context.Context, bucketName, objectName string, opts GetObjectOptions) (*Object, error)
-	// func (s3 *S3) Get(key string) (Object, error) {
-	ctx := context.Background()
 	key := s3json.Key.Render()
 	// The object has a channel interface that we have to empty.
+	ctx := context.Background()
 	object, err := s3json.S3.MinioClient.GetObject(
 		ctx,
 		s3json.S3.Bucket.CredentialString("bucket"),

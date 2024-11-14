@@ -45,7 +45,7 @@ func CrawlRequestHandler(c *gin.Context) {
 
 func JobCountHandler(c *gin.Context) {
 	ctx := context.Background()
-	db_url, _ := env.Env.GetDatabaseUrl(env.WorkingDatabase)
+	db_url, _ := env.Env.GetDatabaseUrl(env.QueueDatabase)
 
 	conn, err := pgx.Connect(ctx, db_url)
 	if err != nil {
