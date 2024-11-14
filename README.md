@@ -46,6 +46,20 @@ make up
 
 The `up` compiles all of the services, generates the database API, unpacks the USWDS assets into place, and launches the stack.
 
+## containerized build
+
+```
+make docker
+```
+
+to start, and 
+
+```
+make macup
+```
+
+to build and run the applications within a containerized environment. This runs the build in a Linux context (against the image used by CF/cloud.gov).
+
 ## interacting with components
 
 An API key is hard-coded into the `compose.yaml` file; it is `lego`. Obviously, this is not suitable for production use.

@@ -8,7 +8,7 @@ import (
 
 	common "github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
-	pg_schemas "github.com/GSA-TTS/jemison/internal/postgres/schemas"
+	"github.com/GSA-TTS/jemison/internal/postgres/pg_schemas"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/gin-gonic/gin"
 

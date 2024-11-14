@@ -6,6 +6,7 @@ clean:
 .PHONY: generate
 generate:
 	cd internal/sqlite ; make generate
+	cd internal/postgres ; make generate
 
 .PHONY: config
 config:
@@ -13,6 +14,7 @@ config:
 
 docker: 
 	docker build -t jemison/dev -f Dockerfile.base .
+	docker build -t jemison/build -f Dockerfile.build .
 
 .PHONY: build
 build: clean config generate
@@ -28,6 +30,11 @@ build: clean config generate
 
 .PHONY: up
 up: build
+	docker compose up
+
+.PHONY: 
+macup:
+	docker run -v ${PWD}:/app -t jemison/build
 	docker compose up
 
 .PHONY: run

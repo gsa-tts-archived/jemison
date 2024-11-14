@@ -1,0 +1,5 @@
+FROM jemison/dev
+
+WORKDIR /app
+
+ENTRYPOINT ["make", "build"]

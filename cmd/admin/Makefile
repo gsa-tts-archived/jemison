@@ -9,8 +9,9 @@ check:
 
 generate:
 	cd ../../internal/sqlite ; sqlc generate || exit 1
+	cd ../../internal/postgres ; sqlc generate || exit 1
 
-build: generate
+build: clean generate
 	go build -buildvcs=false -o service.exe
 
 clean:

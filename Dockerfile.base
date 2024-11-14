@@ -4,21 +4,28 @@ RUN apt-get update \
     && apt-get install -y \
     build-essential \
     curl \
-    golang-go \
+    jsonnet \
+    libpoppler-dev \ 
     libpoppler-glib-dev \
     poppler-utils \
     software-properties-common \
     tree \
     wget 
 
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
-RUN apt-get update && apt-get -y install google-chrome-stable
+# Copy the zscaler root CA into the container and add it to the list of OpenSSL
+# root certificates.
+COPY zscaler-root.pem /etc/ssl/certs/zscaler-root.pem
+# Rebuild the CA cache. Otherwise the prior step is useless.
+RUN c_rehash
 
-RUN add-apt-repository ppa:longsleep/golang-backports
-RUN apt-get update \
-    && apt-get install -y \
-    golang-go
+# RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+#     && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+# RUN apt-get update && apt-get -y install google-chrome-stable
+
+# RUN add-apt-repository ppa:longsleep/golang-backports
+# RUN apt-get update \
+#     && apt-get install -y \
+#     golang-go
 
 WORKDIR /minio
 RUN curl https://dl.min.io/client/mc/release/linux-amd64/mc \
@@ -30,12 +37,18 @@ RUN chmod +x /minio/mc
 RUN wget https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.deb
 RUN dpkg -i litestream-v0.3.13-linux-amd64.deb
 
-
 WORKDIR /sqlc
 RUN wget https://downloads.sqlc.dev/sqlc_1.27.0_linux_amd64.tar.gz \ 
     && tar xvzf sqlc_1.27.0_linux_amd64.tar.gz \
     && chmod 755 sqlc \
     && mv sqlc /bin/sqlc
 
+WORKDIR /go_install
+RUN rm -rf /usr/local/go \
+    && wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
+# WARNING: no idea if this will be sticky inside the container
+ENV PATH=$PATH:/usr/local/go/bin
+    
 
 ENTRYPOINT ["tree /"]
