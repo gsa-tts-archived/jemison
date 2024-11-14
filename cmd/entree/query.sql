@@ -12,17 +12,19 @@
   -- last_fetched DATE,
   -- next_fetch DATE
 
--- This is so we can load all of the hosts into an 
--- in-memory dictionary at startup. There will only be
--- a few thousand, and therefore is easy to load and
--- then use to lookup host IDs.
--- name: GetHosts :many
-SELECT * from hosts;
 
 -- name: GetLedger :one
-SELECT * FROM ledger 
+SELECT * FROM guestbook 
 WHERE 
   host = $1 
   AND
   path = $2
   LIMIT 1;
+
+-- name: UpsertUniqueHost :one
+INSERT INTO hosts 
+  (host) 
+  VALUES ($1)
+  ON CONFLICT DO NOTHING
+  RETURNING id
+;

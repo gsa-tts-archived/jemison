@@ -10,6 +10,7 @@ import (
 )
 
 var ThisServiceName = "entree"
+var HostIdMap = make(map[string]int64)
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -20,8 +21,8 @@ func main() {
 
 	log.Println("environment initialized")
 
-	// // Init a cache for the workers
-	// service, _ := env.Env.GetUserService("admin")
+	HostIdMap = upsertUniqueHosts()
+	crontab()
 
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))

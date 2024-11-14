@@ -82,7 +82,7 @@ services:
       - minio-data:/data
 
   #-----------------------------------------------------
-  # pgweb
+  # pgweb:5432
   #-----------------------------------------------------
   pgweb:
     image: sosedoff/pgweb
@@ -92,6 +92,21 @@ services:
       - 22222:8081
     environment:
       PGWEB_DATABASE_URL: postgresql://postgres@jemison-queues-db:5432/postgres?sslmode=disable
+    depends_on:
+      jemison-queues-db:
+        condition: service_healthy
+
+  #-----------------------------------------------------
+  # pgweb:6543
+  #-----------------------------------------------------
+  pgweb2:
+    image: sosedoff/pgweb
+    container_name: pgweb2
+    restart: always
+    ports: 
+      - 22223:8081
+    environment:
+      PGWEB_DATABASE_URL: postgresql://postgres@jemison-db:5432/postgres?sslmode=disable
     depends_on:
       jemison-queues-db:
         condition: service_healthy

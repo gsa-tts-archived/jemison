@@ -17,6 +17,7 @@ docker:
 .PHONY: build
 build: clean config generate
 	cd cmd/admin ; make build
+	cd cmd/entree ; make build
 	cd cmd/extract ; make build
 	cd cmd/fetch ; make build
 	cd cmd/pack ; make build
