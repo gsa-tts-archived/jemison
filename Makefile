@@ -32,6 +32,10 @@ build: clean config generate
 up: build
 	docker compose up
 
+.PHONY: backend
+backend: 
+	docker compose -f backend.yaml up
+
 .PHONY: 
 macup:
 	docker run -v ${PWD}:/app -t jemison/build

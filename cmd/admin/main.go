@@ -26,17 +26,34 @@ type FetchRequestInput struct {
 }
 
 // https://dev.to/kashifsoofi/rest-api-with-go-chi-and-inmemory-store-43ag
-func CrawlRequestHandler(c *gin.Context) {
+func FetchRequestHandler(c *gin.Context) {
 	var fri FetchRequestInput
 	if err := c.BindJSON(&fri); err != nil {
 		return
 	}
-
 	if fri.ApiKey == os.Getenv("API_KEY") || true {
-		zap.L().Debug("api enqueue", zap.String("host", fri.Host), zap.String("path", fri.Path))
-
+		zap.L().Debug("fetch enqueue", zap.String("host", fri.Host), zap.String("path", fri.Path))
 		queueing.InsertFetch(fri.Scheme, fri.Host, fri.Path)
+		c.IndentedJSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
+	}
+}
 
+func EntreeRequestHandler(c *gin.Context) {
+	var fri FetchRequestInput
+	hallPass := c.Param("hallpass")
+
+	if err := c.BindJSON(&fri); err != nil {
+		return
+	}
+	if fri.ApiKey == os.Getenv("API_KEY") || true {
+		zap.L().Debug("entree enqueue", zap.String("host", fri.Host), zap.String("path", fri.Path))
+		if hallPass == "pass" {
+			queueing.InsertEntree(fri.Scheme, fri.Host, fri.Path, true)
+		} else {
+			queueing.InsertEntree(fri.Scheme, fri.Host, fri.Path, false)
+		}
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
@@ -81,7 +98,8 @@ func main() {
 	v1 := engine.Group("/api")
 	{
 		v1.GET("/heartbeat", common.Heartbeat)
-		v1.PUT("/crawl", CrawlRequestHandler)
+		v1.PUT("/fetch", FetchRequestHandler)
+		v1.PUT("/entree/:hallpass", EntreeRequestHandler)
 		v1.GET("/jobs", JobCountHandler)
 	}
 

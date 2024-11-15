@@ -49,6 +49,38 @@ ALTER TABLE public.content_types ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTIT
 
 
 --
+-- Name: guestbook; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.guestbook (
+    id bigint NOT NULL,
+    scheme public.scheme NOT NULL,
+    host bigint,
+    path text NOT NULL,
+    content_sha1 text,
+    content_length integer,
+    content_type integer,
+    last_updated date,
+    last_fetched date,
+    next_fetch date
+);
+
+
+--
+-- Name: guestbook_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.guestbook ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.guestbook_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Name: hosts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -64,38 +96,6 @@ CREATE TABLE public.hosts (
 
 ALTER TABLE public.hosts ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.hosts_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
---
--- Name: ledger; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.ledger (
-    id bigint NOT NULL,
-    scheme public.scheme NOT NULL,
-    host bigint,
-    path text NOT NULL,
-    content_sha1 text,
-    content_length integer,
-    content_type integer,
-    last_updated date,
-    last_fetched date,
-    next_fetch date
-);
-
-
---
--- Name: ledger_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-ALTER TABLE public.ledger ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME public.ledger_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -122,27 +122,35 @@ ALTER TABLE ONLY public.content_types
 
 
 --
+-- Name: guestbook guestbook_host_path_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guestbook
+    ADD CONSTRAINT guestbook_host_path_key UNIQUE (host, path);
+
+
+--
+-- Name: guestbook guestbook_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guestbook
+    ADD CONSTRAINT guestbook_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hosts hosts_host_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hosts
+    ADD CONSTRAINT hosts_host_key UNIQUE (host);
+
+
+--
 -- Name: hosts hosts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.hosts
     ADD CONSTRAINT hosts_pkey PRIMARY KEY (id);
-
-
---
--- Name: ledger ledger_host_path_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.ledger
-    ADD CONSTRAINT ledger_host_path_key UNIQUE (host, path);
-
-
---
--- Name: ledger ledger_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.ledger
-    ADD CONSTRAINT ledger_pkey PRIMARY KEY (id);
 
 
 --
@@ -154,19 +162,19 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: ledger ledger_content_type_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: guestbook guestbook_content_type_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.ledger
-    ADD CONSTRAINT ledger_content_type_fkey FOREIGN KEY (content_type) REFERENCES public.content_types(id);
+ALTER TABLE ONLY public.guestbook
+    ADD CONSTRAINT guestbook_content_type_fkey FOREIGN KEY (content_type) REFERENCES public.content_types(id);
 
 
 --
--- Name: ledger ledger_host_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: guestbook guestbook_host_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.ledger
-    ADD CONSTRAINT ledger_host_fkey FOREIGN KEY (host) REFERENCES public.hosts(id);
+ALTER TABLE ONLY public.guestbook
+    ADD CONSTRAINT guestbook_host_fkey FOREIGN KEY (host) REFERENCES public.hosts(id);
 
 
 --

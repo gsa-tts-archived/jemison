@@ -11,6 +11,7 @@ import (
 
 	common "github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
@@ -115,35 +116,16 @@ func walk_html(s3json *kv.S3JSON) {
 	zap.L().Debug("walk considering links",
 		zap.Int("count", len(links)))
 	for _, link := range links {
-		// Queue the next step
-		// log.Println("FETCH ENQ", s3json.GetString("host"), link)
-
-		ctx, tx := common.CtxTx(dbPool)
-		defer tx.Rollback(ctx)
-		zap.L().Debug("inserting fetch job")
-		fetchClient.InsertTx(context.Background(), tx, common.FetchArgs{
-			Host:   s3json.GetString("host"),
-			Scheme: link.Scheme,
-			Path:   link.Path,
-		}, &river.InsertOpts{Queue: "fetch"})
-
-		if err := tx.Commit(ctx); err != nil {
-			zap.L().Panic("cannot commit insert tx",
-				zap.String("host", link.Host), zap.String("path", link.Path))
-		}
+		// The links come back canonicalized against the host. So,
+		// all the fields should be present.
+		queueing.InsertEntree(
+			link.Scheme,
+			link.Host,
+			link.Path,
+			false,
+		)
 	}
 }
-
-// func to_link(s3json *kv.S3JSON) string {
-// 	// FIXME: stop assuming the scheme...
-// 	u, _ := url.Parse(
-// 		s3json.GetString("scheme") +
-// 			"://" +
-// 			s3json.GetString("host") +
-// 			"/" +
-// 			s3json.GetString("path"))
-// 	return u.String()
-// }
 
 func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 	base := url.URL{

@@ -2,15 +2,22 @@
 
 -- There is no 'if not exists' for CREATE TYPE
 -- https://stackoverflow.com/questions/7624919/check-if-a-user-defined-type-already-exists-in-postgresql
-DROP TYPE IF EXISTS scheme;
-CREATE TYPE scheme AS ENUM (
-  'http',
-  'https'
-);
+-- Also, for future migrations:
+-- https://stackoverflow.com/questions/1771543/adding-a-new-value-to-an-existing-enum-type
+
+DO $$ BEGIN
+  CREATE TYPE scheme AS ENUM (
+    'http',
+    'https'
+  );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS hosts (
   id BIGINT generated always as identity primary key,
-  host TEXT
+  host TEXT,
+  UNIQUE(host)
 );
 
 CREATE TABLE IF NOT EXISTS content_types (
@@ -33,10 +40,9 @@ CREATE TABLE IF NOT EXISTS guestbook (
 );
 
 -- migrate:down
-
-DROP TYPE IF EXISTS scheme;
+DROP TABLE IF EXISTS guestbook;
 DROP TABLE IF EXISTS hosts;
 DROP TABLE IF EXISTS content_types;
-DROP TABLE IF EXISTS guestbook;
+DROP TYPE IF EXISTS scheme;
 
 
