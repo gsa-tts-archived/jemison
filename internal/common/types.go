@@ -3,9 +3,10 @@ package common
 import "net/http"
 
 type EntreeArgs struct {
-	Scheme string `json:"scheme"`
-	Host   string `json:"host"`
-	Path   string `json:"path"`
+	Scheme   string `json:"scheme"`
+	Host     string `json:"host"`
+	Path     string `json:"path"`
+	HallPass bool   `json:"hallpass"`
 }
 
 func (EntreeArgs) Kind() string {

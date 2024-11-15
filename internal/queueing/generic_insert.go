@@ -51,3 +51,30 @@ func InsertFetch(scheme string, host string, path string) {
 			zap.String("path", path))
 	}
 }
+
+func InsertEntree(scheme string, host string, path string, isHallPass bool) {
+	_, pool, _ := common.CommonQueueInit()
+	ctx, tx := common.CtxTx(pool)
+	defer pool.Close()
+	defer tx.Commit(ctx)
+
+	client, err := river.NewClient(riverpgxv5.New(pool), &river.Config{})
+	if err != nil {
+		zap.L().Error("could not create river client",
+			zap.String("error", err.Error()))
+	}
+	client.InsertTx(ctx, tx, common.EntreeArgs{
+		Scheme:   scheme,
+		Host:     host,
+		Path:     path,
+		HallPass: isHallPass,
+	}, &river.InsertOpts{Queue: "entree"})
+	if err := tx.Commit(ctx); err != nil {
+		tx.Rollback(ctx)
+		zap.L().Panic("cannot commit insert tx",
+			zap.String("host", host),
+			zap.String("path", path),
+			zap.Bool("hallpass", isHallPass),
+		)
+	}
+}

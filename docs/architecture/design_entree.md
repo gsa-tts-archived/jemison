@@ -63,6 +63,20 @@ We pass things through `fetch`, `extract`, etc. until `serve` picks up a databas
 
 The update rules are stored in static configuration files shipped with the app. These may become dynamic at a later point.
 
+```mermaid
+flowchart TD
+    start[url comes in]
+    start --> pass{hall pass?}
+    pass -- Y --> fetch1[fetch]
+    fetch1 --> unmod["leave *next_fetch*
+    unmodified"]
+    pass -- N --> date{now > next_fetch?}
+    date -- Y --> fetch2[fetch] --> mod
+    mod["update *next_fetch*"] --> done
+    date -- N --> done
+    unmod --> done
+```
+
 ### tooling
 
 The service uses `dbmate` to manage the `guestbook`. This is currently managed by the application directly. `dbmate` is a standalone tool, and could be extracted and scripted separately. 
