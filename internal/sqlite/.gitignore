@@ -1,2 +1,6 @@
 schemas/*
 pg_schemas/*
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*

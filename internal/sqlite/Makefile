@@ -1,6 +1,6 @@
 check:
 	staticcheck
 test:
-	go test *.go -v
+	go test -tags fts5 *.go -v
 generate:
 	sqlc generate

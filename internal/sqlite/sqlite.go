@@ -23,6 +23,28 @@ type PackTable struct {
 	Queries  *search_db.Queries
 }
 
+func OpenPackTable(db_filename string) (*PackTable, error) {
+
+	pt := PackTable{}
+	pt.Filename = db_filename
+
+	ctx := context.Background()
+
+	// FIXME: Any params to the DB?
+	db, err := sql.Open("sqlite3", db_filename+"?_fk=true")
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(100)
+
+	queries := search_db.New(db)
+
+	pt.Context = ctx
+	pt.DB = db
+	pt.Queries = queries
+	return &pt, nil
+}
+
 func CreatePackTable(db_filename string) (*PackTable, error) {
 
 	pt := PackTable{}
@@ -31,7 +53,10 @@ func CreatePackTable(db_filename string) (*PackTable, error) {
 	ctx := context.Background()
 
 	// FIXME: Any params to the DB?
-	db, err := sql.Open("sqlite3", db_filename)
+	db, err := sql.Open("sqlite3", db_filename+"?_fk=true")
+	if err != nil {
+		return nil, err
+	}
 	db.SetMaxOpenConns(100)
 	// https://phiresky.github.io/blog/2020/sqlite-performance-tuning/
 	db.Exec("pragma journal_mode = WAL")
@@ -42,10 +67,6 @@ func CreatePackTable(db_filename string) (*PackTable, error) {
 	//db.Exec("pragma mmap_size = 30000000000")
 	// Unsure how this effects final filesize or performance on read.
 	// db.Exec("pragma page_size = 32768")
-
-	if err != nil {
-		return nil, err
-	}
 
 	// create tables
 	if _, err := db.ExecContext(ctx, ddl); err != nil {
@@ -69,6 +90,7 @@ func (pt *PackTable) PrepForNetwork() {
 	pt.DB.ExecContext(pt.Context, "PRAGMA vacuum")
 	pt.DB.ExecContext(pt.Context, "PRAGMA optimize")
 	pt.DB.Close()
+
 }
 
 func SqliteFilename(db_filename string) string {
