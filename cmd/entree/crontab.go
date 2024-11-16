@@ -3,14 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/url"
 
 	_ "embed"
 
-	schemas_entree "github.com/GSA-TTS/jemison/cmd/entree/schemas"
+	"github.com/GSA-TTS/jemison/config"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/queueing"
-	"github.com/GSA-TTS/jemison/internal/util"
+	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -18,9 +17,6 @@ import (
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 )
-
-//go:embed schedule.jsonnet
-var sonnet string
 
 /*
 Field name   | Mandatory? | Allowed values  | Allowed special characters
@@ -42,10 +38,13 @@ func crontab() {
 }
 
 func section(section string) func() {
-	JSON := util.ProcessJsonnet(sonnet)
+	JSON := config.ReadConfigJsonnet("schedule.jsonnet")
 	return func() {
 		zap.L().Debug(section)
 		for _, site := range gjson.Get(JSON, section).Array() {
+			// Clear out any hall passes at this point.
+			HallPassLedger.Remove(site.Get("host").String())
+
 			zap.L().Debug(fmt.Sprintln(site))
 			queueing.InsertFetch(
 				site.Get("scheme").String(),
@@ -57,12 +56,12 @@ func section(section string) func() {
 }
 
 func upsertUniqueHosts() map[string]int64 {
-	JSON := util.ProcessJsonnet(sonnet)
+	JSON := config.ReadConfigJsonnet("schedule.jsonnet")
 	uniqueHosts := make(map[string]int64)
 
 	ctx := context.Background()
 
-	db_string, err := env.Env.GetDatabaseUrl(env.DB1)
+	db_string, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
 	if err != nil {
 		zap.L().Fatal("could not get db URL for DB1")
 	}
@@ -72,16 +71,14 @@ func upsertUniqueHosts() map[string]int64 {
 	}
 	defer conn.Close(ctx)
 
-	queries := schemas_entree.New(conn)
+	queries := work_db.New(conn)
 
 	for _, section := range gjson.Parse(JSON).Get("@keys").Array() {
 		for _, site := range gjson.Get(JSON, section.String()).Array() {
-			u := url.URL{
-				Scheme: site.Get("scheme").String(),
-				Host:   site.Get("host").String(),
-				Path:   site.Get("path").String(),
-			}
-			uniqueHosts[u.Host] = -1
+			// We should never see a -1 in the host table. Not sure
+			// how else to do this. The following loop will either populate
+			// the value or fail.
+			uniqueHosts[site.Get("host").String()] = -1
 		}
 	}
 
@@ -90,7 +87,9 @@ func upsertUniqueHosts() map[string]int64 {
 	for h := range uniqueHosts {
 		id, err := queries.UpsertUniqueHost(ctx, pgtype.Text{String: h, Valid: true})
 		if err != nil {
-			zap.L().Error("did not get `id` back for host", zap.String("host", h))
+			zap.L().Error("did not get `id` back for host",
+				zap.String("host", h),
+				zap.String("err", err.Error()))
 		}
 		uniqueHosts[h] = id
 	}

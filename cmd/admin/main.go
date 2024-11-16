@@ -1,18 +1,15 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"os"
 
 	common "github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
-	"github.com/GSA-TTS/jemison/internal/postgres/pg_schemas"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/gin-gonic/gin"
 
-	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
 )
 
@@ -42,52 +39,65 @@ func FetchRequestHandler(c *gin.Context) {
 
 func EntreeRequestHandler(c *gin.Context) {
 	var fri FetchRequestInput
+	full := c.Param("fullorone")
 	hallPass := c.Param("hallpass")
 
 	if err := c.BindJSON(&fri); err != nil {
 		return
 	}
 	if fri.ApiKey == os.Getenv("API_KEY") || true {
-		zap.L().Debug("entree enqueue", zap.String("host", fri.Host), zap.String("path", fri.Path))
+		hallPassB := false
+		fullB := false
+
 		if hallPass == "pass" {
-			queueing.InsertEntree(fri.Scheme, fri.Host, fri.Path, true)
-		} else {
-			queueing.InsertEntree(fri.Scheme, fri.Host, fri.Path, false)
+			hallPassB = true
 		}
+		if full == "full" {
+			fullB = true
+		}
+
+		zap.L().Debug("entree enqueue",
+			zap.String("host", fri.Host),
+			zap.String("path", fri.Path),
+			zap.Bool("full", fullB),
+			zap.Bool("hallpass", hallPassB))
+
+		queueing.InsertEntree(fri.Scheme, fri.Host, fri.Path, fullB, hallPassB)
+
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
 	}
 }
 
-func JobCountHandler(c *gin.Context) {
-	ctx := context.Background()
-	db_url, _ := env.Env.GetDatabaseUrl(env.QueueDatabase)
+// func JobCountHandler(c *gin.Context) {
+// 	ctx := context.Background()
+// 	db_url, _ := env.Env.GetDatabaseUrl(env.QueueDatabase)
 
-	conn, err := pgx.Connect(ctx, db_url)
-	if err != nil {
-	}
-	defer conn.Close(ctx)
+// 	conn, err := pgx.Connect(ctx, db_url)
+// 	if err != nil {
+// 	}
+// 	defer conn.Close(ctx)
 
-	queries := pg_schemas.New(conn)
-	counts := make(map[string]map[string]int64)
-	for _, service := range []string{"fetch", "extract", "pack", "validate", "walk", "serve"} {
-		service_counts := make(map[string]int64)
-		for _, state := range []string{"completed", "running", "retryable"} {
-			count, _ := queries.CountJobs(ctx, pg_schemas.CountJobsParams{
-				Kind:  service,
-				State: state,
-			})
-			service_counts[state] = count
-		}
-		counts[service] = service_counts
-	}
+// 	queries := pg_schemas.New(conn)
+// 	counts := make(map[string]map[string]int64)
+// 	for _, service := range []string{"fetch", "extract", "pack", "validate", "walk", "serve"} {
+// 		service_counts := make(map[string]int64)
+// 		for _, state := range []string{"completed", "running", "retryable"} {
+// 			count, _ := queries.CountJobs(ctx, pg_schemas.CountJobsParams{
+// 				Kind:  service,
+// 				State: state,
+// 			})
+// 			service_counts[state] = count
+// 		}
+// 		counts[service] = service_counts
+// 	}
 
-	c.IndentedJSON(http.StatusOK, gin.H{
-		"status": "ok",
-		"counts": counts,
-	})
-}
+// 	c.IndentedJSON(http.StatusOK, gin.H{
+// 		"status": "ok",
+// 		"counts": counts,
+// 	})
+// }
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -99,8 +109,8 @@ func main() {
 	{
 		v1.GET("/heartbeat", common.Heartbeat)
 		v1.PUT("/fetch", FetchRequestHandler)
-		v1.PUT("/entree/:hallpass", EntreeRequestHandler)
-		v1.GET("/jobs", JobCountHandler)
+		v1.PUT("/entree/:fullorone/:hallpass", EntreeRequestHandler)
+		// v1.GET("/jobs", JobCountHandler)
 	}
 
 	log.Println("environment initialized")

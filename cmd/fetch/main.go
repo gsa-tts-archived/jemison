@@ -42,6 +42,8 @@ func main() {
 		time.Duration(service.GetParamInt64("polite_cache_default_expiration"))*time.Second,
 		time.Duration(service.GetParamInt64("polite_cache_cleanup_interval"))*time.Second)
 
+	go InfoFetchCount()
+
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))
 	// Local and Cloud should both get this from the environment.

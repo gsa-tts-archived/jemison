@@ -21,9 +21,9 @@ var fs embed.FS
 // Assumes config has been read
 func MigrateJemisonDB() {
 
-	db1_url, err := env.Env.GetDatabaseUrl(env.DB1)
+	db1_url, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
 	if err != nil {
-		zap.L().Fatal("could not get url for jemison-db")
+		zap.L().Fatal("could not get url for jemison-work-db")
 	}
 
 	u, _ := url.Parse(db1_url)

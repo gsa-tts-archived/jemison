@@ -52,7 +52,7 @@ func InsertFetch(scheme string, host string, path string) {
 	}
 }
 
-func InsertEntree(scheme string, host string, path string, isHallPass bool) {
+func InsertEntree(scheme string, host string, path string, isFullCrawl bool, isHallPass bool) {
 	_, pool, _ := common.CommonQueueInit()
 	ctx, tx := common.CtxTx(pool)
 	defer pool.Close()
@@ -64,10 +64,11 @@ func InsertEntree(scheme string, host string, path string, isHallPass bool) {
 			zap.String("error", err.Error()))
 	}
 	client.InsertTx(ctx, tx, common.EntreeArgs{
-		Scheme:   scheme,
-		Host:     host,
-		Path:     path,
-		HallPass: isHallPass,
+		Scheme:    scheme,
+		Host:      host,
+		Path:      path,
+		FullCrawl: isFullCrawl,
+		HallPass:  isHallPass,
 	}, &river.InsertOpts{Queue: "entree"})
 	if err := tx.Commit(ctx); err != nil {
 		tx.Rollback(ctx)

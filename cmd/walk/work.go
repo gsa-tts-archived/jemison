@@ -123,6 +123,7 @@ func walk_html(s3json *kv.S3JSON) {
 			link.Host,
 			link.Path,
 			false,
+			false,
 		)
 	}
 }

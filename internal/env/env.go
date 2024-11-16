@@ -17,7 +17,7 @@ var Env *env
 // These reach into the VCAP_SERVICES and are
 // defined in the Terraform.
 const QueueDatabase = "jemison-queues-db"
-const DB1 = "jemison-db"
+const JemisonWorkDatabase = "jemison-work-db"
 
 var validBucketNames = []string{
 	"extract",

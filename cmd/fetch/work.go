@@ -6,18 +6,65 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
+
+	_ "embed"
 
 	common "github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/env"
 	kv "github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/util"
+	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
+
+func guestbookCtxQueries() (context.Context, *pgx.Conn, *work_db.Queries) {
+	ctx := context.Background()
+	db_string, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
+	if err != nil {
+		zap.L().Fatal("could not get db URL for DB1")
+	}
+	conn, err := pgx.Connect(ctx, db_string)
+	if err != nil {
+		zap.L().Fatal("could not connect to DB1")
+	}
+	queries := work_db.New(conn)
+	return ctx, conn, queries
+}
+
+func updateGuestbook(scheme, host, path string) {
+	ctx, conn, queries := guestbookCtxQueries()
+	defer conn.Close(ctx)
+	host_id, _ := queries.GetHostId(ctx, pgtype.Text{String: host, Valid: true})
+	queries.UpdateNextFetch(ctx, work_db.UpdateNextFetchParams{
+		Column1: "weekly",
+		Scheme:  scheme,
+		Host:    host_id,
+		Path:    path,
+	})
+}
 
 // ///////////////////////////////////
 // GLOBALS
 var last_hit sync.Map
 var last_backoff sync.Map
+
+var fetchCount atomic.Int64
+
+func InfoFetchCount() {
+	ticker := time.NewTicker(10 * time.Second)
+
+	for {
+		<-ticker.C
+		cnt := fetchCount.Load()
+		zap.L().Info("pages fetched",
+			zap.Int64("pages", cnt))
+	}
+}
 
 func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]) error {
 	// Check the cache.
@@ -118,6 +165,11 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		zap.L().Panic("cannot commit validate tx",
 			zap.String("error", err.Error()))
 	}
+
+	// Update the guestbook
+	updateGuestbook(job.Args.Scheme, job.Args.Host, job.Args.Path)
+
+	fetchCount.Add(1)
 
 	zap.L().Debug("fetched",
 		zap.String("scheme", job.Args.Scheme),

@@ -7,11 +7,8 @@ test:
 check:
 	staticcheck
 
-generate:
-	sqlc generate || exit 1
-
 # -tags=viper_bind_struct 
-build: generate
+build: 
 	go build -buildvcs=false -o service.exe
 
 clean:

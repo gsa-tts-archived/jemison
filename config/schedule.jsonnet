@@ -26,7 +26,7 @@ local root = '/';
     wg('digitalcorps.gsa', root),
   ],
   weekly: [
-    wg('fac', root),
+    wg('www.fac', root),
     wg('cloud', root),
   ],
   monthly: [

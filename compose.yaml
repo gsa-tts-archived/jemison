@@ -57,7 +57,7 @@ services:
     build: 
       context: .
       dockerfile: ./cmd/entree/Dockerfile
-    entrypoint: /home/vcap/app/cmd/entree/service.exe
+    entrypoint: /home/vcap/app/cmd/entree/run.sh
     volumes:
       - type: bind
         source: .
@@ -70,7 +70,7 @@ services:
         condition: service_healthy
       jemison-queues-db:
         condition: service_healthy
-      jemison-db:
+      jemison-work-db:
         condition: service_healthy
     healthcheck:
       test: curl --fail http://entree:8888/heartbeat || exit 1
@@ -351,14 +351,14 @@ services:
       start_period: 80s  
 
   #-----------------------------------------------------
-  # postgres/jemison-db :6543
+  # postgres/jemison-work-db :6543
   #-----------------------------------------------------
-  jemison-db:
+  jemison-work-db:
     image: postgres:16-alpine
     ports:
       - 6543:5432
     volumes:
-      - jemison-db-vol:/var/lib/postgresql/data
+      - jemison-work-db-vol:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: postgres
       POSTGRES_DB: postgres
@@ -420,9 +420,9 @@ services:
     ports: 
       - 22223:8081
     environment:
-      PGWEB_DATABASE_URL: postgresql://postgres@jemison-db:5432/postgres?sslmode=disable
+      PGWEB_DATABASE_URL: postgresql://postgres@jemison-work-db:5432/postgres?sslmode=disable
     depends_on:
-      jemison-db:
+      jemison-work-db:
         condition: service_healthy
 
   #-----------------------------------------------------
@@ -453,5 +453,5 @@ services:
   
 volumes:
   jemison-queues-db-vol:
-  jemison-db-vol:
+  jemison-work-db-vol:
   minio-data:

@@ -9,11 +9,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.41
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-pkgz/expirable-cache/v3 v3.0.0
-	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-jsonnet v0.20.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
-	github.com/jackc/pgtype v1.14.4
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/johbar/go-poppler v1.0.0
 	github.com/kljensen/snowball v0.10.0
@@ -52,7 +50,6 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438 // indirect
-	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect

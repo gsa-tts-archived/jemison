@@ -6,7 +6,7 @@ clean:
 .PHONY: generate
 generate:
 	cd internal/sqlite ; make generate
-	cd internal/postgres ; make generate
+	cd internal/work_db ; make generate
 
 .PHONY: config
 config:

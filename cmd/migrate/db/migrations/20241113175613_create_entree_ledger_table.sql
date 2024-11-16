@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS content_types (
 CREATE TABLE IF NOT EXISTS guestbook (
   id BIGINT generated always as identity primary key,
   scheme scheme NOT NULL,
-  host BIGINT references hosts(id),
+  host BIGINT references hosts(id) NOT NULL,
   path TEXT NOT NULL,
   content_sha1 TEXT,
   content_length INTEGER,

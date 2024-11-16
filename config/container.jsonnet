@@ -32,7 +32,7 @@ local VCAP = import 'vcap_services.libsonnet';
     'minio',
     [
       ['jemison-queues-db', 'jemison-queues-db', 5432],
-      ['jemison-db', 'jemison-db', 5432],
+      ['jemison-work-db', 'jemison-work-db', 5432],
     ]
   ),
 }
