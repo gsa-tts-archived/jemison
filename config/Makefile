@@ -1,13 +1,10 @@
-SOURCES = $(wildcard *.jsonnet)
-POLITE_SLEEP ?= 2
+.PHONY: all
+all: system
+	cd services ; make all
+	mv services/*.yaml . 
 
-all: clean $(patsubst %.jsonnet,%.yaml, ${SOURCES})
-
-clean: 
-	rm -f *.yaml
-
-%.yaml: %.jsonnet
-	@echo "IN" $<  "OUT" $@
+.PHONY: system
+system: *.jsonnet
 	jsonnetfmt \
 		-i \
 		--indent 2 \
@@ -15,5 +12,4 @@ clean:
 		--sort-imports \
 		--string-style s \
 		--comment-style s \
-		$<
-	jsonnet $< > $@
+	$<
