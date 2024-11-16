@@ -26,7 +26,11 @@ WHERE
 INSERT INTO hosts 
   (host) 
   VALUES ($1)
-  ON CONFLICT (host) DO NOTHING
+  -- See https://stackoverflow.com/a/37543015
+  -- This is a workaround; it forces the `id` to be 
+  -- returned in all cases.
+  ON CONFLICT (host) DO UPDATE
+    SET host = EXCLUDED.host
   RETURNING id
 ;
 
@@ -51,21 +55,31 @@ INSERT INTO guestbook
       last_fetched = NOW()
   RETURNING id;
 
--- If it is time to fetch, 
+
+-- If it is time to fetch?
+-- These match a Golang enum.
+-- const (
+-- 	NotPreviouslySeen FetchStatus = iota
+-- 	DeadlineNotYetReached
+-- 	DeadlinePassed
+-- 	NotFound
+-- 	HallPass
+-- 	DefaultCase
+-- )
 -- name: ToFetchOrNotToFetch :one
 SELECT 
   CASE
-    -- If we get NULL for a host/path, then it is time to fetch.
-    -- It must be a page never seen before
-    WHEN host = $1 and path = $2 and next_fetch = NULL THEN 'FETCH'
-    -- We fetch after our time has past. So, it is not yet time to fetch.
-    -- Only fetch if the date is STRICTLY in the past.
-    WHEN host = $1 and path = $2 and next_fetch < NOW() THEN 'FETCH'
-    -- If next_fetch is in our future (or today), do not fetch.
-    WHEN host = $1 and path = $2 and next_fetch >= NOW() THEN 'DO_NOT_FETCH'
-    ELSE 'FETCH_NOT_FOUND'
+    -- Deadline passed
+    WHEN host = $1 AND path = $2 AND next_fetch < NOW() THEN 2
+    -- Deadline not yet reached
+    WHEN host = $1 AND path = $2 AND next_fetch >= NOW() THEN 1
+    -- If we can't find the path, then this is not found
+    ELSE 3
   END AS is_past_next_fetch
-FROM guestbook; 
+  FROM guestbook
+  WHERE host = $1 AND path = $2
+;
+
 
 -- In order to crawl a site out of the normal schedule, we will want to 
 -- rewrite when those pages were last fetched. We do this for a full domain.

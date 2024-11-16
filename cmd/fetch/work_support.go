@@ -91,14 +91,6 @@ func getUrlToFile(u url.URL) (string, int64, []byte) {
 	return temporaryFilename, bytesRead, theSHA
 }
 
-// func getFilesize(filename string) int64 {
-// 	fileInfo, err := os.Stat(filename)
-// 	if err != nil {
-// 		zap.L().Error("could not get filesize", zap.String("filename", filename))
-// 	}
-// 	return fileInfo.Size()
-// }
-
 func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, error) {
 	u := url.URL{
 		Scheme: job.Args.Scheme,

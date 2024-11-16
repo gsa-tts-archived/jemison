@@ -7,9 +7,15 @@
 // # https://crontab.guru/#0_0_1_1,4,7,10_*
 // local Q = "0 0 1 1,4,7,10 *";
 
-local wg(host, path, scheme='https') = {
+local g(host, path, scheme='https') = {
   scheme: scheme,
   host: host + '.gov',
+  path: path,
+};
+
+local wg(host, path, scheme='https') = {
+  scheme: scheme,
+  host: 'www.' + host + '.gov',
   path: path,
 };
 
@@ -19,20 +25,20 @@ local root = '/';
   minutely: [
   ],
   hourly: [
-    wg('coldcaserecords', root),
-    wg('www.fac', root),
+    g('coldcaserecords', root),
+    wg('fac', root),
   ],
   daily: [
-    wg('digitalcorps.gsa', root),
+    g('digitalcorps.gsa', root),
   ],
   weekly: [
-    wg('www.fac', root),
-    wg('cloud', root),
+    g('www.fac', root),
+    g('cloud', root),
   ],
   monthly: [
-    wg('search', root),
+    g('search', root),
   ],
   quarterly: [
-    wg('gsa', root),
+    g('gsa', root),
   ],
 }

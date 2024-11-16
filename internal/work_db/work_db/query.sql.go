@@ -118,15 +118,15 @@ func (q *Queries) SetLastFetchedToYesterday(ctx context.Context, arg SetLastFetc
 const toFetchOrNotToFetch = `-- name: ToFetchOrNotToFetch :one
 SELECT 
   CASE
-    -- If we get NULL for a host/path, then it is time to fetch.
-    -- It must be a page never seen before
-    WHEN host = $1 and path = $2 and next_fetch = NULL THEN 'FETCH'
-    -- We fetch after our time has past. So, it is not yet time to fetch.
-    WHEN host = $1 and path = $2 and next_fetch < NOW() THEN 'FETCH'
-    WHEN host = $1 and path = $2 and next_fetch >= NOW() THEN 'DO_NOT_FETCH'
-    ELSE 'FETCH_NOT_FOUND'
+    -- Deadline passed
+    WHEN host = $1 AND path = $2 AND next_fetch < NOW() THEN 2
+    -- Deadline not yet reached
+    WHEN host = $1 AND path = $2 AND next_fetch >= NOW() THEN 1
+    -- If we can't find the path, then this is not found
+    ELSE 3
   END AS is_past_next_fetch
-FROM guestbook
+  FROM guestbook
+  WHERE host = $1 AND path = $2
 `
 
 type ToFetchOrNotToFetchParams struct {
@@ -134,10 +134,21 @@ type ToFetchOrNotToFetchParams struct {
 	Path string `json:"path"`
 }
 
-// If it is time to fetch,
-func (q *Queries) ToFetchOrNotToFetch(ctx context.Context, arg ToFetchOrNotToFetchParams) (string, error) {
+// If it is time to fetch?
+// These match a Golang enum.
+// const (
+//
+//	NotPreviouslySeen FetchStatus = iota
+//	DeadlineNotYetReached
+//	DeadlinePassed
+//	NotFound
+//	HallPass
+//	DefaultCase
+//
+// )
+func (q *Queries) ToFetchOrNotToFetch(ctx context.Context, arg ToFetchOrNotToFetchParams) (int32, error) {
 	row := q.db.QueryRow(ctx, toFetchOrNotToFetch, arg.Host, arg.Path)
-	var is_past_next_fetch string
+	var is_past_next_fetch int32
 	err := row.Scan(&is_past_next_fetch)
 	return is_past_next_fetch, err
 }
@@ -187,7 +198,11 @@ const upsertUniqueHost = `-- name: UpsertUniqueHost :one
 INSERT INTO hosts 
   (host) 
   VALUES ($1)
-  ON CONFLICT (host) DO NOTHING
+  -- See https://stackoverflow.com/a/37543015
+  -- This is a workaround; it forces the ` + "`" + `id` + "`" + ` to be 
+  -- returned in all cases.
+  ON CONFLICT (host) DO UPDATE
+    SET host = EXCLUDED.host
   RETURNING id
 `
 

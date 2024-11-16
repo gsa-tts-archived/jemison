@@ -1,5 +1,6 @@
 # -tags=viper_bind_struct 
 build:
+	go generate ./...
 	go build -buildvcs=false -o service.exe
 
 test:

@@ -67,18 +67,36 @@ An API key is hard-coded into the `compose.yaml` file; it is `lego`. Obviously, 
 To begin a crawl:
 
 ```
-http PUT localhost:10000/fetch host=fac.gov path=/ api_key=lego
+http put http://localhost:10001/api/entree/full/pass \
+  scheme=https \
+  host=digitalcorps.gsa.gov \
+  path="/" api-key=lego
 ```
+
+The URL parameters to the `admin` component determine if we are doing a full crawl and whether or not we have a hall pass. A "hall pass" lets us fetch a page even if the deadline for the next fetch has not passed. This is for emergency updating of pages/domains outside of a normal scheudle.
+
+* `/single/no` fetches a single page, with no pass; if the deadline has not been met, we don't fetch the page.
+* `/single/pass` fetches the page immediately
+* `/full/no` does a full crawl, but no hall pass is issued. This will check the deadlines on all existing pages, and we will only queue fetches on pages whose deadlines have been passed.
+* `/full/pass` will set the crawl deadlines on all known pages to *yesterday*, and then kick off a crawl. 
+
+When resetting the schedule (`/full/pass`), we set a new deadline in keeping with the site's normal schedule. For example, if a site is scheduled to run weekly, then we will, as we fetch, set the deadline on a new fetch to one week in the future. In this regard, a weekly schedule is not fixed---it is not necessarily "every Monday." Instead, it is one week from the last time it was fetched. (This may turn out to be confusing behavior...)
 
 The file `container.yaml` is a configuration file with a *few* end-user tunables. The FAC website is small in HTML, but is *large* because it contains 4 PDFs at ~2000 pages each. If you only want to index the HTML, set `extract_pdf` to `false`. (This is good for demonstration purposes.)
 
 To fetch a single PDF and see it extracted:
 
 ```
-http PUT localhost:10000/fetch host=app.fac.gov path=/dissemination/report/pdf/2023-09-GSAFAC-0000063050
+http put http://localhost:10001/api/entree/full/pass \
+  scheme=https \
+  host=app.fac.gov \
+  path="/dissemination/report/pdf/2023-09-GSAFAC-0000063050" \
+  api-key=lego
 ```
 
 (approximately 100 pages)
+
+Note the `host` must be in the known hosts config (`schedule.jsonnet`).
 
 ## searching 
 
@@ -108,7 +126,7 @@ The S3 filestore is simulated when running locally using a containerized version
 
 ![alt text](docs/images/minio.png)
 
-Point a browser at [localhost:9001](http://localhost:9001) with the credentials `nutnutnut/nutnutnut` to browse.
+Point a browser at [localhost:9001](http://localhost:9001) with the credentials `numbernine/numbernine` to browse.
 
 ### watching the queue
 
@@ -118,9 +136,8 @@ There is a UI for monitoring the queues.
 
 This lets you watch the queues at [localhost:11111](http://localhost:11111) provided by [River](https://riverqueue.com/), a queueing library/system built on Postgres. 
 
-### observing the database
 
-[pgweb](https://sosedoff.github.io/pgweb/) is included in the container stack for browsing the database directly and, if needed, editing. Pointign a browser at [localhost:22222](http://localhost:22222) will bring up `pgweb`.
+[pgweb](https://sosedoff.github.io/pgweb/) is included in the container stack for browsing the queue database directly and, if needed, editing. Pointign a browser at [localhost:22222](http://localhost:22222) will bring up `pgweb`. 
 
 If you are running, and want to simulate total queue loss, run
 
@@ -129,6 +146,22 @@ truncate table river_job; truncate table river_leader; truncate table river_queu
 ```
 
 This will not break the app; it will, however, leave all of the services with nothing to do.
+
+Alternatively, run
+
+```
+tools/wipe-queue.bash
+```
+
+which will do the same thing
+
+## viewing the second database
+
+[localhost:22223](http://localhost:22223) is a second `pgweb` instance that looks at the "working" database (`jemison-work-db`). This contains the guestbook (which tracks what URLs we've visisted) and other data that we need for running a crawler for the `.gov` domain. 
+
+In generall, the DB should be used sparingly. In the case of the crawl loop (e.g. `entree -> fetch -> walk -> entree...`), we need to keep track of roughly 25M URLs (perhaps more?). And, because cloud.gov limits us to a 7GB disk, we cannot do this locally in SQLite---a database of 25M URLs is probably going to push (or exceed) our disk space.
+
+So, we use Postgres for things that we know might grow beyond 6GB of storage. We trade some performance, but gain space. 
 
 ## other utilities
 
@@ -140,7 +173,40 @@ docker compose -f backend.yaml up
 
 To 
 
+## in case of emergency
+
+What happens if there is a fire in production?
+
+From a service/serving the public perspective, our databases are in S3. When the `serve` component(s) wake up, they copy their databases out of S3, and serve traffic. In this regard, we can probably always restart the production environment and serve the current state of our crawling efforts.
+
+We are somewhat safe from a fire with regards to the crawler. That is, if we had to completely wipe both `queue-db` and `work-db`, we would be starting from a clean slate. The crawl sequence of `entree->fetch->walk->...` would have no prior state. This would be equivalent to believing that we had never crawled anything, ever.
+
+One solution/possibility is that we could have a process that 
+
+1. Looks at everything in the `fetch` bucket, and 
+2. Inserts it into the `guestbook`, with sensible timestamps.
+
+We could, by the same measure, load each SQLite database from the `serve` bucket, and rebuild our `guestbook` the same way. The `last_fetched` date can be pulled from the `fetch` metadata... meaning the `guestbook` can be rebuilt for the cost of ~25M S3 queries.
+
+We can probably achieve something similar by pulling each `serve` database from the S3 bucket one at a time, and using the crawled URLs from the search DBs to rebuild the `guestbook`.
+
+Either way, it is possible to rebuild the state of the system from the artifacts in S3.
+
+If we rebuild *nothing*, `entree`* would enqueue all of the hosts in the dark of the night. Because we would have no cached URLs, it would be equivalent to kicking off all of our crawls at the same time. (Or, enqueueing them all at once.) At that point, we'd simply be re-crawling all of our known sites. It would take time, but we would (essentially) not be at a loss.
+
+In the case that we lose *all* of our services (e.g. S3 is wiped), we would have to recrawl, and service would be interrupted until we could re-build the SQLite databases. This would probably take a month.
+
+### conclusion
+
+We should back up the SQLite databases periodically, as they are our disaster recovery path. Being able to restore the 3000 or so SQLite databases is what lets us serve results.
+
 ## by the numbers
+
+The original "experiment number eight" came in at 2500 lines of code.
+
+The expansion of services (e.g. breaking out hit tracking into `entree`, the addition of `validate`, etc.) has pushed the system from 2500 lines of Go to just over 4000. 
+
+*The system was always going to grow as we head to production.* However, it is also still much, much smaller than the previous system, and remains architecturally cleaner. :shrug:
 
 ```
 cloc --exclude-ext=yml,yaml,html,css,less,js,json,svg,scss --fullpath --not-match-d=terraform/\.terraform .
@@ -150,18 +216,19 @@ cloc --exclude-ext=yml,yaml,html,css,less,js,json,svg,scss --fullpath --not-matc
 --------------------------------------------------------------------------------
 Language                      files          blank        comment           code
 --------------------------------------------------------------------------------
-Go                               53            639            320           2985
+Go                               72            905            584           4295
 JSON                              2              0              0           2852
-Markdown                         17            257              0            451
-HCL                               5             48             37            291
-make                              9             60              3            240
-Python                            3             18              0             82
-Dockerfile                        6             27             15             64
-Bourne Shell                      5             10              0             30
-SQL                               2              8             11             26
-Bourne Again Shell                2              3              5             11
+Markdown                         28            492              0            981
+make                             18             93              7            366
+HCL                               5             49             37            300
+SQL                               6             83            107            208
+Python                            3             27             27            124
+Dockerfile                        6             30             27             67
+Bourne Shell                      6             11              0             33
+Bourne Again Shell                1              2              0              6
+NAnt script                       1              2              0              3
 --------------------------------------------------------------------------------
-SUM:                            104           1070            391           7032
+SUM:                            148           1694            789           9235
 --------------------------------------------------------------------------------
 ```
 

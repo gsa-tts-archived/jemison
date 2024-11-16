@@ -14,16 +14,16 @@ type ContentType struct {
 }
 
 type Guestbook struct {
-	ID            int64       `json:"id"`
-	Scheme        interface{} `json:"scheme"`
-	Host          int64       `json:"host"`
-	Path          string      `json:"path"`
-	ContentSha1   pgtype.Text `json:"content_sha1"`
-	ContentLength pgtype.Int4 `json:"content_length"`
-	ContentType   pgtype.Int4 `json:"content_type"`
-	LastUpdated   pgtype.Date `json:"last_updated"`
-	LastFetched   pgtype.Date `json:"last_fetched"`
-	NextFetch     pgtype.Date `json:"next_fetch"`
+	ID            int64            `json:"id"`
+	Scheme        interface{}      `json:"scheme"`
+	Host          int64            `json:"host"`
+	Path          string           `json:"path"`
+	ContentSha1   pgtype.Text      `json:"content_sha1"`
+	ContentLength pgtype.Int4      `json:"content_length"`
+	ContentType   pgtype.Int4      `json:"content_type"`
+	LastUpdated   pgtype.Timestamp `json:"last_updated"`
+	LastFetched   pgtype.Timestamp `json:"last_fetched"`
+	NextFetch     pgtype.Date      `json:"next_fetch"`
 }
 
 type Host struct {
