@@ -13,6 +13,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// https://github.com/PuerkitoBio/goquery/issues/443
+// Someone wanting to pull a full-HTML text from a page...
+// Metadata scraping
+// https://jonathanmh.com/p/web-scraping-golang-goquery/
+// Vectors
+// https://alexgarcia.xyz/sqlite-vec/go.html
+
 func scrape_sel(sel *goquery.Selection) string {
 	content := ""
 	txt := sel.Text()

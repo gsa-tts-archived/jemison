@@ -10,25 +10,46 @@ INSERT INTO paths
 
 -- name: InsertTitle :one
 INSERT INTO titles
-    (path_id, kind, txt)
+    (path_id, kind, title)
     VALUES (?, 0, ?)
     RETURNING id
 ;
 
 -- name: InsertHeader :one
 INSERT INTO headers
-    (path_id, kind, level, txt)
+    (path_id, kind, level, header)
     VALUES (?, 1, ?, ?)
     RETURNING id
 ;
 
 -- name: InsertBody :one
 INSERT INTO bodies
-    (path_id, kind, tag, txt)
+    (path_id, kind, tag, body)
     VALUES
     (?, 2, ?, ?)
     RETURNING id
 ;
+
+-- name: Search :many
+-- SELECT 
+--   path_id,
+--   (SELECT path from paths WHERE id = path_id), 
+--   kind,
+--   weight,
+--   txt
+--   FROM
+--     (SELECT titles_fts.path_id as path_id, 4.0 as weight, kind, title as txt
+--       FROM titles_fts
+--       WHERE title MATCH ?1
+--     UNION ALL
+--     SELECT headers_fts.path_id as path_id, 2.0 as weight, kind, header as txt
+--       FROM headers_fts
+--       WHERE header MATCH ?1
+--     UNION ALL
+--     SELECT bodies_fts.path_id as path_id, 1.0 as weight, kind, body as txt
+--       FROM bodies_fts
+--       WHERE body MATCH ?1
+--     ORDER BY weight DESC)
 
 -- -- name: CreateSiteEntry :one
 -- INSERT INTO site_index (host, path, text) 
