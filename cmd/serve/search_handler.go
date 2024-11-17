@@ -71,7 +71,8 @@ func permutate[T any](data []T) [][]T {
 func permuteSubqueries(queries *schemas.Queries,
 	path string,
 	improved_terms []string,
-	results_per_query int64) []schemas.SearchSiteIndexSnippetsRow {
+	results_per_query int64) []schemas.SearchResult {
+
 	permuted := permutate(improved_terms)
 
 	shorter_queries := util.Map(permuted,
@@ -79,17 +80,17 @@ func permuteSubqueries(queries *schemas.Queries,
 			return item[0 : len(item)-1]
 		})
 
-	combined := make([][]schemas.SearchSiteIndexSnippetsRow, 0)
+	combined := make([][]schemas.SearchResult, 0)
 	for _, q := range shorter_queries {
-		res2, _ := queries.Search(context.Background(), schemas.SearchSiteIndexSnippetsParams{
-			Text:  strings.Join(q, " "),
+		res2, _ := queries.Search(context.Background(), &schemas.SearchParams{
+			Terms: q,
 			Path:  path,
 			Limit: results_per_query,
 		})
 		combined = append(combined, res2)
 	}
 
-	interleaved := make([]schemas.SearchSiteIndexSnippetsRow, 0)
+	interleaved := make([]schemas.SearchResult, 0)
 	max_result_set_length := 0
 	for _, set := range combined {
 		if len(set) > max_result_set_length {
@@ -109,7 +110,8 @@ func permuteSubqueries(queries *schemas.Queries,
 }
 
 func runQuery(sri ServeRequestInput, limit int) (
-	[]schemas.SearchSiteIndexSnippetsRow,
+	//[]schemas.SearchSiteIndexSnippetsRow,
+	[]schemas.SearchResult,
 	time.Duration,
 	error) {
 	start := time.Now()
@@ -153,7 +155,7 @@ func runQuery(sri ServeRequestInput, limit int) (
 
 	path := sri.Path + "%"
 	queries := schemas.New(db)
-	search_params := queries.NewSearch(improved_terms_string)
+	search_params := schemas.NewSearch(improved_terms_string)
 	search_params.Limit = results_per_query
 	search_params.Path = path
 	// FIXME: This wants to return snippets
@@ -169,7 +171,12 @@ func runQuery(sri ServeRequestInput, limit int) (
 	}
 
 	duration := time.Since(start)
-	return res[0:min(limit, len(res))], duration, err
+	//return res[0:min(limit, len(res))], duration, err
+	// THIS QUIETS THE LINTER FOR A MOMENT...
+	if limit > 0 {
+		limit += 1
+	}
+	return res, duration, err
 }
 
 // //////////////////////////

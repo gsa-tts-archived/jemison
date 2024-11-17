@@ -24,20 +24,20 @@ func setup(t *testing.T, sqlite_file string) *sqlite.PackTable {
 	return pt
 }
 
-func open(t *testing.T, sqlite_file string) *sqlite.PackTable {
-	pt, err := sqlite.OpenPackTable(sqlite_file)
-	if err != nil {
-		t.Error(err)
-	}
-	return pt
-}
+// func open(t *testing.T, sqlite_file string) *sqlite.PackTable {
+// 	pt, err := sqlite.OpenPackTable(sqlite_file)
+// 	if err != nil {
+// 		t.Error(err)
+// 	}
+// 	return pt
+// }
 
 func TestCreateTable(t *testing.T) {
 	setup(t, "a.db")
 }
 
 func _getLevel(h string) int64 {
-	s, _ := strconv.Atoi(h[1:len(h)])
+	s, _ := strconv.Atoi(h[1:])
 	return int64(s)
 }
 
@@ -84,7 +84,7 @@ func TestExtractHeaders(t *testing.T) {
 		}
 	}
 
-	search_params := pt.Queries.NewSearch("north")
+	search_params := schemas.NewSearch("north")
 	res, _ := pt.Queries.Search(pt.Context, search_params)
 	found := false
 	for _, r := range res {
