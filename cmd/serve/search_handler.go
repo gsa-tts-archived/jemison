@@ -10,7 +10,6 @@ import (
 
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/sqlite/schemas"
-	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/gin-gonic/gin"
 	"github.com/kljensen/snowball"
 	"go.uber.org/zap"
@@ -25,91 +24,7 @@ type ServeRequestInput struct {
 
 var statmap sync.Map
 
-// CC BY-SA 3.0
-// https://stackoverflow.com/a/30226442
-// My change was to make it generic.
-func permutate[T any](data []T) [][]T {
-	if len(data) == 0 {
-		return nil
-	}
-
-	permutation := make([]T, len(data))
-	indexInUse := make([]bool, len(data))
-
-	var ret [][]T
-	var f func(idx int)
-
-	f = func(idx int) {
-		if idx >= len(data) {
-			arr := make([]T, len(data))
-			copy(arr, permutation)
-			ret = append(ret, arr)
-			return
-		}
-		for i := 0; i < len(data); i++ {
-			if !indexInUse[i] {
-				indexInUse[i] = true
-				permutation[idx] = data[i]
-				f(idx + 1)
-				indexInUse[i] = false
-			}
-		}
-	}
-
-	f(0)
-	return ret
-}
-
-// Too few results? Permute!
-// 1. Take all the search terms (if there are more than two)
-// 2. Permute
-// 3. Delete the last term in each permutation
-// 4. Run those queries
-// 5. Keep the top `n` of each
-// 6. Interleave, and return
-
-func permuteSubqueries(queries *schemas.Queries,
-	path string,
-	improved_terms []string,
-	results_per_query int64) []schemas.SearchResult {
-
-	permuted := permutate(improved_terms)
-
-	shorter_queries := util.Map(permuted,
-		func(item []string) []string {
-			return item[0 : len(item)-1]
-		})
-
-	combined := make([][]schemas.SearchResult, 0)
-	for _, q := range shorter_queries {
-		res2, _ := queries.Search(context.Background(), &schemas.SearchParams{
-			Terms: q,
-			Path:  path,
-			Limit: results_per_query,
-		})
-		combined = append(combined, res2)
-	}
-
-	interleaved := make([]schemas.SearchResult, 0)
-	max_result_set_length := 0
-	for _, set := range combined {
-		if len(set) > max_result_set_length {
-			max_result_set_length = len(set)
-		}
-	}
-
-	for i := range max_result_set_length {
-		for _, c := range combined {
-			if i < len(c) {
-				interleaved = append(interleaved, c[i])
-			}
-		}
-	}
-
-	return interleaved
-}
-
-func runQuery(sri ServeRequestInput, limit int) (
+func runQuery(sri ServeRequestInput) (
 	//[]schemas.SearchSiteIndexSnippetsRow,
 	[]schemas.SearchResult,
 	time.Duration,
@@ -191,7 +106,7 @@ func SearchHandler(c *gin.Context) {
 		return
 	}
 
-	rows, duration, err := runQuery(sri, 10)
+	rows, duration, err := runQuery(sri)
 	runStats(sri, duration)
 
 	if err != nil {

@@ -2,31 +2,30 @@ package schemas
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 
 	"go.uber.org/zap"
 )
 
-func prepDB(sqlite_filename string) (*sql.DB, error) {
+// func prepDB(sqlite_filename string) (*sql.DB, error) {
 
-	// FIXME: Any params to the DB?
-	db, err := sql.Open("sqlite3", sqlite_filename+"?mode=ro")
-	if err != nil {
-		return nil, err
-	}
-	db.SetMaxOpenConns(100)
-	// https://phiresky.github.io/blog/2020/sqlite-performance-tuning/
-	db.Exec("pragma journal_mode = WAL")
-	db.Exec("pragma synchronous = normal")
-	db.Exec("pragma temp_store = file")
-	db.Exec("pragma temp_store_directory = /home/vcap/app/tmp")
-	// We don't have much RAM. No.
-	//db.Exec("pragma mmap_size = 30000000000")
-	// Unsure how this effects final filesize or performance on read.
-	// db.Exec("pragma page_size = 32768")
-	return db, nil
-}
+// 	// FIXME: Any params to the DB?
+// 	db, err := sql.Open("sqlite3", sqlite_filename+"?mode=ro")
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	db.SetMaxOpenConns(100)
+// 	// https://phiresky.github.io/blog/2020/sqlite-performance-tuning/
+// 	db.Exec("pragma journal_mode = WAL")
+// 	db.Exec("pragma synchronous = normal")
+// 	db.Exec("pragma temp_store = file")
+// 	db.Exec("pragma temp_store_directory = /home/vcap/app/tmp")
+// 	// We don't have much RAM. No.
+// 	//db.Exec("pragma mmap_size = 30000000000")
+// 	// Unsure how this effects final filesize or performance on read.
+// 	// db.Exec("pragma page_size = 32768")
+// 	return db, nil
+// }
 
 type SearchResult struct {
 	Terms      string
