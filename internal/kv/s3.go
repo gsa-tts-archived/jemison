@@ -14,6 +14,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var DEBUG_S3 = false
+
 // S3 holds a bucket structure (containing VCAP_SERVICES information)
 // and an S3 client connection from the min.io libraries.
 type S3 struct {
@@ -122,7 +124,9 @@ func (s3 *S3) S3PathToS3JSON(key string) (*S3JSON, error) {
 		return nil, err
 	}
 
-	zap.L().Debug("retrieved S3 object", zap.String("key", key))
+	if DEBUG_S3 {
+		zap.L().Debug("retrieved S3 object", zap.String("key", key))
+	}
 
 	raw, err := io.ReadAll(object)
 

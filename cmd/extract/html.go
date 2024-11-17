@@ -23,20 +23,9 @@ import (
 // https://alexgarcia.xyz/sqlite-vec/go.html
 
 func scrape_sel(sel *goquery.Selection) string {
-	content := ""
 	txt := sel.Text()
-	if len(txt) > 0 {
-		repl := strings.ToLower(txt)
-		// FIXME: This should be part of a standalone text processing
-		// module. Perhaps we don't always want to do this. For example,
-		// in the case of multi-lingual scraping.
-		//repl = util.RemoveStopwords(repl)
-		repl += " "
-		if len(repl) > 2 {
-			content += repl
-		}
-	}
-	return content
+	repl := strings.ToLower(txt)
+	return stripWhitespace(repl)
 }
 
 func stripWhitespace(s string) string {
@@ -45,9 +34,13 @@ func stripWhitespace(s string) string {
 }
 
 func _getTitle(doc *goquery.Document) string {
+	// Some pages are just really malformed.
+	// It turns out there are title tags elsewhere in the doc.
 	title := ""
 	doc.Find("title").Each(func(ndx int, sel *goquery.Selection) {
-		title = scrape_sel(sel)
+		if title == "" {
+			title = scrape_sel(sel)
+		}
 	})
 	return stripWhitespace(title)
 }
@@ -89,7 +82,6 @@ func _getBodyContent(doc *goquery.Document) string {
 		"bold",
 		"em",
 		"i",
-		"title",
 	} {
 		// zap.L().Debug("looking for", zap.String("elem", elem))
 		doc.Find(elem).Each(func(ndx int, sel *goquery.Selection) {
@@ -139,7 +131,7 @@ func extractHtml(obj *kv.S3JSON) {
 
 	zap.L().Debug("found content",
 		zap.Int("headers", len(headers)),
-		zap.String("content", content))
+		zap.Int("content length", len(content)))
 
 	// Store everything
 	copied_key := obj.Key.Copy()

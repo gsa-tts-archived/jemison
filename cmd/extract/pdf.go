@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strconv"
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	kv "github.com/GSA-TTS/jemison/internal/kv"
@@ -45,6 +46,8 @@ func extractPdf(obj *kv.S3JSON) {
 			zap.String("key", obj.Key.Render()))
 		return
 	} else {
+		// Pull the metadata out, and include in every object.
+		info := doc.Info()
 		for page_no := 0; page_no < doc.GetNPages(); page_no++ {
 
 			page_number_anchor := fmt.Sprintf("#page=%d", page_no+1)
@@ -53,9 +56,15 @@ func extractPdf(obj *kv.S3JSON) {
 			copied_key.Extension = util.JSON
 
 			page := doc.GetPage(page_no)
-			obj.Set("content", util.RemoveStopwords(page.Text()))
+			// obj.Set("content", util.RemoveStopwords(page.Text()))
+			obj.Set("content", page.Text())
 			obj.Set("path", copied_key.Path)
 			obj.Set("pdf_page_number", fmt.Sprintf("%d", page_no+1))
+			obj.Set("title", info.Title)
+			obj.Set("creation-date", strconv.Itoa(info.CreationDate))
+			obj.Set("modification-date", strconv.Itoa(info.ModificationDate))
+			obj.Set("pdf-version", info.PdfVersion)
+			obj.Set("pages", strconv.Itoa(info.Pages))
 
 			new_obj := kv.NewFromBytes(
 				ThisServiceName,

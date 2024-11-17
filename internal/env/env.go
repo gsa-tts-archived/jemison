@@ -12,6 +12,7 @@ import (
 )
 
 var Env *env
+var DEBUG_ENV = false
 
 // Constants for the attached services
 // These reach into the VCAP_SERVICES and are
@@ -201,11 +202,13 @@ func (e *env) GetDatabaseUrl(name string) (string, error) {
 
 func (e *env) GetObjectStore(name string) (Bucket, error) {
 	for _, b := range e.ObjectStores {
-		zap.L().Debug("GetObjectStore",
-			zap.String("bucket_name", b.Name),
-			zap.String("search_key", name),
-			zap.Bool("is_equal", b.Name == name),
-		)
+		if DEBUG_ENV {
+			zap.L().Debug("GetObjectStore",
+				zap.String("bucket_name", b.Name),
+				zap.String("search_key", name),
+				zap.Bool("is_equal", b.Name == name),
+			)
+		}
 
 		if b.Name == name {
 			return b, nil

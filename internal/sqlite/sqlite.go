@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
+	"os"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -51,10 +52,18 @@ func CreatePackTable(db_filename string) (*PackTable, error) {
 	pt.Filename = db_filename
 
 	ctx := context.Background()
+	// What if the file already exists? We should clean up first.
+	// When testing locally, it is the same location as where we serve from.
+	// In cloud.gov, this will be on a pack instance.
+	os.Remove(db_filename)
 
 	// FIXME: Any params to the DB?
 	db, err := sql.Open("sqlite3", db_filename+"?_fk=true")
 	if err != nil {
+		zap.L().Error("cannot create SQLite file for packing",
+			zap.String("db_filename", db_filename),
+			zap.String("err", err.Error()),
+		)
 		return nil, err
 	}
 	db.SetMaxOpenConns(100)
@@ -96,10 +105,10 @@ func (pt *PackTable) PrepForNetwork() {
 func SqliteFilename(db_filename string) string {
 	// Always add an .sqlite extension to filenames.
 	if has_ext := strings.HasSuffix(db_filename, "sqlite"); has_ext {
-		zap.L().Debug("not adding .sqlite to filename")
+		//zap.L().Debug("not adding .sqlite to filename")
 		return db_filename
 	} else {
-		zap.L().Debug("adding .sqlite to filename")
+		//zap.L().Debug("adding .sqlite to filename")
 		db_filename = db_filename + ".sqlite"
 		return db_filename
 	}

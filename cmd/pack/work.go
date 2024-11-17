@@ -40,6 +40,72 @@ func optionalSlash(path string) string {
 	}
 }
 
+func packHtml(pt *sqlite.PackTable, s3json *kv.S3JSON) {
+	// We have more fields than before.
+	path_id, err := pt.Queries.InsertPath(pt.Context, s3json.GetString("path"))
+	if err != nil {
+		zap.L().Error("could not insert path when packing",
+			zap.String("_key", s3json.GetString("_key")),
+			zap.String("err", err.Error()),
+			zap.String("path", s3json.GetString("path")),
+		)
+	}
+
+	// Insert the title
+	_, err = pt.Queries.InsertTitle(pt.Context, schemas.InsertTitleParams{
+		PathID: path_id,
+		Title:  s3json.GetString("title"),
+	})
+	if err != nil {
+		zap.L().Error("could not insert title when packing",
+			zap.String("_key", s3json.GetString("_key")),
+			zap.String("err", err.Error()),
+			zap.String("title", s3json.GetString("title")))
+	}
+
+	// Insert the content
+	body := s3json.GetString("body")
+	_, err = pt.Queries.InsertBody(pt.Context, schemas.InsertBodyParams{
+		PathID: path_id,
+		Body:   body,
+	})
+	if err != nil {
+		zap.L().Error("could not insert body when packing",
+			zap.String("_key", s3json.GetString("_key")),
+			zap.String("err", err.Error()),
+			zap.String("sqlite_filename", pt.Filename),
+			zap.String("title", s3json.GetString("title")),
+			zap.String("body", body[:min(len(body), 30)]+"..."),
+		)
+	}
+}
+
+func packPdf(pt *sqlite.PackTable, s3json *kv.S3JSON) {
+	// We have more fields than before.
+	path_id, err := pt.Queries.InsertPath(pt.Context, s3json.GetString("path"))
+	if err != nil {
+		zap.L().Error("could not insert path when packing PDF", zap.String("path", s3json.GetString("path")))
+	}
+	// Insert the title
+	_, err = pt.Queries.InsertTitle(pt.Context, schemas.InsertTitleParams{
+		PathID: path_id,
+		Title:  s3json.GetString("title"),
+	})
+	if err != nil {
+		zap.L().Error("could not insert title when packing PDF",
+			zap.String("title", s3json.GetString("title")))
+	}
+	// Insert the content
+	_, err = pt.Queries.InsertBody(pt.Context, schemas.InsertBodyParams{
+		PathID: path_id,
+		Body:   s3json.GetString("content"),
+	})
+	if err != nil {
+		zap.L().Error("could not insert body when packing PDF",
+			zap.String("title", s3json.GetString("title")))
+	}
+}
+
 func PackTheDatabase(host string) {
 
 	// Look into the "extract" bucket and get a
@@ -66,6 +132,8 @@ func PackTheDatabase(host string) {
 		// 2) we want to send this back to the queue.
 		//
 		// FIXME: Add a client to queue this back for ourselves.
+		zap.L().Warn("not enough space to pack the database",
+			zap.Float64("database size", float64(size)), zap.Float64("available", float64(available)))
 		return
 	}
 
@@ -81,30 +149,13 @@ func PackTheDatabase(host string) {
 			zap.L().Error("could not fetch object for packing",
 				zap.String("key", s3json.Key.Render()))
 		}
-		//JSON := s3json.GetJSON()
 
-		// We have more fields than before.
-		path_id, err := pt.Queries.InsertPath(pt.Context, s3json.GetString("path"))
-		if err != nil {
-			zap.L().Error("could not insert path when packing", zap.String("path", s3json.GetString("path")))
-		}
-		// Insert the title
-		_, err = pt.Queries.InsertTitle(pt.Context, schemas.InsertTitleParams{
-			PathID: path_id,
-			Title:  s3json.GetString("title"),
-		})
-		if err != nil {
-			zap.L().Error("could not insert title when packing",
-				zap.String("title", s3json.GetString("title")))
-		}
-
-		// Insert the content
-		_, err = pt.Queries.InsertBody(pt.Context, schemas.InsertBodyParams{
-			PathID: path_id,
-			Body:   s3json.GetString("body"),
-		})
-		if err != nil {
-			zap.L().Error("could not insert body when packing", zap.String("body", s3json.GetString("body")))
+		contentType := s3json.GetString("content-type")
+		switch contentType {
+		case "text/html":
+			packHtml(pt, s3json)
+		case "application/pdf":
+			packPdf(pt, s3json)
 		}
 	}
 
@@ -130,7 +181,7 @@ func FinalizeTimer(in <-chan string) {
 			// When we see a domain, reset the clock.
 			// E.g. a clock is running on alice.gov.
 			// Reset it to "now" so that we have more time until it times out.
-			zap.L().Debug("resetting clock", zap.String("host", host))
+			//zap.L().Debug("resetting clock", zap.String("host", host))
 			clocks[host] = time.Now()
 
 		case <-timeout.C:
@@ -144,13 +195,14 @@ func FinalizeTimer(in <-chan string) {
 					s3 := kv.NewS3("serve")
 					err := s3.FileToS3Path(sqlite_filename, sqlite_filename, util.SQLite3.String())
 					if err != nil {
-						log.Println("PACK could not store to file", sqlite_filename)
-						log.Fatal(err)
+						zap.L().Fatal("pack could not store to file",
+							zap.String("sqlite_filename", sqlite_filename),
+							zap.String("err", err.Error()))
 					}
 					os.Remove(sqlite_filename)
 
 					// Enqueue serve
-					zap.L().Debug("inserting serve job")
+					//zap.L().Debug("inserting serve job")
 					ctx, tx := common.CtxTx(servePool)
 					serveClient.InsertTx(ctx, tx, common.ServeArgs{
 						Filename: sqlite_filename,

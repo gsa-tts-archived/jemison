@@ -70,11 +70,26 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	// We don't want to do anything if this is in the recently visited cache.
 	zap.L().Debug("working", zap.String("url", host_and_path(job)))
 
+	// Use the queue instead of sleeping. It is keeping fetchers from working.
+	last_hit_time, ok := last_hit.Load(job.Args.Host)
+	// If we're in the map, and we're within 2s, we should keep checking after a backoff
+	polite_duration := time.Duration(polite_sleep) * time.Second
+
+	if ok && (time.Since(last_hit_time.(time.Time)) < polite_duration) {
+		queueing.InsertFetch(
+			job.Args.Scheme,
+			job.Args.Host,
+			job.Args.Path,
+		)
+		time.Sleep(200 * time.Millisecond)
+		return nil
+	}
+
 	page_json, err := fetch_page_content(job)
 	if err != nil {
 		// The queueing system retries should save us here; bail if we
 		// can't get the content now.
-		if !strings.Contains(err.Error(), common.NonIndexableContentType.String()) {
+		if strings.Contains(err.Error(), common.NonIndexableContentType.String()) {
 			zap.L().Warn("could not fetch page content",
 				zap.String("scheme", job.Args.Scheme),
 				zap.String("host", job.Args.Host),

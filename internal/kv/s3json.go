@@ -18,6 +18,8 @@ import (
 	"github.com/GSA-TTS/jemison/internal/util"
 )
 
+var DEBUG_S3JSON = false
+
 // NewFromBytes(bucket_name string, host string, path string, m []byte) *S3JSON
 // NewEmptyS3JSON(bucket_name string, host string, path string) *S3JSON
 // (s3json *S3JSON) IsEmpty() bool
@@ -163,7 +165,9 @@ func (s3json *S3JSON) Load() error {
 		return err
 	}
 
-	zap.L().Debug("retrieved S3 object", zap.String("key", key))
+	if DEBUG_S3JSON {
+		zap.L().Debug("retrieved S3 object", zap.String("key", key))
+	}
 
 	raw, err := io.ReadAll(object)
 

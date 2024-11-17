@@ -20,15 +20,6 @@ func newS3FromBucketName(bucket_name string) S3 {
 		log.Fatal("KV INVALID BUCKET NAME ", bucket_name)
 	}
 
-	// Check if we already have this in the map, so reconnects don't create
-	// new S3 objects/etc.
-	// if s3, ok := buckets.Load(bucket_name); ok {
-	// 	zap.L().Debug("in the sync map", zap.String("bucket_name", bucket_name))
-	// 	return s3.(S3)
-	// } else {
-	// 	zap.L().Debug("not in the sync map", zap.String("bucket_name", bucket_name))
-	// }
-
 	s3 := S3{}
 
 	// Grab a reference to our bucket from the config.
@@ -39,10 +30,12 @@ func newS3FromBucketName(bucket_name string) S3 {
 		os.Exit(1)
 	}
 
-	zap.L().Debug("got reference to bucket from vcap",
-		zap.String("name", b.Name),
-		zap.String("bucket", b.CredentialString("bucket")),
-		zap.String("region", b.CredentialString("region")))
+	if DEBUG_S3 {
+		zap.L().Debug("got reference to bucket from vcap",
+			zap.String("name", b.Name),
+			zap.String("bucket", b.CredentialString("bucket")),
+			zap.String("region", b.CredentialString("region")))
+	}
 
 	s3.Bucket = b
 
@@ -75,8 +68,10 @@ func newS3FromBucketName(bucket_name string) S3 {
 	}
 
 	if found {
-		zap.L().Debug("pre-existing bucket in S3",
-			zap.String("bucket_name", bucket_name))
+		if DEBUG_S3 {
+			zap.L().Debug("pre-existing bucket in S3",
+				zap.String("bucket_name", bucket_name))
+		}
 		// Make sure to insert the metadata into the sync.Map
 		// when we find a bucket that already exists.
 		// buckets.Store(bucket_name, s3)
@@ -97,12 +92,6 @@ func newS3FromBucketName(bucket_name string) S3 {
 			log.Fatal("KV could not create bucket ", bucket_name)
 		}
 	} // Skip container creation in CF
-
-	// Put a pointer to this object in our syncmap.
-	// buckets.Store(bucket_name, &s3)
-
-	// loaded, _ := buckets.Load(bucket_name)
-	//zap.L().Info("bucket ready", zap.String("bucket_name", loaded.(*S3).Bucket.Name))
 
 	return s3
 }

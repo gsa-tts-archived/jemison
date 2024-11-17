@@ -114,7 +114,7 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 	if !util.IsSearchableMimeType(contentType) {
 		return nil, fmt.Errorf(
 			common.NonIndexableContentType.String()+
-				"non-indexable MIME type: %s", u.String())
+				" non-indexable MIME type: %s", u.String())
 	}
 
 	// Write the raw content to a file.

@@ -25,7 +25,7 @@
           <div id="stats"></div>
         </div>
         <main class="desktop:grid-col-9 usa-prose" id="main-content">
-          <h1>Search some things</h1>
+          <h1>A search prototype</h1>
           <p class="usa-intro">
             This is a search engine in under 3000 lines of code.
           </p>
@@ -155,6 +155,7 @@
                 if (domain == "{SEARCH_HOST}") {
                   domain = trim_to_chars(domain, 32)
                   bold(stats, "On " + domain)
+                  statPara(stats, "Paths indexed", data["{SEARCH_HOST}"]["pages"], "")
                   statPara(stats, "Avg. query time", nanoToMillis(data["{SEARCH_HOST}"]["average_query_time"]), "ms")
                   statPara(stats, "Queries", data["{SEARCH_HOST}"]["queries"], "")
 
