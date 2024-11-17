@@ -108,7 +108,8 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 		return nil, err
 	}
 
-	contentType := headResp.Header.Get("content-type")
+	// Get a clean mime type right away
+	contentType := util.CleanMimeType(headResp.Header.Get("content-type"))
 	log.Debug("checking HEAD MIME type", zap.String("content-type", contentType))
 	if !util.IsSearchableMimeType(contentType) {
 		return nil, fmt.Errorf(
@@ -133,29 +134,32 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 	s3 := kv.NewS3(ThisServiceName)
 	s3.FileToS3(key, tempFilename, util.GetMimeType(contentType))
 
-	response := map[string]string{
+	response := make(map[string]string)
+	// Copy in all of the response headers.
+	// Doing this first, so we can overwrite some things.
+	for k := range headResp.Header {
+		response[strings.ToLower(k)] = headResp.Header.Get(k)
+	}
+
+	for k, v := range map[string]string{
 		"raw":            key.Render(),
 		"sha1":           fmt.Sprintf("%x", theSHA),
 		"content-length": fmt.Sprintf("%d", bytesRead),
 		"scheme":         job.Args.Scheme,
 		"host":           job.Args.Host,
 		"path":           job.Args.Path,
+	} {
+		response[k] = v
 	}
+
 	// FIXME
 	// There is a texinfo standard library for normalizing content types.
 	// Consider using it. I want a simplified string, not utf-8 etc.
-	response["content-type"] = util.GetMimeType(response["content-type"])
+	response["content-type"] = contentType
 
 	zap.L().Debug("content read",
 		zap.String("content-length", response["content-length"]),
 	)
-
-	// Copy in all of the response headers.
-	// This used to be the GET headers, but... they're hiding.
-	// Going to do this for now, because I don't know what we'll need.
-	for k := range headResp.Header {
-		response[strings.ToLower(k)] = headResp.Header.Get(k)
-	}
 
 	return response, nil
 }

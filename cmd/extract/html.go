@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/GSA-TTS/jemison/internal/common"
@@ -38,12 +39,17 @@ func scrape_sel(sel *goquery.Selection) string {
 	return content
 }
 
+func stripWhitespace(s string) string {
+	var re = regexp.MustCompile(`\s\s+`)
+	return re.ReplaceAllString(s, " ")
+}
+
 func _getTitle(doc *goquery.Document) string {
 	title := ""
 	doc.Find("title").Each(func(ndx int, sel *goquery.Selection) {
 		title = scrape_sel(sel)
 	})
-	return title
+	return stripWhitespace(title)
 }
 
 func _getHeaders(doc *goquery.Document) map[string][]string {
@@ -62,7 +68,7 @@ func _getHeaders(doc *goquery.Document) map[string][]string {
 	} {
 		accum := make([]string, 0)
 		doc.Find(tag).Each(func(ndx int, sel *goquery.Selection) {
-			accum = append(accum, scrape_sel(sel))
+			accum = append(accum, stripWhitespace(scrape_sel(sel)))
 		})
 		headers[tag] = accum
 	}
@@ -91,7 +97,9 @@ func _getBodyContent(doc *goquery.Document) string {
 			content += scrape_sel(sel)
 		})
 	}
-	return content
+
+	// Get rid of all extraneous whitespace
+	return stripWhitespace(content)
 }
 
 // //////////////////
@@ -128,6 +136,10 @@ func extractHtml(obj *kv.S3JSON) {
 	title := _getTitle(doc)
 	headers := _getHeaders(doc)
 	content := _getBodyContent(doc)
+
+	zap.L().Debug("found content",
+		zap.Int("headers", len(headers)),
+		zap.String("content", content))
 
 	// Store everything
 	copied_key := obj.Key.Copy()

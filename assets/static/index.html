@@ -77,6 +77,21 @@
 
               var list = document.getElementById('six-list');
 
+              for (var k in userData.results) {
+                var r = userData.results[k];
+                if (r.PathString.length > 0) {
+                  var entry = document.createElement('li');
+                  // Fixme... return the title in the result
+                  var h = "<a href='https://{SEARCH_HOST}" + r.PathString + "' target='_blank'>" + r.PageTitle + "</a>"
+                  h += "<br/>" + "<span style=\"color:gray\">Terms used: " + r.Terms + "</span>"
+                  h += "<br/>" + r.Snippet;
+                  entry.innerHTML = h
+                  list.appendChild(entry);
+
+                }
+              }
+
+
               var stats = document.getElementById('stats')
               stats.innerHTML = "";
               query_time = userData.elapsed;
@@ -84,41 +99,31 @@
               statPara(stats, "Query time", nanoToMillis(query_time), "ms")
               AllTheStats(stats)
 
-              for (var k in userData.results) {
-                var r = userData.results[k];
-                if (r.path.length > 0) {
-                  var entry = document.createElement('li');
-                  var h = "<a href='https://{SEARCH_HOST}" + r.path + "' target='_blank'>" + r.path + "</a>"
-                  h += "<br/>" + r.snippet
-                  entry.innerHTML = h
-                  list.appendChild(entry);
-
-                }
-              }
             })
             .catch(error => {
               console.error('Error:', error);
             });
         };
 
+        /////////////////////////
+        // statPara
         function statPara(stats, tag, value, units) {
           var elapsedp = document.createElement('p')
           elapsedp.classList.add("margin-left-1")
-          if (value == null || Number.isNaN(value)) {
-            value = "<i>no data</i>"
-            units = ""
-          }
           elapsedp.innerHTML = tag + ": " + value + " " + units
-
           stats.appendChild(elapsedp)
         }
 
+        /////////////////////
+        // nanoToMillis
         function nanoToMillis(v) {
           v = Math.round(v / 100000)
           v = v / 10
           return v
         }
 
+        //////////////////////
+        // AllTheStats
         function AllTheStats(stats) {
           site_url = "{HOST}"
           var get_url = "{SCHEME}://{HOST}:{PORT}/api/stats"
@@ -146,12 +151,10 @@
               stats.appendChild(document.createElement('hr'))
 
               for (domain of data["hosted_domains"]) {
-                compared = (domain === "{SEARCH_HOST}")
-                console.log("compare ===", domain, "{SEARCH_HOST}", compared)
-                if (compared) {
+                console.log(domain, "{SEARCH_HOST}")
+                if (domain == "{SEARCH_HOST}") {
                   domain = trim_to_chars(domain, 32)
                   bold(stats, "On " + domain)
-                  statPara(stats, "Pages indexed", data["{SEARCH_HOST}"]["pages"], "")
                   statPara(stats, "Avg. query time", nanoToMillis(data["{SEARCH_HOST}"]["average_query_time"]), "ms")
                   statPara(stats, "Queries", data["{SEARCH_HOST}"]["queries"], "")
 
@@ -167,16 +170,12 @@
                     }
                   }
 
-                  if (top_queries.length > 0) {
+                  if (top_queries != []) {
 
                     bold(stats, "Top queries")
                     top_queries.sort(function (a, b) { return a[1] - b[1] }).reverse()
                     console.log(top_queries)
-                    max = top_queries.length
-                    if (max > 3) {
-                      max = 3
-                    }
-                    for (let step = 0; step < max; step++) {
+                    for (let step = 0; step < 3; step++) {
                       statPara(stats, top_queries[step][0], top_queries[step][1], "")
                     }
                   }
@@ -186,6 +185,8 @@
             })
         }
 
+        //////////////////////////////////
+        // trim_to_chars
         function trim_to_chars(domain, n) {
           if (domain.length >= n) {
             first = domain.substr(0, 12)
@@ -196,14 +197,18 @@
           }
         }
 
+        /////////////////////////////////////
+        // bold
         function bold(parent, msg) {
           e = document.createElement('p')
-          b = document.createElement('b')
-          b.innerHTML = msg
-          e.appendChild(b)
-          parent.appendChild(e)
+                    b = document.createElement('b')
+                    b.innerHTML = msg
+                    e.appendChild(b)
+                    parent.appendChild(e)
         }
 
+        //////////////////////////////////////////
+        // getSortedHashDesc
         function getSortedHashDesc(inputHash) {
           var resultHash = {};
 
@@ -216,6 +221,8 @@
           return resultHash;
         }
 
+        //////////////////////////////////////////
+        // getSortedHashAsc
         function getSortedHashAsc(inputHash) {
           var resultHash = {};
 
@@ -228,6 +235,8 @@
           return resultHash;
         }
 
+        //////////////////////////////////////////
+        // HandleTheKeyboardClicks
         function HandleTheKeyboardClicks() {
           var key = window.event.keyCode;
           // If the user has pressed enter
@@ -237,7 +246,10 @@
           return true;
         }
 
-        function GetDatabases(next) {
+
+        //////////////////////////////////
+        // GetDatabases
+        function GetDatabases() {
           var post_url = "{SCHEME}://{HOST}:{PORT}/api/databases"
           fetch(post_url, {
             method: 'GET',
@@ -253,34 +265,21 @@
             })
             .then(responseData => {
               console.log('Response Data:', responseData);
-
-              //<ul class="usa-sidenav" id="database-list">
-              new_list = document.createElement("ul")
-              new_list.classList.add("usa-sidenav")
-
-              // var list = document.getElementById('database-list');
+              document.getElementById("database-list").innerHTML = "";
+              var list = document.getElementById('database-list');
               for (var k in responseData.databases) {
                 var db = responseData.databases[k];
                 var entry = document.createElement('li');
                 entry.classList.add("usa-sidenav__item")
-                compared = ("{SEARCH_HOST}" === db)
-                var link = document.createElement('a')
-                if (compared) {
+                if ("{HOST}" === db) {
                   entry.classList.add("usa-current");
-                } else {
                 }
-                link.innerHTML = trim_to_chars(db, 30)
+                var link = document.createElement('a')
+                link.innerHTML = trim_to_chars(db, 32)
                 link.setAttribute("href", "{SCHEME}://{HOST}:{PORT}/search/" + db)
                 entry.appendChild(link)
-                new_list.appendChild(entry);
-                
-                list = document.getElementById("database-list")
-                list.innerHTML = "";
-                list.appendChild(new_list);
-
-              }
-              if (next && (next != null)) {
-                next(responseData)
+                list.appendChild(entry);
+                console.log(entry);
               }
             })
             .catch(error => {
@@ -289,19 +288,8 @@
         };
 
 
-        function RedirectAndShow(data) {
-          console.log("the_databases", data)
-          loc = window.location.href
-          console.log(loc, loc.endsWith("start"), data["databases"].length)
-          if (loc.endsWith("start") && data["databases"].length > 0) {
-            console.log("REDIRECTING")
-            window.location.href = data["databases"][0]
-          }
-          var stats = document.getElementById('stats')
-          AllTheStats(stats);
-        }
         function DoAllTheThings() {
-          GetDatabases(RedirectAndShow);
+          GetDatabases();
         }
 
 
@@ -314,7 +302,17 @@
 
     </div>
   </div>
-  
+  <div class="usa-identifier">
+    <section class="usa-identifier__section usa-identifier__section--usagov"
+      aria-label="U.S. government information and services">
+      <div class="usa-identifier__container">
+        <div class="usa-identifier__usagov-description">
+          Looking for U.S. government information and services?
+        </div>
+        <a href="https://www.usa.gov/" class="usa-link">Visit USA.gov</a>
+      </div>
+    </section>
+  </div>
 </body>
 
 </html>

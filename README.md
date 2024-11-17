@@ -16,19 +16,18 @@ It is based on a series of experiments in search and embedded database technolog
 > 
 > `jemison` is:
 > 
-> 1. **MAINTAINABLE**: 20x fewer lines of code
+> 1. **MAINTAINABLE**: 15x fewer lines of code
 > 2. **AFFORDABLE** 10x less resource intenstive (read: hosting costs)
-> 3. **BLAZING FAST**: 10x more performant (and scales horitzontally)
+> 3. **FAST**: 10x more performant (and scales horitzontally)
 
 Why `jemison` is an MVP candidate for search:
 
 1. `jemison` can already crawl and index HTML and PDFs, handling diacritics (e.g. Español).
-2. `jemison` can deploy a full crawl/index/serve solution in 1GB of RAM on [cloud.gov](https://cloud.gov/).
-3. `jemison` is 2500 lines of code: easy to maintain, with an extensible, distributed architecture.
+2. `jemison` can deploy a full crawl/index/serve solution in 1GB of RAM on [cloud.gov](https://cloud.gov/)<sup>1</sup>.
+3. `jemison` is 4000 lines of code: easy to maintain, with an extensible, distributed architecture.
 4. `jemison` can handle 55K requests per minute (10x the current search.gov load) with 256**M**B of RAM.
 
-I lied. There is no #5.
-
+<sup>1</sup> <em>This was true at one point. It needs a touch more now.</em>
 
 ## running the experiment
 

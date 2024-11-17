@@ -1,76 +1,5 @@
 -- -- https://github.com/mattn/go-sqlite3?tab=readme-ov-file
 
--- CREATE TABLE paths (
---   path TEXT,
---   UNIQUE(path)
--- );
-
--- CREATE TABLE titles (
---   path_rowid INTEGER,
---   kind INTEGER,
---   txt TEXT,
---   FOREIGN KEY(path_rowid) REFERENCES paths(rowid)
--- );
-
--- CREATE TABLE headers (
---   path_rowid INTEGER,
---   kind INTEGER,
---   level INTEGER,
---   txt TEXT,
---   FOREIGN KEY(path_rowid) REFERENCES paths(rowid)
--- );
-
--- CREATE TABLE bodies (
---   path_rowid INTEGER,
---   kind INTEGER,
---   tag TEXT,
---   txt TEXT,
---   FOREIGN KEY(path_rowid) REFERENCES paths(rowid)
--- );
-
--- CREATE VIRTUAL TABLE titles_fts USING fts5(
---   path_rowid UNINDEXED,
---   kind UNINDEXED,
---   txt, 
---   content='titles',
---   content_rowid='rowid' 
--- );
-
--- CREATE VIRTUAL TABLE headers_fts USING fts5(
---   path_rowid UNINDEXED,
---   kind UNINDEXED,
---   level UNINDEXED,
---   txt,
---   content='headers',
---   content_rowid='rowid' 
--- );
-
--- CREATE VIRTUAL TABLE bodies_fts USING fts5(
---   path_rowid UNINDEXED,
---   kind UNINDEXED,
---   txt,
---   content='bodies',
---   content_rowid='rowid' 
--- );
-
--- CREATE TRIGGER titles_ai AFTER INSERT ON titles
---     BEGIN
---         INSERT INTO titles_fts (rowid, path_rowid, kind, txt)
---         VALUES (new.rowid, new.path_rowid, new.kind, new.txt);
---     END;
-
--- CREATE TRIGGER headers_ai AFTER INSERT ON headers
---     BEGIN
---         INSERT INTO headers_fts (rowid, path_rowid, kind, txt, level)
---         VALUES (new.rowid, new.path_rowid, new.txt, new.kind, new.level);
---     END;
-
--- CREATE TRIGGER bodies_ai AFTER INSERT ON bodies
---     BEGIN
---         INSERT INTO bodies_fts (rowid, path_rowid, kind, txt)
---         VALUES (new.rowid, new.path_rowid, new.kind, new.txt);
---     END;
-
 insert into paths 
   (path)
   values ("/a"), ("/b");
@@ -84,18 +13,18 @@ insert into titles
 ;
 commit;
 
-begin;
-insert into headers
-  (path_id, kind, level, header)
-  values
-    (1, 1, 1, "H the outline"),
-    (1, 1, 1, "H a shaggy dog story"),
-    (1, 1, 2, "H the cats and dogs"),
-    (2, 1, 1, "H something new"),
-    (2, 1, 2, "H something old"),
-    (2, 1, 3, "H something borrowed")
-;
-commit;
+-- begin;
+-- insert into headers
+--   (path_id, kind, level, header)
+--   values
+--     (1, 1, 1, "H the outline"),
+--     (1, 1, 1, "H a shaggy dog story"),
+--     (1, 1, 2, "H the cats and dogs"),
+--     (2, 1, 1, "H something new"),
+--     (2, 1, 2, "H something old"),
+--     (2, 1, 3, "H something borrowed")
+-- ;
+-- commit;
 
 begin;
 insert into bodies
@@ -209,4 +138,35 @@ SELECT
       FROM bodies_fts
       WHERE body MATCH 'the'
     ORDER BY weight DESC)
+  ;
+SELECT PRINTF("");
+
+
+SELECT PRINTF("more params");
+SELECT PRINTF("---");
+
+SELECT 
+  path_id,
+  (SELECT path from paths WHERE id = path_id), 
+  kind,
+  weight,
+	rank,
+  txt
+  FROM
+    (SELECT titles_fts.path_id as path_id, 4.0 as weight, rank, kind, title as txt
+      FROM titles_fts
+      WHERE title MATCH 'dog dog* world'
+				AND path_id IN (SELECT path_id FROM paths WHERE path LIKE '%')
+    UNION ALL
+    SELECT headers_fts.path_id as path_id, 2.0 as weight, rank, kind, header as txt
+      FROM headers_fts
+      WHERE header MATCH 'dog dog* world'
+				AND path_id IN (SELECT path_id FROM paths WHERE path LIKE '%')
+    UNION ALL
+    SELECT bodies_fts.path_id as path_id, 1.0 as weight, rank, kind, body as txt
+      FROM bodies_fts
+      WHERE body MATCH 'dog dog* world'
+				AND path_id IN (SELECT path_id FROM paths WHERE path LIKE '%')
+    ORDER BY weight DESC, rank ASC)
+		LIMIT 10
   ;

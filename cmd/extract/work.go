@@ -33,7 +33,10 @@ func (w *ExtractWorker) Work(ctx context.Context, job *river.Job[common.ExtractA
 		zap.String("host", job.Args.Host),
 		zap.String("path", job.Args.Path))
 
-	s3json := kv.NewEmptyS3JSON("fetch", util.ToScheme(job.Args.Scheme), job.Args.Host, job.Args.Path)
+	s3json := kv.NewEmptyS3JSON("fetch",
+		util.ToScheme(job.Args.Scheme),
+		job.Args.Host,
+		job.Args.Path)
 	s3json.Load()
 
 	extract(s3json)

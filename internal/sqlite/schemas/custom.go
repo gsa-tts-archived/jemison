@@ -29,12 +29,15 @@ func prepDB(sqlite_filename string) (*sql.DB, error) {
 }
 
 type SearchResult struct {
+	Terms      string
 	PathID     int64
-	PathString string
+	PageTitle  string
 	Kind       int64
 	Weight     float64
 	Rank       float64
 	Text       string
+	PathString string
+	Snippet    string
 }
 
 type SearchParams struct {
@@ -48,7 +51,7 @@ func NewSearch(terms string) *SearchParams {
 	sp := &SearchParams{}
 	sp.Terms = strings.Split(terms, " ")
 	// By default, match all paths.
-	sp.Path = "%"
+	sp.Path = "%%"
 	sp.Limit = 10
 	sp.Offset = 0
 	return sp
@@ -69,27 +72,56 @@ SELECT
   kind,
   weight,
 	rank,
-  txt
+	page_title,
+	snip
   FROM
-    (SELECT titles_fts.path_id as path_id, 4.0 as weight, rank, kind, title as txt
+    (SELECT 
+			titles_fts.path_id as path_id, 
+			4.0 as weight, 
+			rank, 
+			kind, 
+			title as txt, 
+			title as page_title, 
+			snippet(titles_fts, 2, '<b>', '</b>', '...', 8) as snip
       FROM titles_fts
-      WHERE title MATCH ?1
-				AND path_id IN (SELECT path_id FROM paths WHERE path LIKE ?2)
+      WHERE titles_fts MATCH ?1
+				AND titles_fts.path_id IN (SELECT path_id FROM paths WHERE path LIKE ?2)
     UNION ALL
-    SELECT headers_fts.path_id as path_id, 2.0 as weight, rank, kind, header as txt
+    SELECT 
+			headers_fts.path_id as path_id, 
+			2.0 as weight, 
+			rank, 
+			kind, 
+			header as txt, 
+			(select title from titles where headers_fts.path_id = titles.path_id) as page_title,
+			snippet(headers_fts, 3, '<b>', '</b>', '...', 16) as snip
       FROM headers_fts
-      WHERE header MATCH ?1
-				AND path_id IN (SELECT path_id FROM paths WHERE path LIKE ?2)
+      WHERE headers_fts MATCH ?1
+				AND headers_fts.path_id IN (SELECT path_id FROM paths WHERE path LIKE ?2)
     UNION ALL
-    SELECT bodies_fts.path_id as path_id, 1.0 as weight, rank, kind, body as txt
-      FROM bodies_fts
-      WHERE body MATCH ?1
-				AND path_id IN (SELECT path_id FROM paths WHERE path LIKE ?2)
+    SELECT 
+			bodies_fts.path_id as path_id, 
+			1.0 as weight, 
+			rank, 
+			kind, 
+			body as txt, 
+			(select title from titles where bodies_fts.path_id = titles.path_id) as page_title,
+			snippet(bodies_fts, 2, '<b>', '</b>', '...', 32) as snip
+			FROM bodies_fts
+      WHERE bodies_fts MATCH ?1
+				AND bodies_fts.path_id IN (SELECT path_id FROM paths WHERE path LIKE ?2)
     ORDER BY weight DESC, rank ASC)
 		LIMIT ?3
 		OFFSET ?4
   ;
 `
+
+	zap.L().Debug("running FTS5 query",
+		zap.String("params", params.TermsToString()),
+		zap.String("path", params.Path),
+		zap.Int64("limit", params.Limit),
+		zap.Int64("offset", params.Offset))
+
 	rows, err := q.db.QueryContext(ctx,
 		query,
 		params.TermsToString(),
@@ -98,22 +130,33 @@ SELECT
 		params.Offset,
 	)
 	if err != nil {
-		zap.L().Error("FTS5 search errored", zap.String("err", err.Error()))
+		zap.L().Warn("FTS5 search errored",
+			zap.String("params", params.TermsToString()),
+			zap.String("path", params.Path),
+			zap.Int64("limit", params.Limit),
+			zap.Int64("offset", params.Offset),
+		)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var results []SearchResult
-
+	// Always have an empty set to return.
+	results := make([]SearchResult, 0)
+	// Append any results.
+	// The order of the .Scan must match the order of columns
+	// defined in the query results above.
 	for rows.Next() {
 		var sr SearchResult
+		sr.Terms = params.TermsToString()
 		if err := rows.Scan(
 			&sr.PathID,
 			&sr.PathString,
 			&sr.Kind,
 			&sr.Weight,
 			&sr.Rank,
-			&sr.Text); err != nil {
+			&sr.PageTitle,
+			&sr.Snippet,
+		); err != nil {
 			return results, err
 		}
 		results = append(results, sr)

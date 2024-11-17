@@ -15,7 +15,7 @@ local parameters = [
   ],
   [
     'debug_level',
-    { cf: 'warn', container: 'info' },
+    { cf: 'warn', container: 'debug' },
   ],
   [
     'polite_sleep',

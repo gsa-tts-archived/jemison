@@ -15,7 +15,7 @@ local parameters = [
   ],
   [
     'debug_level',
-    { cf: 'warn', container: 'info' },
+    { cf: 'warn', container: 'debug' },
   ],
   [
     # This used to be really critical, because the packer was 
@@ -24,7 +24,7 @@ local parameters = [
     # multiple times, it is OK. Also, we won't build more than once
     # every "timeout seconds," so really it is more of a flush.
     'packing_timeout_seconds',
-    { cf: B.minutes(10), container: B.minutes(5) },
+    { cf: B.minutes(10), container: 15 },
   ],
 ];
 

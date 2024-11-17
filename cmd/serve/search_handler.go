@@ -138,7 +138,10 @@ func runQuery(sri ServeRequestInput, limit int) (
 			}
 		}
 	}
-	improved_terms_string := strings.Join(improved_terms, " ")
+
+	// Definitely need to OR the terms here.
+	// Otherwise, we're building a large implicit AND
+	improved_terms_string := strings.Join(improved_terms, " OR ")
 
 	zap.L().Debug("search string",
 		zap.String("original", sri.Terms),
@@ -166,16 +169,14 @@ func runQuery(sri ServeRequestInput, limit int) (
 	// each search result with the terms that were used
 	//zap.L().Info("search results", zap.Int("count", len(res)))
 
-	if (len(res) < 2) && (len(improved_terms) > 1) {
-		res = permuteSubqueries(queries, path, improved_terms, results_per_query)
-	}
+	// if (len(res) < 2) && (len(improved_terms) > 1) {
+	// 	res = permuteSubqueries(queries, path, improved_terms, results_per_query)
+	// }
 
 	duration := time.Since(start)
 	//return res[0:min(limit, len(res))], duration, err
 	// THIS QUIETS THE LINTER FOR A MOMENT...
-	if limit > 0 {
-		limit += 1
-	}
+
 	return res, duration, err
 }
 

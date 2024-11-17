@@ -1,7 +1,6 @@
 package util
 
 import (
-	"bytes"
 	"strings"
 )
 
@@ -59,18 +58,21 @@ func CleanMimeType(mime string) string {
 
 func GetMimeType(path string) string {
 	m := map[string]string{
+		"html":    "text/html",
+		"htm":     "text/html",
 		"json":    "application/json",
-		"txt":     "text/plain",
 		"md":      "text/plain",
+		"plain":   "text/plain",
 		"pdf":     "application/pdf",
 		"sqlite":  "application/vnd.sqlite3",
 		"sqlite3": "application/vnd.sqlite3",
+		"txt":     "text/plain",
 		// https://www.iana.org/assignments/media-types/application/zstd
 		"zstd": "application/zstd",
 	}
-	for k, v := range m {
-		if bytes.HasSuffix([]byte(path), []byte(k)) {
-			return v
+	for tag, mime_type := range m {
+		if strings.HasSuffix(path, tag) {
+			return mime_type
 		}
 	}
 	return m["json"]
