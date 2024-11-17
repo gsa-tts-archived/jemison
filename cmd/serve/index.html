@@ -77,6 +77,21 @@
 
               var list = document.getElementById('six-list');
 
+              for (var k in userData.results) {
+                var r = userData.results[k];
+                if (r.PathString.length > 0) {
+                  var entry = document.createElement('li');
+                  // Fixme... return the title in the result
+                  var h = "<a href='https://{SEARCH_HOST}" + r.PathString + "' target='_blank'>" + r.PageTitle + "</a>"
+                  h += "<br/>" + "<span style=\"color:gray\">Terms used: " + r.Terms + "</span>"
+                  h += "<br/>" + r.Snippet;
+                  entry.innerHTML = h
+                  list.appendChild(entry);
+
+                }
+              }
+
+
               var stats = document.getElementById('stats')
               stats.innerHTML = "";
               query_time = userData.elapsed;
@@ -84,23 +99,14 @@
               statPara(stats, "Query time", nanoToMillis(query_time), "ms")
               AllTheStats(stats)
 
-              for (var k in userData.results) {
-                var r = userData.results[k];
-                if (r.path.length > 0) {
-                  var entry = document.createElement('li');
-                  var h = "<a href='https://{SEARCH_HOST}" + r.path + "' target='_blank'>" + r.path + "</a>"
-                  h += "<br/>" + r.snippet
-                  entry.innerHTML = h
-                  list.appendChild(entry);
-
-                }
-              }
             })
             .catch(error => {
               console.error('Error:', error);
             });
         };
 
+        /////////////////////////
+        // statPara
         function statPara(stats, tag, value, units) {
           var elapsedp = document.createElement('p')
           elapsedp.classList.add("margin-left-1")
@@ -108,12 +114,16 @@
           stats.appendChild(elapsedp)
         }
 
+        /////////////////////
+        // nanoToMillis
         function nanoToMillis(v) {
           v = Math.round(v / 100000)
           v = v / 10
           return v
         }
 
+        //////////////////////
+        // AllTheStats
         function AllTheStats(stats) {
           site_url = "{HOST}"
           var get_url = "{SCHEME}://{HOST}:{PORT}/api/stats"
@@ -175,6 +185,8 @@
             })
         }
 
+        //////////////////////////////////
+        // trim_to_chars
         function trim_to_chars(domain, n) {
           if (domain.length >= n) {
             first = domain.substr(0, 12)
@@ -185,6 +197,8 @@
           }
         }
 
+        /////////////////////////////////////
+        // bold
         function bold(parent, msg) {
           e = document.createElement('p')
                     b = document.createElement('b')
@@ -193,6 +207,8 @@
                     parent.appendChild(e)
         }
 
+        //////////////////////////////////////////
+        // getSortedHashDesc
         function getSortedHashDesc(inputHash) {
           var resultHash = {};
 
@@ -205,6 +221,8 @@
           return resultHash;
         }
 
+        //////////////////////////////////////////
+        // getSortedHashAsc
         function getSortedHashAsc(inputHash) {
           var resultHash = {};
 
@@ -217,6 +235,8 @@
           return resultHash;
         }
 
+        //////////////////////////////////////////
+        // HandleTheKeyboardClicks
         function HandleTheKeyboardClicks() {
           var key = window.event.keyCode;
           // If the user has pressed enter
@@ -227,6 +247,8 @@
         }
 
 
+        //////////////////////////////////
+        // GetDatabases
         function GetDatabases() {
           var post_url = "{SCHEME}://{HOST}:{PORT}/api/databases"
           fetch(post_url, {
