@@ -3,6 +3,7 @@ package schemas
 import (
 	"context"
 	"database/sql"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -36,9 +37,30 @@ type SearchResult struct {
 	Text       string
 }
 
+type SearchParams struct {
+	Terms  []string
+	Path   string
+	Limit  int64
+	Offset int64
+}
+
+func NewSearch(terms string) *SearchParams {
+	sp := &SearchParams{}
+	sp.Terms = strings.Split(terms, " ")
+	// By default, match all paths.
+	sp.Path = "%"
+	sp.Limit = 10
+	sp.Offset = 0
+	return sp
+}
+
+func (sp *SearchParams) TermsToString() string {
+	return strings.Join(sp.Terms[:], " ")
+}
+
 // FIXME: There's some optimization possible here --- prepared query,
 // etc. This is probably far from optimal.
-func (q *Queries) Search(ctx context.Context, terms string) ([]SearchResult, error) {
+func (q *Queries) Search(ctx context.Context, params *SearchParams) ([]SearchResult, error) {
 	//db, _ := prepDB(file)
 	query := `
 SELECT 
@@ -52,18 +74,29 @@ SELECT
     (SELECT titles_fts.path_id as path_id, 4.0 as weight, rank, kind, title as txt
       FROM titles_fts
       WHERE title MATCH ?1
+				AND path_id IN (SELECT path_id FROM paths WHERE path LIKE ?2)
     UNION ALL
     SELECT headers_fts.path_id as path_id, 2.0 as weight, rank, kind, header as txt
       FROM headers_fts
       WHERE header MATCH ?1
+				AND path_id IN (SELECT path_id FROM paths WHERE path LIKE ?2)
     UNION ALL
     SELECT bodies_fts.path_id as path_id, 1.0 as weight, rank, kind, body as txt
       FROM bodies_fts
       WHERE body MATCH ?1
+				AND path_id IN (SELECT path_id FROM paths WHERE path LIKE ?2)
     ORDER BY weight DESC, rank ASC)
+		LIMIT ?3
+		OFFSET ?4
   ;
 `
-	rows, err := q.db.QueryContext(ctx, query, terms)
+	rows, err := q.db.QueryContext(ctx,
+		query,
+		params.TermsToString(),
+		params.Path,
+		params.Limit,
+		params.Offset,
+	)
 	if err != nil {
 		zap.L().Error("FTS5 search errored", zap.String("err", err.Error()))
 		return nil, err

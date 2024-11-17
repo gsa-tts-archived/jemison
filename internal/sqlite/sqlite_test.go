@@ -132,7 +132,8 @@ func TestInsertContent(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
-	r, err := Search("many_paths.db", "wind*")
+	pt := open(t, "many_paths.db")
+	r, err := pt.Queries.Search(pt.Context, schemas.NewSearch("wind*"))
 	if err != nil {
 		t.Error(err)
 	}

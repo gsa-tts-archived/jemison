@@ -16,7 +16,6 @@ import (
 	"github.com/GSA-TTS/jemison/internal/sqlite/schemas"
 	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/riverqueue/river"
-	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 )
 
@@ -82,15 +81,30 @@ func PackTheDatabase(host string) {
 			zap.L().Error("could not fetch object for packing",
 				zap.String("key", s3json.Key.Render()))
 		}
-		JSON := s3json.GetJSON()
-		_, err = pt.Queries.CreateSiteEntry(pt.Context, schemas.CreateSiteEntryParams{
-			Host: gjson.GetBytes(JSON, "host").String(),
-			Path: gjson.GetBytes(JSON, "path").String(),
-			Text: gjson.GetBytes(JSON, "content").String(),
+		//JSON := s3json.GetJSON()
+
+		// We have more fields than before.
+		path_id, err := pt.Queries.InsertPath(pt.Context, s3json.GetString("path"))
+		if err != nil {
+			zap.L().Error("could not insert path when packing", zap.String("path", s3json.GetString("path")))
+		}
+		// Insert the title
+		_, err = pt.Queries.InsertTitle(pt.Context, schemas.InsertTitleParams{
+			PathID: path_id,
+			Title:  s3json.GetString("title"),
 		})
 		if err != nil {
-			log.Println("Insert into site entry table failed")
-			log.Fatal(err)
+			zap.L().Error("could not insert title when packing",
+				zap.String("title", s3json.GetString("title")))
+		}
+
+		// Insert the content
+		_, err = pt.Queries.InsertBody(pt.Context, schemas.InsertBodyParams{
+			PathID: path_id,
+			Body:   s3json.GetString("body"),
+		})
+		if err != nil {
+			zap.L().Error("could not insert body when packing", zap.String("body", s3json.GetString("body")))
 		}
 	}
 

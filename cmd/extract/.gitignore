@@ -1,1 +1,5 @@
 service.exe
+*.sqlite
+*.db
+*.sqlite-*
+*.db-*

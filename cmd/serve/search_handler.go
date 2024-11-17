@@ -25,6 +25,9 @@ type ServeRequestInput struct {
 
 var statmap sync.Map
 
+// CC BY-SA 3.0
+// https://stackoverflow.com/a/30226442
+// My change was to make it generic.
 func permutate[T any](data []T) [][]T {
 	if len(data) == 0 {
 		return nil
@@ -78,7 +81,7 @@ func permuteSubqueries(queries *schemas.Queries,
 
 	combined := make([][]schemas.SearchSiteIndexSnippetsRow, 0)
 	for _, q := range shorter_queries {
-		res2, _ := queries.SearchSiteIndexSnippets(context.Background(), schemas.SearchSiteIndexSnippetsParams{
+		res2, _ := queries.Search(context.Background(), schemas.SearchSiteIndexSnippetsParams{
 			Text:  strings.Join(q, " "),
 			Path:  path,
 			Limit: results_per_query,
@@ -150,11 +153,11 @@ func runQuery(sri ServeRequestInput, limit int) (
 
 	path := sri.Path + "%"
 	queries := schemas.New(db)
-	res, err := queries.SearchSiteIndexSnippets(context.Background(), schemas.SearchSiteIndexSnippetsParams{
-		Text:  improved_terms_string, //sri.Terms,
-		Path:  path,
-		Limit: results_per_query,
-	})
+	search_params := queries.NewSearch(improved_terms_string)
+	search_params.Limit = results_per_query
+	search_params.Path = path
+	// FIXME: This wants to return snippets
+	res, err := queries.Search(context.Background(), search_params)
 	db.Close()
 
 	// This is all fine and good, but it would be nice to annotate

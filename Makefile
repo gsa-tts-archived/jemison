@@ -1,6 +1,8 @@
 .PHONY: clean
 clean:
-	rm -rf internal/sqlite/schemas/*.go
+	rm -f internal/sqlite/schemas/db.go
+	rm -f internal/sqlite/schemas/models.go
+	rm -f internal/sqlite/schemas/query.sql.go
 	rm -f cmd/*/service.exe
 
 .PHONY: generate

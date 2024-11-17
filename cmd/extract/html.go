@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 
@@ -28,7 +29,7 @@ func scrape_sel(sel *goquery.Selection) string {
 		// FIXME: This should be part of a standalone text processing
 		// module. Perhaps we don't always want to do this. For example,
 		// in the case of multi-lingual scraping.
-		repl = util.RemoveStopwords(repl)
+		//repl = util.RemoveStopwords(repl)
 		repl += " "
 		if len(repl) > 2 {
 			content += repl
@@ -36,6 +37,69 @@ func scrape_sel(sel *goquery.Selection) string {
 	}
 	return content
 }
+
+func _getTitle(doc *goquery.Document) string {
+	title := ""
+	doc.Find("title").Each(func(ndx int, sel *goquery.Selection) {
+		title = scrape_sel(sel)
+	})
+	return title
+}
+
+func _getHeaders(doc *goquery.Document) map[string][]string {
+	// Build an array of headers at each level
+	headers := make(map[string][]string, 0)
+
+	for _, tag := range []string{
+		"h1",
+		"h2",
+		"h3",
+		"h4",
+		"h5",
+		"h6",
+		"h7",
+		"h8",
+	} {
+		accum := make([]string, 0)
+		doc.Find(tag).Each(func(ndx int, sel *goquery.Selection) {
+			accum = append(accum, scrape_sel(sel))
+		})
+		headers[tag] = accum
+	}
+	return headers
+}
+
+func _getBodyContent(doc *goquery.Document) string {
+	content := ""
+	for _, elem := range []string{
+		"p",
+		"li",
+		"td",
+		"div",
+		"span",
+		"a",
+		"small",
+		"b",
+		"bold",
+		"em",
+		"i",
+		"title",
+	} {
+		// zap.L().Debug("looking for", zap.String("elem", elem))
+		doc.Find(elem).Each(func(ndx int, sel *goquery.Selection) {
+			// zap.L().Debug("element", zap.String("sel", scrape_sel(sel)))
+			content += scrape_sel(sel)
+		})
+	}
+	return content
+}
+
+// //////////////////
+// extractHtml loads the following keys into the JSON
+//
+// * title: string
+// * headers: []string (as JSON)
+// * body : string
 
 func extractHtml(obj *kv.S3JSON) {
 	// rawFilename := obj.GetString("raw")
@@ -61,43 +125,9 @@ func extractHtml(obj *kv.S3JSON) {
 		zap.L().Fatal("cannot create new doc from raw file")
 	}
 
-	// fi, err := os.Stat(rawFilename)
-	// if err != nil {
-	// 	zap.L().Fatal(err.Error())
-	// }
-	// // get the size
-	// size := fi.Size()
-	// zap.L().Debug("size", zap.Int64("size", size))
-
-	content := ""
-	for _, elem := range []string{
-		"p",
-		"li",
-		"td",
-		"div",
-		"span",
-		"a",
-		"small",
-		"b",
-		"bold",
-		"em",
-		"i",
-		"title",
-		"h1",
-		"h2",
-		"h3",
-		"h4",
-		"h5",
-		"h6",
-		"h7",
-		"h8",
-	} {
-		// zap.L().Debug("looking for", zap.String("elem", elem))
-		doc.Find(elem).Each(func(ndx int, sel *goquery.Selection) {
-			// zap.L().Debug("element", zap.String("sel", scrape_sel(sel)))
-			content += scrape_sel(sel)
-		})
-	}
+	title := _getTitle(doc)
+	headers := _getHeaders(doc)
+	content := _getBodyContent(doc)
 
 	// Store everything
 	copied_key := obj.Key.Copy()
@@ -109,8 +139,16 @@ func extractHtml(obj *kv.S3JSON) {
 		obj.Key.Host,
 		obj.Key.Path,
 		obj.GetJSON())
-	// zap.L().Debug("content check", zap.String("content", util.RemoveStopwords(content)))
-	new_obj.Set("content", util.RemoveStopwords(content))
+
+	// Load up the object
+	new_obj.Set("title", title)
+	// Marshal headers to JSON
+	jsonString, err := json.Marshal(headers)
+	if err != nil {
+		zap.L().Error("could not marshal headers to JSON", zap.String("title", title))
+	}
+	new_obj.Set("headers", string(jsonString))
+	new_obj.Set("body", content)
 	new_obj.Save()
 
 	// Enqueue next steps

@@ -30,6 +30,18 @@ INSERT INTO bodies
     RETURNING id
 ;
 
+-- name: CountSiteIndex :one
+SELECT count(*) FROM paths;
+
+-- -- https://www.sqlitetutorial.net/sqlite-full-text-search/
+-- -- name: SearchSiteIndexSnippets :many
+-- SELECT path, snippet(site_index, 2, '<b>', '</b>', '...', 16)
+--     FROM site_index 
+--     WHERE text MATCH ?
+--     AND path LIKE ?
+--     ORDER BY rank
+--     LIMIT ?;
+
 -- name: Search :many
 -- SELECT 
 --   path_id,
@@ -68,14 +80,7 @@ INSERT INTO bodies
 --     ORDER BY rank
 --     LIMIT ?;
 
--- -- https://www.sqlitetutorial.net/sqlite-full-text-search/
--- -- name: SearchSiteIndexSnippets :many
--- SELECT path, snippet(site_index, 2, '<b>', '</b>', '...', 16)
---     FROM site_index 
---     WHERE text MATCH ?
---     AND path LIKE ?
---     ORDER BY rank
---     LIMIT ?;
+
 
 -- -- name: SearchSiteIndexSnippetsWithPath :many
 -- SELECT path, snippet(site_index, 2, '<b>', '</b>', '...', 16)
@@ -85,6 +90,3 @@ INSERT INTO bodies
 --     ORDER BY rank
 --     LIMIT ?;
 
-
--- -- name: CountSiteIndex :one
--- SELECT count(*) FROM site_index;
