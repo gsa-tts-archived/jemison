@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"math/rand/v2"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -81,7 +82,9 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			job.Args.Host,
 			job.Args.Path,
 		)
-		time.Sleep(200 * time.Millisecond)
+
+		// Put a *tiny* backoff. We'll see how the queue does.
+		time.Sleep(time.Duration(rand.IntN(5)+1) * time.Millisecond)
 		return nil
 	}
 

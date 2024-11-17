@@ -26,17 +26,21 @@ local root = '/';
   ],
   hourly: [
     g('coldcaserecords', root),
-    wg('fac', root),
+    g('beta.notify.gov', root),
+    g('standards.digital.gov', root),
   ],
   daily: [
     g('digitalcorps.gsa', root),
+    g('cloud', root),
+    g('oge', root),
+    g('search', root),
+    g('cem.va.gov', root),
   ],
   weekly: [
-    g('www.fac', root),
-    g('cloud', root),
+    wg('fac', root),
+    wg('usa.gov', root),
   ],
   monthly: [
-    g('search', root),
   ],
   quarterly: [
     g('gsa', root),

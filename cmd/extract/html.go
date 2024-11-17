@@ -21,6 +21,7 @@ import (
 // https://jonathanmh.com/p/web-scraping-golang-goquery/
 // Vectors
 // https://alexgarcia.xyz/sqlite-vec/go.html
+// https://www.zenrows.com/blog/goquery
 
 func scrape_sel(sel *goquery.Selection) string {
 	txt := sel.Text()
