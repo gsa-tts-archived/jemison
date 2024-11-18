@@ -5,7 +5,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var ThisServiceName = "entree"
+var ThisServiceName = "migrate"
 var HostIdMap = make(map[string]int64)
 
 func main() {

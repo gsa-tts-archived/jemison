@@ -34,7 +34,7 @@ local root = '/';
     g('cloud', root),
     g('oge', root),
     g('search', root),
-    g('cem.va.gov', root),
+    wg('cem.va.gov', root),
   ],
   weekly: [
     wg('fac', root),

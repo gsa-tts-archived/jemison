@@ -38,7 +38,8 @@ func crontab() {
 }
 
 func section(section string) func() {
-	JSON := config.ReadConfigJsonnet("schedule.jsonnet")
+	//JSON := config.ReadConfigJsonnet("schedule.jsonnet")
+	JSON := config.ReadJsonConfig("schedule.json")
 	return func() {
 		zap.L().Debug(section)
 		for _, site := range gjson.Get(JSON, section).Array() {
@@ -56,7 +57,8 @@ func section(section string) func() {
 }
 
 func upsertUniqueHosts() map[string]int64 {
-	JSON := config.ReadConfigJsonnet("schedule.jsonnet")
+	//JSON := config.ReadConfigJsonnet("schedule.jsonnet")
+	JSON := config.ReadJsonConfig("schedule.json")
 	uniqueHosts := make(map[string]int64)
 
 	ctx := context.Background()

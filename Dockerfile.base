@@ -47,8 +47,9 @@ WORKDIR /go_install
 RUN rm -rf /usr/local/go \
     && wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz \
     && tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
-# WARNING: no idea if this will be sticky inside the container
-ENV PATH=$PATH:/usr/local/go/bin
-    
+
+ENV PATH=$PATH:/usr/local/go/bin:/root/go/bin
+RUN go install golang.org/x/tools/cmd/goimports@latest    
+RUN go install golang.org/x/tools/cmd/stringer@latest    
 
 ENTRYPOINT ["tree /"]
