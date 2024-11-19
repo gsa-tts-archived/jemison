@@ -42,6 +42,10 @@ variable gin_debug_level {
   default = "release"
 }
 
+variable service_admin_ram {
+  default = 64
+}
+
 variable service_entree_ram {
   default = 64
 }

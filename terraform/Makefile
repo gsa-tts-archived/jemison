@@ -21,10 +21,23 @@ app: clean_app
 		cp -r assets terraform/app/ ; \
 		cp -r config terraform/app/
 
+.PHONY: admin
+admin: app
+	mkdir -p zips
+	cp ../cmd/admin/service.exe app/admin.exe
+	echo "web: ./admin.exe" > app/Procfile
+	cp ../assets/apt.yml app/apt.yml
+	cd app ; zip -r -X ../zips/admin.zip . \
+		-x assets/databases/* \
+		-x assets/static.zip \
+		-x assetts/static/* \
+		-x terraform/*
+
+
+
 .PHONY: entree
-entree: app migrate
-	rm -f app/*.exe
-	cd ../cmd/entree ; make build
+entree: app
+	mkdir -p zips
 	cp ../cmd/entree/service.exe app/extract.exe
 	cp ../cmd/entree/run.sh app/run.sh
 	echo "web: ./run.sh" > app/Procfile
@@ -38,8 +51,7 @@ entree: app migrate
 
 .PHONY: extract
 extract: app
-	rm -f app/*.exe
-	cd ../cmd/extract ; make build
+	mkdir -p zips
 	cp ../cmd/extract/service.exe app/extract.exe
 	echo "web: ./extract.exe" > app/Procfile
 	cp ../assets/apt.yml app/apt.yml
@@ -51,8 +63,7 @@ extract: app
 
 .PHONY: fetch
 fetch: app
-	rm -f app/*.exe
-	cd ../cmd/fetch ; make build
+	mkdir -p zips
 	cp ../cmd/fetch/service.exe app/fetch.exe
 	echo "web: ./fetch.exe" > app/Procfile
 	cp ../assets/apt.yml app/apt.yml
@@ -62,24 +73,21 @@ fetch: app
 		-x assetts/static/* \
 		-x terraform/*
 
-.PHONY: migrate
-fetch: app
-	rm -f app/*.exe
-	cd ../cmd/migrate ; make build
-	cp ../cmd/migrate/service.exe app/migrate.exe
-	echo "web: ./migrate.exe" > app/Procfile
-	cp ../assets/apt.yml app/apt.yml
-	cd app ; zip -r -X ../zips/migrate.zip . \
-		-x assets/databases/* \
-		-x assets/static.zip \
-		-x assetts/static/* \
-		-x terraform/*
+# .PHONY: migrate
+# migrate: app
+# 	cp ../cmd/migrate/service.exe app/migrate.exe
+# 	echo "web: ./migrate.exe" > app/Procfile
+# 	cp ../assets/apt.yml app/apt.yml
+# 	cd app ; zip -r -X ../zips/migrate.zip . \
+# 		-x assets/databases/* \
+# 		-x assets/static.zip \
+# 		-x assetts/static/* \
+# 		-x terraform/*
 
 
 .PHONY: pack
 pack: app
-	rm -f app/*.exe
-	cd ../cmd/pack ; make build
+	mkdir -p zips
 	cp ../cmd/pack/service.exe app/pack.exe
 	echo "web: ./pack.exe" > app/Procfile
 	cp ../assets/apt.yml app/apt.yml
@@ -91,8 +99,7 @@ pack: app
 
 .PHONY: serve
 serve: app
-	rm -f app/*.exe
-	cd ../cmd/serve ; make build
+	mkdir -p zips
 	cp ../cmd/serve/service.exe app/serve.exe
 	echo "web: ./serve.exe" > app/Procfile
 	cp ../assets/apt.yml app/apt.yml
@@ -107,8 +114,7 @@ serve: app
 
 .PHONY: walk
 walk: app
-	rm -f app/*.exe
-	cd ../cmd/walk ; make build
+	mkdir -p zips
 	cp ../cmd/walk/service.exe app/walk.exe
 	echo "web: ./walk.exe" > app/Procfile
 	cp ../assets/apt.yml app/apt.yml
@@ -121,6 +127,18 @@ walk: app
 .PHONY:
 plan:
 	terraform plan -var-file="terraform.tfvars" -out plans/das.plan
+
+.PHONY: tf_admin
+tf_admin: admin plan apply
+	echo "tf admin"
+
+.PHONY: tf_entree
+tf_entree: entree plan apply
+	echo "tf entree"
+
+.PHONY: tf_migrate
+tf_migrate: migrate plan apply
+	echo "tf migrate"
 
 .PHONY: tf_extract
 tf_extract: extract plan apply
@@ -142,8 +160,12 @@ tf_serve: serve plan apply
 tf_walk: walk plan apply
 	echo "tf walk"
 	
+.PHONY: container_build
+container_build:
+	docker run -v ${PWD}:/app -t jemison/build
+
 .PHONY: plan_all
-plan_all: clean init extract fetch pack serve walk
+plan_all: init admin entree extract fetch pack serve walk
 	terraform plan -var-file="terraform.tfvars" -out plans/das.plan
 
 .PHONY: apply

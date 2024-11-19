@@ -49,15 +49,15 @@ run: clean generate
 	cd assets ; unzip -qq -o static.zip > /dev/null 2>&1
 	docker compose up
 
-# I need to delete_all every time, because there is not enough RAM
-# in the sandbox to rolling deploy
-.PHONY: terraform
-terraform: delete_all build
-	cd terraform ; make apply_all
-
 .PHONY: cloc
 cloc:
 	docker run --rm -v ${PWD}:/tmp aldanial/cloc --exclude-dir=assets .
+
+delete_admin:
+	cf delete -f admin
+
+delete_entree:
+	cf delete -f entree
 
 delete_extract:
 	cf delete -f extract
@@ -75,7 +75,15 @@ delete_walk:
 	cf delete -f walk
 
 .PHONY: delete_all
-delete_all: delete_extract delete_fetch delete_pack delete_serve delete_walk
+delete_all: delete_admin delete_entree delete_extract delete_fetch delete_pack delete_serve delete_walk
+
+
+# I need to delete_all every time, because there is not enough RAM
+# in the sandbox to rolling deploy
+.PHONY: terraform
+terraform: delete_all
+	docker run -v ${PWD}:/app -t jemison/build
+	cd terraform ; make apply_all
 
 .PHONY: docker_full_clean
 docker_full_clean:
