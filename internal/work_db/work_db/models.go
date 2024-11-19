@@ -23,10 +23,10 @@ type Guestbook struct {
 	ContentType   pgtype.Int4      `json:"content_type"`
 	LastUpdated   pgtype.Timestamp `json:"last_updated"`
 	LastFetched   pgtype.Timestamp `json:"last_fetched"`
-	NextFetch     pgtype.Date      `json:"next_fetch"`
 }
 
 type Host struct {
-	ID   int64       `json:"id"`
-	Host pgtype.Text `json:"host"`
+	ID        int64            `json:"id"`
+	Host      string           `json:"host"`
+	NextFetch pgtype.Timestamp `json:"next_fetch"`
 }

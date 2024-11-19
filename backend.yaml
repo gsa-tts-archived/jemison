@@ -68,8 +68,8 @@ services:
       - "9000"
       - "9001"
     ports:
-      - 9000:9000
-      - 9001:9001
+      - 9001:9000
+      - 9002:9001
     environment:
       MINIO_ROOT_USER: numbernine
       MINIO_ROOT_PASSWORD: numbernine

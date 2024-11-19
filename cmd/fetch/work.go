@@ -17,7 +17,6 @@ import (
 	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
@@ -34,18 +33,6 @@ func guestbookCtxQueries() (context.Context, *pgx.Conn, *work_db.Queries) {
 	}
 	queries := work_db.New(conn)
 	return ctx, conn, queries
-}
-
-func updateGuestbook(scheme, host, path string) {
-	ctx, conn, queries := guestbookCtxQueries()
-	defer conn.Close(ctx)
-	host_id, _ := queries.GetHostId(ctx, pgtype.Text{String: host, Valid: true})
-	queries.UpdateNextFetch(ctx, work_db.UpdateNextFetchParams{
-		Column1: "weekly",
-		Scheme:  scheme,
-		Host:    host_id,
-		Path:    path,
-	})
 }
 
 // ///////////////////////////////////
@@ -142,7 +129,7 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			Path:   job.Args.Path}})
 
 	// Update the guestbook
-	updateGuestbook(job.Args.Scheme, job.Args.Host, job.Args.Path)
+	//updateNextFetch(job.Args.Scheme, job.Args.Host, job.Args.Path)
 
 	fetchCount.Add(1)
 

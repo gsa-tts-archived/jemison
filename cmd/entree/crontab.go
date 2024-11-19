@@ -11,7 +11,6 @@ import (
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/robfig/cron"
 	"github.com/tidwall/gjson"
@@ -56,9 +55,25 @@ func section(section string) func() {
 	}
 }
 
+func getHostSections() map[string]string {
+	JSON := config.ReadJsonConfig("schedule.json")
+	hostSections := make(map[string]string)
+
+	for _, section := range gjson.Parse(JSON).Get("@keys").Array() {
+		for _, site := range gjson.Get(JSON, section.String()).Array() {
+			// We should never see a -1 in the host table. Not sure
+			// how else to do this. The following loop will either populate
+			// the value or fail.
+			hostSections[site.Get("host").String()] = section.String()
+		}
+	}
+	return hostSections
+}
+
 func upsertUniqueHosts() map[string]int64 {
 	//JSON := config.ReadConfigJsonnet("schedule.jsonnet")
 	JSON := config.ReadJsonConfig("schedule.json")
+	hostSections := make(map[string]string)
 	uniqueHosts := make(map[string]int64)
 
 	ctx := context.Background()
@@ -80,14 +95,19 @@ func upsertUniqueHosts() map[string]int64 {
 			// We should never see a -1 in the host table. Not sure
 			// how else to do this. The following loop will either populate
 			// the value or fail.
-			uniqueHosts[site.Get("host").String()] = -1
+			hostSections[site.Get("host").String()] = section.String()
 		}
 	}
 
 	// Iterate through the set, and create a unique map of ... oh. I could have
 	// just created the map in the first place... FIXME later...
-	for h := range uniqueHosts {
-		id, err := queries.UpsertUniqueHost(ctx, pgtype.Text{String: h, Valid: true})
+	for h, section := range hostSections {
+		// The section is 'weekly', 'monthly', etc.
+		zap.L().Debug("upserting", zap.String("host", h), zap.String("section", section))
+		id, err := queries.UpsertUniqueHost(ctx, work_db.UpsertUniqueHostParams{
+			Column1: section,
+			Host:    h,
+		})
 		if err != nil {
 			zap.L().Error("did not get `id` back for host",
 				zap.String("host", h),

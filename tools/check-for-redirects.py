@@ -6,7 +6,7 @@ import click
 @click.argument("filename")
 def maine(filename):
     results = open("redirects.csv", "w")
-
+    results.write("url,resolved,status\n")
     with open(filename) as file:
         for line in file:
             line = line.strip()
