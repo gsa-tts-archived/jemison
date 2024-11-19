@@ -42,6 +42,11 @@ variable gin_debug_level {
   default = "release"
 }
 
+variable service_entree_ram {
+  default = 64
+}
+
+
 variable service_extract_ram {
   default = 256
 }
@@ -59,5 +64,5 @@ variable service_serve_ram {
 }
 
 variable service_walk_ram {
-  default = 128
+  default = 64
 }

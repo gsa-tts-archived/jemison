@@ -21,6 +21,21 @@ app: clean_app
 		cp -r assets terraform/app/ ; \
 		cp -r config terraform/app/
 
+.PHONY: entree
+entree: app migrate
+	rm -f app/*.exe
+	cd ../cmd/entree ; make build
+	cp ../cmd/entree/service.exe app/extract.exe
+	cp ../cmd/entree/run.sh app/run.sh
+	echo "web: ./run.sh" > app/Procfile
+	cp ../assets/apt.yml app/apt.yml
+	cp ../cmd/migrate/service.exe app/migrate.exe
+	cd app ; zip -r -X ../zips/entree.zip . \
+		-x assets/databases/* \
+		-x assets/static.zip \
+		-x assetts/static/* \
+		-x terraform/*
+
 .PHONY: extract
 extract: app
 	rm -f app/*.exe
@@ -46,6 +61,20 @@ fetch: app
 		-x assets/static.zip \
 		-x assetts/static/* \
 		-x terraform/*
+
+.PHONY: migrate
+fetch: app
+	rm -f app/*.exe
+	cd ../cmd/migrate ; make build
+	cp ../cmd/migrate/service.exe app/migrate.exe
+	echo "web: ./migrate.exe" > app/Procfile
+	cp ../assets/apt.yml app/apt.yml
+	cd app ; zip -r -X ../zips/migrate.zip . \
+		-x assets/databases/* \
+		-x assets/static.zip \
+		-x assetts/static/* \
+		-x terraform/*
+
 
 .PHONY: pack
 pack: app

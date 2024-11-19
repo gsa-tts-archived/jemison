@@ -12,7 +12,7 @@ data "cloudfoundry_space" "app_space" {
 # POSTGRES
 #################################################################
 
-module "database" {
+module "queues_database" {
   source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
   cf_org_name      = "sandbox-gsa"
   cf_space_name    = "matthew.jadud"
@@ -22,7 +22,7 @@ module "database" {
   rds_plan_name    = "micro-psql"
 }
 
-module "database" {
+module "work_database" {
   source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
   cf_org_name      = "sandbox-gsa"
   cf_space_name    = "matthew.jadud"
@@ -67,14 +67,56 @@ module "s3-private-serve" {
 
 
 #################################################################
+# ENTREE
+#################################################################
+resource "cloudfoundry_route" "entree_route" {
+  space    = data.cloudfoundry_space.app_space.id
+  domain   = data.cloudfoundry_domain.public.id
+  hostname = "jemison-entree"
+}
+
+resource "cloudfoundry_app" "entree" {
+  name                 = "entree"
+  space                = data.cloudfoundry_space.app_space.id
+  buildpacks            = ["https://github.com/cloudfoundry/apt-buildpack", "https://github.com/cloudfoundry/binary-buildpack.git"]
+  path                 = "zips/entree.zip"
+  source_code_hash     = filesha256("zips/entree.zip")
+  disk_quota           = var.disk_quota_l
+  memory               = var.service_entree_ram
+  instances            = 1
+  strategy             = "rolling"
+  timeout              = 200
+  health_check_type    = "port"
+  health_check_timeout = 180
+  health_check_http_endpoint = "/heartbeat"
+
+
+  service_binding {
+    service_instance = module.work_database.instance_id
+  }
+
+  service_binding {
+    service_instance = module.queues_database.instance_id
+  }
+
+  routes {
+    route = cloudfoundry_route.entree_route.id
+  }
+
+  environment = {
+    ENV = "SANDBOX"
+    API_KEY = "${var.api_key}"
+    DEBUG_LEVEL = "${var.zap_debug_level}"
+    GIN_MODE = "${var.gin_debug_level}"
+    # REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
+  }
+}
+
+#################################################################
 # FETCH
 #################################################################
 
-resource "cloudfoundry_route" "fetch_route" {
-  space    = data.cloudfoundry_space.app_space.id
-  domain   = data.cloudfoundry_domain.public.id
-  hostname = "jemison-fetch"
-}
+
 resource "cloudfoundry_app" "fetch" {
   name                 = "fetch"
   space                = data.cloudfoundry_space.app_space.id
@@ -94,7 +136,7 @@ resource "cloudfoundry_app" "fetch" {
   }
 
   service_binding {
-    service_instance = module.database.instance_id
+    service_instance = module.queues_database.instance_id
   }
 
   routes {
@@ -103,7 +145,6 @@ resource "cloudfoundry_app" "fetch" {
 
   environment = {
     ENV = "SANDBOX"
-    API_KEY = "${var.api_key}"
     DEBUG_LEVEL = "${var.zap_debug_level}"
     GIN_MODE = "${var.gin_debug_level}"
     # REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
@@ -134,7 +175,7 @@ resource "cloudfoundry_app" "extract" {
     service_instance = module.s3-private-fetch.bucket_id
   }
   service_binding {
-    service_instance = module.database.instance_id
+    service_instance = module.queues_database.instance_id
   }
 
   # routes {
@@ -176,7 +217,7 @@ resource "cloudfoundry_app" "pack" {
   }
 
   service_binding {
-    service_instance = module.database.instance_id
+    service_instance = module.queues_database.instance_id
   }
 
   # routes {
@@ -223,7 +264,7 @@ resource "cloudfoundry_app" "serve" {
     service_instance = module.s3-private-serve.bucket_id
   }
   service_binding {
-    service_instance = module.database.instance_id
+    service_instance = module.queues_database.instance_id
   }
 
   routes {
@@ -262,7 +303,7 @@ resource "cloudfoundry_app" "walk" {
   }
 
   service_binding {
-    service_instance = module.database.instance_id
+    service_instance = module.queues_database.instance_id
   }
 
   # routes {
