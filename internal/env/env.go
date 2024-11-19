@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 
+	"github.com/GSA-TTS/jemison/config"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -95,6 +96,7 @@ var test_envs = []string{"LOCALHOST"}
 
 func InitGlobalEnv(this_service string) {
 	Env = &env{}
+	configName := "NO_CONFIG_NAME_SET"
 
 	viper.AddConfigPath("/home/vcap/app/config")
 	viper.SetConfigType("yaml")
@@ -105,6 +107,7 @@ func InitGlobalEnv(this_service string) {
 	if IsContainerEnv() {
 		log.Println("IsContainerEnv")
 		viper.SetConfigName("container")
+		configName = "container"
 	}
 
 	if IsLocalTestEnv() {
@@ -112,11 +115,13 @@ func InitGlobalEnv(this_service string) {
 		viper.AddConfigPath("../../config")
 		viper.AddConfigPath("config")
 		viper.SetConfigName("localhost")
+		configName = "localhost"
 	}
 
 	if IsCloudEnv() {
 		log.Println("IsCloudEnv")
 		viper.SetConfigName("cf")
+		configName = "cf"
 		// https://github.com/spf13/viper/issues/1706
 		// https://github.com/spf13/viper/issues/1671
 		viper.AutomaticEnv()
@@ -125,7 +130,8 @@ func InitGlobalEnv(this_service string) {
 	// Grab the PORT in the cloud and locally from os.Getenv()
 	viper.BindEnv("PORT")
 
-	err := viper.ReadInConfig()
+	//err := viper.ReadInConfig()
+	err := viper.ReadConfig(config.GetYamlFileReader(configName + ".yaml"))
 
 	if err != nil {
 		log.Fatal("ENV cannot load in the config file ", viper.ConfigFileUsed())

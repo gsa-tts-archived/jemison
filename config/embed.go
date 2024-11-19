@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"embed"
 
 	"github.com/google/go-jsonnet"
@@ -9,6 +10,7 @@ import (
 
 //go:embed *.jsonnet
 //go:embed *.json
+//go:embed *.yaml
 var ConfigFs embed.FS
 
 func ReadConfigJsonnet(sonnetFilename string) string {
@@ -28,4 +30,12 @@ func ReadJsonConfig(jsonFilename string) string {
 		zap.L().Fatal(err.Error())
 	}
 	return string(json_bytes)
+}
+
+func GetYamlFileReader(yamlFilename string) *bytes.Reader {
+	yaml_bytes, err := ConfigFs.ReadFile(yamlFilename)
+	if err != nil {
+		zap.L().Fatal(err.Error())
+	}
+	return bytes.NewReader(yaml_bytes)
 }
