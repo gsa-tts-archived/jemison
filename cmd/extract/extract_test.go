@@ -10,6 +10,7 @@ import (
 
 	"github.com/GSA-TTS/jemison/internal/sqlite"
 	"github.com/GSA-TTS/jemison/internal/sqlite/schemas"
+	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -203,7 +204,7 @@ func TestGetTitle3(t *testing.T) {
 	title := ""
 	doc.Find("script").Remove()
 	doc.Find("head").Each(func(i int, s *goquery.Selection) {
-		stripped := stripWhitespace(s.Find("title").Text())
+		stripped := util.CollapseWhitespace(s.Find("title").Text())
 		if stripped != "" {
 			log.Println("setting title to", stripped)
 			title = stripped

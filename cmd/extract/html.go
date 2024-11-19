@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/GSA-TTS/jemison/internal/common"
@@ -26,12 +25,7 @@ import (
 func scrape_sel(sel *goquery.Selection) string {
 	txt := sel.Text()
 	repl := strings.ToLower(txt)
-	return stripWhitespace(repl)
-}
-
-func stripWhitespace(s string) string {
-	var re = regexp.MustCompile(`\s\s+`)
-	return re.ReplaceAllString(s, " ")
+	return util.CollapseWhitespace(repl)
 }
 
 func _getTitle(doc *goquery.Document) string {
@@ -43,7 +37,7 @@ func _getTitle(doc *goquery.Document) string {
 			title = scrape_sel(sel)
 		}
 	})
-	return stripWhitespace(title)
+	return util.CollapseWhitespace(title)
 }
 
 func _getHeaders(doc *goquery.Document) map[string][]string {
@@ -62,7 +56,7 @@ func _getHeaders(doc *goquery.Document) map[string][]string {
 	} {
 		accum := make([]string, 0)
 		doc.Find(tag).Each(func(ndx int, sel *goquery.Selection) {
-			accum = append(accum, stripWhitespace(scrape_sel(sel)))
+			accum = append(accum, util.CollapseWhitespace(scrape_sel(sel)))
 		})
 		headers[tag] = accum
 	}
@@ -92,7 +86,7 @@ func _getBodyContent(doc *goquery.Document) string {
 	}
 
 	// Get rid of all extraneous whitespace
-	return stripWhitespace(content)
+	return util.CollapseWhitespace(content)
 }
 
 // //////////////////

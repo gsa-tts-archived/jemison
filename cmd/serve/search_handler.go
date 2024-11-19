@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -38,28 +39,24 @@ func runQuery(sri ServeRequestInput) (
 
 	// Don't only use the stemmed words
 	existing_terms := strings.Split(sri.Terms, " ")
-	improved_terms := make([]string, 0)
-	for _, t := range existing_terms {
-		// start by adding the existing terms to the list.
-		improved_terms = append(improved_terms, t)
-		stemmed, err := snowball.Stem(t, "english", true)
+	zap.L().Debug("EXISTING TERMS", zap.Strings("terms", existing_terms))
+
+	query := NewQuery()
+
+	for _, et := range existing_terms {
+		stemmed, err := snowball.Stem(et, "english", true)
+		zap.L().Debug("stemmed result", zap.String("et", et), zap.String("stemmed", stemmed))
 		if err != nil {
-			// Pass. Keep the value as-is
-			improved_terms = append(improved_terms, t)
-		} else {
-			if len(stemmed) > 0 {
-				// Stem the terms and add wildcards.
-				improved_terms = append(improved_terms, stemmed+"*")
-			}
+			zap.L().Debug("stemming error", zap.String("err", err.Error()))
 		}
+		query.AddToQuery(Or(et, stemmed+"*"))
 	}
 
-	// Definitely need to OR the terms here.
-	// Otherwise, we're building a large implicit AND
-	improved_terms_string := strings.Join(improved_terms, " OR ")
+	improved_terms_string := query.ToString()
 
 	zap.L().Debug("search string",
 		zap.String("original", sri.Terms),
+		zap.String("Q", fmt.Sprintln(query)),
 		zap.String("improved", improved_terms_string))
 
 	db, err := sql.Open("sqlite3", destination+"?cache=shared&mode=ro")

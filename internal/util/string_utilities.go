@@ -1,6 +1,7 @@
 package util
 
 import (
+	"regexp"
 	"strings"
 )
 
@@ -85,4 +86,9 @@ func IsSearchableMimeType(mime string) bool {
 		}
 	}
 	return false
+}
+
+func CollapseWhitespace(s string) string {
+	var re = regexp.MustCompile(`\s\s+`)
+	return re.ReplaceAllString(s, " ")
 }
