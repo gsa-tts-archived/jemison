@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/GSA-TTS/jemison/internal/env"
@@ -29,25 +30,26 @@ type EntreeCheck struct {
 // FIXME: someday, it would be good to decide what is limited to package,
 // and what can be accessed outside. Then, these become lowercase...
 
-func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) EntreeCheck {
+func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) (*EntreeCheck, error) {
 	q, ctx, conn := GetQ()
 	defer conn.Close(ctx)
 	host_id, err := q.GetHostId(ctx, host)
 	if err != nil {
-		zap.L().Fatal("could not get host id", zap.String("host", host))
+		zap.L().Debug("could not get host id", zap.String("host", host))
+		return nil, fmt.Errorf("could not get host id")
 	}
 
-	return EntreeCheck{
+	return &EntreeCheck{
 		Kind:     kind,
 		HallPass: hallPass,
 		Scheme:   scheme,
 		Host:     host,
 		HostId:   host_id,
 		Path:     path,
-	}
+	}, nil
 }
 
-func EvaluateEntree(ec EntreeCheck) {
+func EvaluateEntree(ec *EntreeCheck) {
 	it_shall_pass := false
 
 	if IsSingleWithPass(ec) {
@@ -100,7 +102,7 @@ func EvaluateEntree(ec EntreeCheck) {
 // Possible side-effects:
 //   - Fetch the page
 //   - Update the last_fetch in guestbook
-func IsSingleWithPass(ec EntreeCheck) bool {
+func IsSingleWithPass(ec *EntreeCheck) bool {
 	// This just allows us to queue this onward to `fetch`.
 	// Fetch will handle guestbook updates.
 	return ec.Kind == "single" && ec.HallPass
@@ -112,11 +114,11 @@ func IsSingleWithPass(ec EntreeCheck) bool {
 // Possible side-effects:
 //   - Fetch the page
 //   - Update last_fetch in guestbook
-func IsSingleNoPass(ec EntreeCheck) bool {
+func IsSingleNoPass(ec *EntreeCheck) bool {
 	return ec.Kind == "single" && !ec.HallPass && CheckIfIsInGuestbook(ec)
 }
 
-func CheckIfIsInGuestbook(ec EntreeCheck) bool {
+func CheckIfIsInGuestbook(ec *EntreeCheck) bool {
 	// This is currently multiple database hits.
 	// It is a place for optimization. But the first
 	// implementation is for simplicity.
@@ -135,7 +137,7 @@ func CheckIfIsInGuestbook(ec EntreeCheck) bool {
 //   - Set next_fetch for all known pages in guestbook to *yesterday*
 //   - Set last_fetch in guestbook
 //   - Reset next_fetch in hosts table after completion
-func IsFullWithPass(ec EntreeCheck) bool {
+func IsFullWithPass(ec *EntreeCheck) bool {
 	return ec.Kind == "full" && ec.HallPass
 }
 
@@ -143,7 +145,7 @@ func IsFullWithPass(ec EntreeCheck) bool {
 //
 // Possible side-effects:
 //   - None. It runs on what is in the DBs.
-func IsFullNoPass(ec EntreeCheck) bool {
+func IsFullNoPass(ec *EntreeCheck) bool {
 	return ec.Kind == "full" && !ec.HallPass && CheckIfAfterHostNextFetch(ec)
 }
 
@@ -163,7 +165,7 @@ func GetQ() (*work_db.Queries, context.Context, *pgx.Conn) {
 	return queries, ctx, conn
 }
 
-func isInGuestbook(ec EntreeCheck) bool {
+func isInGuestbook(ec *EntreeCheck) bool {
 	q, ctx, conn := GetQ()
 	defer conn.Close(ctx)
 	b, err := q.CheckEntryExistsInGuestbook(ctx, ec.HostId)
@@ -174,7 +176,7 @@ func isInGuestbook(ec EntreeCheck) bool {
 	return b
 }
 
-func CheckIfAfterGuestbookNextFetch(ec EntreeCheck) bool {
+func CheckIfAfterGuestbookNextFetch(ec *EntreeCheck) bool {
 	q, ctx, conn := GetQ()
 	defer conn.Close(ctx)
 	entry, err := q.GetGuestbookEntry(ctx, work_db.GetGuestbookEntryParams{
@@ -195,7 +197,7 @@ func CheckIfAfterGuestbookNextFetch(ec EntreeCheck) bool {
 	return time.Now().After(entry.NextFetch.Time)
 }
 
-func CheckIfAfterHostNextFetch(ec EntreeCheck) bool {
+func CheckIfAfterHostNextFetch(ec *EntreeCheck) bool {
 	q, ctx, conn := GetQ()
 	defer conn.Close(ctx)
 	ts, err := q.GetHostNextFetch(ctx, ec.HostId)
@@ -211,7 +213,7 @@ func CheckIfAfterHostNextFetch(ec EntreeCheck) bool {
 	return time.Now().After(ts.Time)
 }
 
-func SetHostNextFetchToYesterday(ec EntreeCheck) {
+func SetHostNextFetchToYesterday(ec *EntreeCheck) {
 	q, ctx, conn := GetQ()
 	defer conn.Close(ctx)
 	err := q.SetHostNextFetchToYesterday(ctx, ec.Host)
@@ -221,7 +223,7 @@ func SetHostNextFetchToYesterday(ec EntreeCheck) {
 	}
 }
 
-func SetGuestbookFetchToYesterdayForHost(ec EntreeCheck) {
+func SetGuestbookFetchToYesterdayForHost(ec *EntreeCheck) {
 	q, ctx, conn := GetQ()
 	defer conn.Close(ctx)
 	err := q.SetGuestbookFetchToYesterdayForHost(ctx, ec.HostId)

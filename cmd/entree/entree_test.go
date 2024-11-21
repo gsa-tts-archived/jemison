@@ -162,7 +162,7 @@ func TestSetGuestbookFetchToYesterdayForHost(t *testing.T) {
 func TestSetGuestbookFetchToYesterdayForHost2(t *testing.T) {
 	setup()
 
-	ec := NewEntreeCheck("full",
+	ec, _ := NewEntreeCheck("full",
 		"https", "www.imls.gov", "/", true)
 	assert.True(t, IsFullWithPass(ec))
 

@@ -28,8 +28,13 @@ func (w *EntreeWorker) Work(ctx context.Context, job *river.Job[common.EntreeArg
 
 	// In case we don't have clean URLs...
 	path := util.TrimSuffix(job.Args.Path, "/")
-	ec := NewEntreeCheck(kind, job.Args.Scheme, job.Args.Host, path, job.Args.HallPass)
-
+	ec, err := NewEntreeCheck(kind, job.Args.Scheme, job.Args.Host, path, job.Args.HallPass)
+	if err != nil {
+		// If we cannot create a new EC object, we probably couldn't find the host.
+		// A refined error message here would be good. But, what it means is we don't want to
+		// requeue the job, and we don't want to proceed.
+		return nil
+	}
 	EvaluateEntree(ec)
 
 	return nil
