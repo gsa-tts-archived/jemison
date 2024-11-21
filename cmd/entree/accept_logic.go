@@ -48,11 +48,33 @@ func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) EntreeCheck 
 }
 
 func EvaluateEntree(ec EntreeCheck) {
+	it_shall_pass := false
 
 	if IsSingleWithPass(ec) {
 		log.Info("is-single-with-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
+		it_shall_pass = true
+	} else if IsSingleNoPass(ec) {
+		log.Info("is-single-no-pass",
+			zap.String("host", ec.Host), zap.String("path", ec.Path))
+		it_shall_pass = true
+	} else if IsFullWithPass(ec) {
+		log.Info("is-full-with-pass",
+			zap.String("host", ec.Host), zap.String("path", ec.Path))
+		SetHostNextFetchToYesterday(ec)
+		SetGuestbookFetchToYesterdayForHost(ec)
+		it_shall_pass = true
+	} else if IsFullNoPass(ec) {
+		log.Info("is-full-no-pass",
+			zap.String("host", ec.Host), zap.String("path", ec.Path))
+		it_shall_pass = true
+	} else {
+		log.Info("no entree evaluation criteria met",
+			zap.String("host", ec.Host), zap.String("path", ec.Path))
+		it_shall_pass = false
+	}
 
+	if it_shall_pass {
 		// We need to update the guestbook now, because we will end up re-walking
 		// the page if we don't. This is true in each case.
 		// Fetch will update a second time.
@@ -67,57 +89,6 @@ func EvaluateEntree(ec EntreeCheck) {
 			ec.Scheme,
 			ec.Host,
 			ec.Path)
-		return
-
-	} else if IsSingleNoPass(ec) {
-		log.Info("is-single-no-pass",
-			zap.String("host", ec.Host), zap.String("path", ec.Path))
-		work_db.UpdateNextFetch(work_db.FetchUpdateParams{
-			Scheme:      ec.Scheme,
-			Host:        ec.Host,
-			Path:        ec.Path,
-			LastUpdated: time.Now(),
-		})
-		queueing.InsertFetch(
-			ec.Scheme,
-			ec.Host,
-			ec.Path)
-		return
-
-	} else if IsFullWithPass(ec) {
-		log.Info("is-full-with-pass",
-			zap.String("host", ec.Host), zap.String("path", ec.Path))
-		SetHostNextFetchToYesterday(ec)
-		SetGuestbookFetchToYesterdayForHost(ec)
-		work_db.UpdateNextFetch(work_db.FetchUpdateParams{
-			Scheme:      ec.Scheme,
-			Host:        ec.Host,
-			Path:        ec.Path,
-			LastUpdated: time.Now(),
-		})
-		queueing.InsertFetch(
-			ec.Scheme,
-			ec.Host,
-			ec.Path)
-		return
-
-	} else if IsFullNoPass(ec) {
-		log.Info("is-full-no-pass",
-			zap.String("host", ec.Host), zap.String("path", ec.Path))
-		work_db.UpdateNextFetch(work_db.FetchUpdateParams{
-			Scheme:      ec.Scheme,
-			Host:        ec.Host,
-			Path:        ec.Path,
-			LastUpdated: time.Now(),
-		})
-		queueing.InsertFetch(
-			ec.Scheme,
-			ec.Host,
-			ec.Path)
-		return
-	} else {
-		log.Info("no entree evaluation criteria met",
-			zap.String("host", ec.Host), zap.String("path", ec.Path))
 	}
 
 }
