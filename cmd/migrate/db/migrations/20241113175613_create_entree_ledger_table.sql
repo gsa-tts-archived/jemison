@@ -5,18 +5,10 @@
 -- Also, for future migrations:
 -- https://stackoverflow.com/questions/1771543/adding-a-new-value-to-an-existing-enum-type
 
-DO $$ BEGIN
-  CREATE TYPE scheme AS ENUM (
-    'http',
-    'https'
-  );
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
 CREATE TABLE IF NOT EXISTS hosts (
   id BIGINT generated always as identity primary key,
-  host TEXT,
+  host TEXT NOT NULL,
+  next_fetch TIMESTAMP NOT NULL,
   UNIQUE(host)
 );
 
@@ -27,15 +19,15 @@ CREATE TABLE IF NOT EXISTS content_types (
 
 CREATE TABLE IF NOT EXISTS guestbook (
   id BIGINT generated always as identity primary key,
-  scheme scheme NOT NULL,
+  scheme TEXT NOT NULL DEFAULT 'https',
   host BIGINT references hosts(id) NOT NULL,
   path TEXT NOT NULL,
   content_sha1 TEXT,
   content_length INTEGER,
   content_type INTEGER references content_types(id),
-  last_updated DATE,
-  last_fetched DATE,
-  next_fetch DATE,
+  last_updated TIMESTAMP NOT NULL,
+  last_fetched TIMESTAMP NOT NULL,
+  next_fetch TIMESTAMP NOT NULL,
   UNIQUE (host, path)
 );
 
@@ -43,6 +35,5 @@ CREATE TABLE IF NOT EXISTS guestbook (
 DROP TABLE IF EXISTS guestbook;
 DROP TABLE IF EXISTS hosts;
 DROP TABLE IF EXISTS content_types;
-DROP TYPE IF EXISTS scheme;
 
 

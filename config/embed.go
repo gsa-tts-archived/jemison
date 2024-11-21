@@ -3,8 +3,11 @@ package config
 import (
 	"bytes"
 	"embed"
+	"time"
 
 	"github.com/google/go-jsonnet"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 )
 
@@ -38,4 +41,48 @@ func GetYamlFileReader(yamlFilename string) *bytes.Reader {
 		zap.L().Fatal(err.Error())
 	}
 	return bytes.NewReader(yaml_bytes)
+}
+
+func GetScheduleFromHost(host string) string {
+	cfg := ReadJsonConfig("schedule.json")
+	hostSections := make(map[string]string, 0)
+	for _, section := range gjson.Parse(cfg).Get("@keys").Array() {
+		for _, site := range gjson.Get(cfg, section.String()).Array() {
+			hostSections[site.Get("host").String()] = section.String()
+		}
+	}
+	return hostSections[host]
+}
+
+func SectionToTimestamp(section string, start_time time.Time) time.Time {
+	switch section {
+	case "daily":
+		return start_time.Add(24 * time.Hour)
+	case "weekly":
+		return start_time.Add(7 * 24 * time.Hour)
+	case "bi-weekly":
+		return start_time.Add(14 * 24 * time.Hour)
+	case "monthly":
+		return start_time.Add(30 * 24 * time.Hour)
+	case "quarterly":
+		return start_time.Add(3 * 30 * 24 * time.Hour)
+	case "bi-annually":
+		return start_time.Add(6 * 30 * 24 * time.Hour)
+	default:
+		// We will default to `montly` to be safe
+		return start_time.Add(time.Duration(30*24) * time.Hour)
+	}
+}
+
+func HostToPgTimestamp(host string, start_time time.Time) pgtype.Timestamp {
+	schedule := GetScheduleFromHost(host)
+	return SectionToPgTimestamp(schedule, start_time)
+}
+
+func SectionToPgTimestamp(section string, start_time time.Time) pgtype.Timestamp {
+	return pgtype.Timestamp{
+		Time:             SectionToTimestamp(section, start_time),
+		InfinityModifier: 0,
+		Valid:            true,
+	}
 }

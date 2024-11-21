@@ -135,8 +135,8 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 		Path:   s3json.GetString("path"),
 	}
 
-	zap.L().Debug("considering the url",
-		zap.String("url", link))
+	// zap.L().Debug("considering the url",
+	// 	zap.String("url", link))
 
 	// Is the URL at least length 1?
 	if len(link) < 1 {

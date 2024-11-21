@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	_ "embed"
 
@@ -55,20 +56,20 @@ func section(section string) func() {
 	}
 }
 
-func getHostSections() map[string]string {
-	JSON := config.ReadJsonConfig("schedule.json")
-	hostSections := make(map[string]string)
+// func getHostSections() map[string]string {
+// 	JSON := config.ReadJsonConfig("schedule.json")
+// 	hostSections := make(map[string]string)
 
-	for _, section := range gjson.Parse(JSON).Get("@keys").Array() {
-		for _, site := range gjson.Get(JSON, section.String()).Array() {
-			// We should never see a -1 in the host table. Not sure
-			// how else to do this. The following loop will either populate
-			// the value or fail.
-			hostSections[site.Get("host").String()] = section.String()
-		}
-	}
-	return hostSections
-}
+// 	for _, section := range gjson.Parse(JSON).Get("@keys").Array() {
+// 		for _, site := range gjson.Get(JSON, section.String()).Array() {
+// 			// We should never see a -1 in the host table. Not sure
+// 			// how else to do this. The following loop will either populate
+// 			// the value or fail.
+// 			hostSections[site.Get("host").String()] = section.String()
+// 		}
+// 	}
+// 	return hostSections
+// }
 
 func upsertUniqueHosts() map[string]int64 {
 	//JSON := config.ReadConfigJsonnet("schedule.jsonnet")
@@ -103,10 +104,11 @@ func upsertUniqueHosts() map[string]int64 {
 	// just created the map in the first place... FIXME later...
 	for h, section := range hostSections {
 		// The section is 'weekly', 'monthly', etc.
-		zap.L().Debug("upserting", zap.String("host", h), zap.String("section", section))
+		// zap.L().Debug("upserting", zap.String("host", h), zap.String("section", section))
+		next_fetch := config.SectionToPgTimestamp(section, time.Now())
 		id, err := queries.UpsertUniqueHost(ctx, work_db.UpsertUniqueHostParams{
-			Column1: section,
-			Host:    h,
+			NextFetch: next_fetch,
+			Host:      h,
 		})
 		if err != nil {
 			zap.L().Error("did not get `id` back for host",

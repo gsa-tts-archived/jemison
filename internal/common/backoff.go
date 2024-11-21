@@ -20,8 +20,8 @@ func BackoffLoop(host string, polite_sleep int64, last_hit *sync.Map, last_backo
 			last, _ := last_backoff.Load(host)
 			new_backoff_time := float64(polite_sleep)/10*rand.Float64() + float64(last.(int64))*1.03
 			// Go back to sleep
-			zap.L().Debug("backing off and sleeping", zap.String("host", host),
-				zap.Float64("duration", new_backoff_time))
+			// zap.L().Debug("backing off and sleeping", zap.String("host", host),
+			// 	zap.Float64("duration", new_backoff_time))
 			time.Sleep(time.Duration(new_backoff_time) * time.Second)
 			continue
 		} else {

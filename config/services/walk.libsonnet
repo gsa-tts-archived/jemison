@@ -15,7 +15,7 @@ local parameters = [
   ],
   [
     'debug_level',
-    { cf: 'warn', container: 'into' },
+    { cf: 'warn', container: 'info' },
   ],
   [
     'cache-ttl',

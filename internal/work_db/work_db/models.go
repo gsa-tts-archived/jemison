@@ -15,7 +15,7 @@ type ContentType struct {
 
 type Guestbook struct {
 	ID            int64            `json:"id"`
-	Scheme        interface{}      `json:"scheme"`
+	Scheme        string           `json:"scheme"`
 	Host          int64            `json:"host"`
 	Path          string           `json:"path"`
 	ContentSha1   pgtype.Text      `json:"content_sha1"`
@@ -23,6 +23,7 @@ type Guestbook struct {
 	ContentType   pgtype.Int4      `json:"content_type"`
 	LastUpdated   pgtype.Timestamp `json:"last_updated"`
 	LastFetched   pgtype.Timestamp `json:"last_fetched"`
+	NextFetch     pgtype.Timestamp `json:"next_fetch"`
 }
 
 type Host struct {

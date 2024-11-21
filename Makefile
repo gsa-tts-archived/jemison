@@ -3,6 +3,9 @@ clean:
 	rm -f internal/sqlite/schemas/db.go
 	rm -f internal/sqlite/schemas/models.go
 	rm -f internal/sqlite/schemas/query.sql.go
+	rm -f internal/work_db/work_db/db.go
+	rm -f internal/work_db/work_db/models.go
+	rm -f internal/work_db/work_db/query.sql.go
 	rm -f cmd/*/service.exe
 
 .PHONY: generate

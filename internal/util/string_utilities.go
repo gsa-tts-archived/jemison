@@ -92,3 +92,12 @@ func CollapseWhitespace(s string) string {
 	var re = regexp.MustCompile(`\s\s+`)
 	return re.ReplaceAllString(s, " ")
 }
+
+func TrimSuffix(s, suffix string) string {
+	if strings.HasSuffix(s, suffix) {
+		s = s[:len(s)-len(suffix)]
+		return s
+	} else {
+		return s
+	}
+}

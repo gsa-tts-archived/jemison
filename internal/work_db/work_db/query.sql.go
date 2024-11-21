@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkEntryExistsInGuestbook = `-- name: CheckEntryExistsInGuestbook :one
+SELECT EXISTS(SELECT 1::bool FROM guestbook WHERE host = $1)
+`
+
+func (q *Queries) CheckEntryExistsInGuestbook(ctx context.Context, host int64) (bool, error) {
+	row := q.db.QueryRow(ctx, checkEntryExistsInGuestbook, host)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const getGuestbookEntries = `-- name: GetGuestbookEntries :many
 SELECT path FROM guestbook 
 WHERE 
@@ -39,7 +50,20 @@ func (q *Queries) GetGuestbookEntries(ctx context.Context, host int64) ([]string
 }
 
 const getGuestbookEntry = `-- name: GetGuestbookEntry :one
-SELECT id, scheme, host, path, content_sha1, content_length, content_type, last_updated, last_fetched FROM guestbook 
+
+  -- id BIGINT generated always as identity primary key,
+  -- scheme scheme NOT NULL,
+  -- host BIGINT references hosts(id) NOT NULL,
+  -- path TEXT NOT NULL,
+  -- content_sha1 TEXT,
+  -- content_length INTEGER,
+  -- content_type INTEGER references content_types(id),
+  -- last_updated TIMESTAMP NOT NULL,
+  -- last_fetched TIMESTAMP NOT NULL,
+  -- next_fetch TIMESTAMP NOT NULL,
+  -- UNIQUE (host, path)
+
+SELECT id, scheme, host, path, content_sha1, content_length, content_type, last_updated, last_fetched, next_fetch FROM guestbook 
 WHERE 
   host = $1 
   AND
@@ -52,6 +76,9 @@ type GetGuestbookEntryParams struct {
 	Path string `json:"path"`
 }
 
+// ------------------------------------------------------------
+// `guestbook` table
+// ------------------------------------------------------------
 // Returns a single guestbook entry
 // based on the unique host/path combo.
 func (q *Queries) GetGuestbookEntry(ctx context.Context, arg GetGuestbookEntryParams) (Guestbook, error) {
@@ -67,6 +94,7 @@ func (q *Queries) GetGuestbookEntry(ctx context.Context, arg GetGuestbookEntryPa
 		&i.ContentType,
 		&i.LastUpdated,
 		&i.LastFetched,
+		&i.NextFetch,
 	)
 	return i, err
 }
@@ -75,6 +103,9 @@ const getHostId = `-- name: GetHostId :one
 SELECT id FROM hosts WHERE host = $1
 `
 
+// ------------------------------------------------------------
+// `host` table
+// ------------------------------------------------------------
 // Find a host ID
 func (q *Queries) GetHostId(ctx context.Context, host string) (int64, error) {
 	row := q.db.QueryRow(ctx, getHostId, host)
@@ -94,10 +125,90 @@ func (q *Queries) GetHostNextFetch(ctx context.Context, id int64) (pgtype.Timest
 	return next_fetch, err
 }
 
-const setNextFetchToYesterday = `-- name: SetNextFetchToYesterday :one
+const setGuestbookFetchToYesterdayForHost = `-- name: SetGuestbookFetchToYesterdayForHost :exec
+UPDATE guestbook
+  SET 
+    next_fetch = NOW()+make_interval(days => -1)
+  WHERE
+    host = $1
+`
+
+func (q *Queries) SetGuestbookFetchToYesterdayForHost(ctx context.Context, host int64) error {
+	_, err := q.db.Exec(ctx, setGuestbookFetchToYesterdayForHost, host)
+	return err
+}
+
+const setHostNextFetchToYesterday = `-- name: SetHostNextFetchToYesterday :exec
+UPDATE hosts
+  SET
+    next_fetch = NOW()+make_interval(days => -1)
+  WHERE
+    host = $1
+`
+
+func (q *Queries) SetHostNextFetchToYesterday(ctx context.Context, host string) error {
+	_, err := q.db.Exec(ctx, setHostNextFetchToYesterday, host)
+	return err
+}
+
+const updateGuestbookFetch = `-- name: UpdateGuestbookFetch :one
+INSERT INTO guestbook
+  -- 1       2     3        4             -           5
+  (scheme, host, path, last_updated, last_fetched, next_fetch)
+  VALUES 
+  -- always insert three seconds in the past
+  -- this way, if we check too fast, we're guaranteed to see
+  -- that we last fetched it in the past.
+  ($1, $2, $3, $4, NOW()+make_interval(secs => -3), $5)
+  ON CONFLICT (host, path) DO UPDATE
+  SET
+    scheme = EXCLUDED.scheme,
+    host = EXCLUDED.host,
+    path = EXCLUDED.path,
+    content_sha1 = EXCLUDED.content_sha1,
+    content_length = EXCLUDED.content_length,
+    content_type = EXCLUDED.content_type,
+    last_updated = EXCLUDED.last_updated,
+    last_fetched = EXCLUDED.last_fetched,
+    next_fetch = EXCLUDED.next_fetch
+  RETURNING id
+`
+
+type UpdateGuestbookFetchParams struct {
+	Scheme      string           `json:"scheme"`
+	Host        int64            `json:"host"`
+	Path        string           `json:"path"`
+	LastUpdated pgtype.Timestamp `json:"last_updated"`
+	NextFetch   pgtype.Timestamp `json:"next_fetch"`
+}
+
+// This is likely called by `fetch`
+func (q *Queries) UpdateGuestbookFetch(ctx context.Context, arg UpdateGuestbookFetchParams) (int64, error) {
+	row := q.db.QueryRow(ctx, updateGuestbookFetch,
+		arg.Scheme,
+		arg.Host,
+		arg.Path,
+		arg.LastUpdated,
+		arg.NextFetch,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const updateHostNextFetch = `-- name: UpdateHostNextFetch :one
+  --   CASE 
+  --     WHEN $1::TEXT = 'weekly' THEN NOW()+make_interval(weeks => 1, days => -1)
+  --     WHEN $1 = 'bi-weekly' THEN NOW()+make_interval(weeks => 2, days => -1)
+  --     WHEN $1 = 'monthly' THEN NOW()+make_interval(months => 1, days => -1)
+  --     WHEN $1 = 'bi-monthly' THEN NOW()+make_interval(months => 2, days => -1)
+  --     WHEN $1 = 'quarterly' THEN NOW()+make_interval(months=> 3, days => -1)
+  --   END)
+  -- )
+
 INSERT INTO hosts
   (host, next_fetch)
-  VALUES ($1, NOW()+make_interval(days => -1))
+  VALUES ($1, $2)
   ON CONFLICT (host)
   WHERE host = $1
   DO UPDATE
@@ -107,80 +218,15 @@ INSERT INTO hosts
   RETURNING id
 `
 
-func (q *Queries) SetNextFetchToYesterday(ctx context.Context, host string) (int64, error) {
-	row := q.db.QueryRow(ctx, setNextFetchToYesterday, host)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+type UpdateHostNextFetchParams struct {
+	Host      string           `json:"host"`
+	NextFetch pgtype.Timestamp `json:"next_fetch"`
 }
 
-const toFetchOrNotToFetch = `-- name: ToFetchOrNotToFetch :one
-SELECT 
-  CASE
-    -- Deadline passed
-    WHEN host = $1 AND path = $2 AND next_fetch < NOW() THEN 2
-    -- Deadline not yet reached
-    WHEN host = $1 AND path = $2 AND next_fetch >= NOW() THEN 1
-    -- If we can't find the path, then this is not found
-    ELSE 3
-  END AS is_past_next_fetch
-  FROM guestbook
-  WHERE host = $1 AND path = $2
-`
-
-type ToFetchOrNotToFetchParams struct {
-	Host int64  `json:"host"`
-	Path string `json:"path"`
-}
-
-// If it is time to fetch?
-// These match a Golang enum.
-// const (
-//
-//	NotPreviouslySeen FetchStatus = iota 0
-//	DeadlineNotYetReached = 1
-//	DeadlinePassed = 2
-//	NotFound = 3
-//	HallPass = 4
-//	DefaultCase = 5
-//
-// )
-func (q *Queries) ToFetchOrNotToFetch(ctx context.Context, arg ToFetchOrNotToFetchParams) (int32, error) {
-	row := q.db.QueryRow(ctx, toFetchOrNotToFetch, arg.Host, arg.Path)
-	var is_past_next_fetch int32
-	err := row.Scan(&is_past_next_fetch)
-	return is_past_next_fetch, err
-}
-
-const updateNextFetch = `-- name: UpdateNextFetch :one
-INSERT INTO hosts
-  (host, next_fetch)
-  VALUES ($2, 
-  (SELECT
-    CASE 
-      WHEN $1 = 'weekly' THEN NOW()+make_interval(weeks => 1, days => -1)
-      WHEN $1 = 'bi-weekly' THEN NOW()+make_interval(weeks => 2, days => -1)
-      WHEN $1 = 'monthly' THEN NOW()+make_interval(months => 1, days => -1)
-      WHEN $1 = 'bi-monthly' THEN NOW()+make_interval(months => 2, days => -1)
-      WHEN $1 = 'quarterly' THEN NOW()+make_interval(months=> 3, days => -1)
-    END)
-  )
-  ON CONFLICT (host)
-  WHERE host = $2
-  DO UPDATE
-    SET 
-      host = EXCLUDED.host,
-      next_fetch = EXCLUDED.next_fetch
-  RETURNING id
-`
-
-type UpdateNextFetchParams struct {
-	Column1 interface{} `json:"column_1"`
-	Host    string      `json:"host"`
-}
-
-func (q *Queries) UpdateNextFetch(ctx context.Context, arg UpdateNextFetchParams) (int64, error) {
-	row := q.db.QueryRow(ctx, updateNextFetch, arg.Column1, arg.Host)
+// (SELECT
+// FIXM: This is the same as Upsert. Reduce to one function.
+func (q *Queries) UpdateHostNextFetch(ctx context.Context, arg UpdateHostNextFetchParams) (int64, error) {
+	row := q.db.QueryRow(ctx, updateHostNextFetch, arg.Host, arg.NextFetch)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -189,16 +235,7 @@ func (q *Queries) UpdateNextFetch(ctx context.Context, arg UpdateNextFetchParams
 const upsertUniqueHost = `-- name: UpsertUniqueHost :one
 INSERT INTO hosts 
   (host, next_fetch) 
-  VALUES ($2, 
-  (SELECT
-    CASE 
-      WHEN $1 = 'weekly' THEN NOW()+make_interval(weeks => 1, days => -1)
-      WHEN $1 = 'bi-weekly' THEN NOW()+make_interval(weeks => 2, days => -1)
-      WHEN $1 = 'monthly' THEN NOW()+make_interval(months => 1, days => -1)
-      WHEN $1 = 'bi-monthly' THEN NOW()+make_interval(months => 2, days => -1)
-      WHEN $1 = 'quarterly' THEN NOW()+make_interval(months=> 3, days => -1)
-    END)
-  )
+  VALUES ($1, $2) 
   -- See https://stackoverflow.com/a/37543015
   -- This is a workaround; it forces the ` + "`" + `id` + "`" + ` to be 
   -- returned in all cases.
@@ -209,15 +246,15 @@ INSERT INTO hosts
 `
 
 type UpsertUniqueHostParams struct {
-	Column1 interface{} `json:"column_1"`
-	Host    string      `json:"host"`
+	Host      string           `json:"host"`
+	NextFetch pgtype.Timestamp `json:"next_fetch"`
 }
 
 // This gets used at startup. We walk the config
 // file and load the table with unique hosts, so that
 // we can use the IDs in the `guestbook` table.
 func (q *Queries) UpsertUniqueHost(ctx context.Context, arg UpsertUniqueHostParams) (int64, error) {
-	row := q.db.QueryRow(ctx, upsertUniqueHost, arg.Column1, arg.Host)
+	row := q.db.QueryRow(ctx, upsertUniqueHost, arg.Host, arg.NextFetch)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
