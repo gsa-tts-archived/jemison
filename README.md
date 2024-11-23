@@ -1,7 +1,7 @@
 # jemison
 
 
-`jemison` is an amazing prototype for a small, scalable, maintainable search platform. 
+`jemison` is a prototype for a small, scalable, maintainable search platform. 
 
 It is based on a series of experiments in search and embedded database technologies.
 

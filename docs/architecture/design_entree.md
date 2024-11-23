@@ -63,18 +63,56 @@ We pass things through `fetch`, `extract`, etc. until `serve` picks up a databas
 
 The update rules are stored in static configuration files shipped with the app. These may become dynamic at a later point.
 
+
 ```mermaid
 flowchart TD
-    start[url comes in]
-    start --> pass{hall pass?}
-    pass -- Y --> fetch1[fetch]
-    fetch1 --> unmod["leave *next_fetch*
-    unmodified"]
-    pass -- N --> date{now > next_fetch?}
-    date -- Y --> fetch2[fetch] --> mod
-    mod["update *next_fetch*"] --> done
-    date -- N --> done
-    unmod --> done
+%% Nodes
+A("Url enters"):::blue
+
+AP("Accept"):::green
+RP("Reject"):::red
+
+AS("Accept"):::green
+RS("Reject"):::red
+
+D("Check host<br>next_fetch"):::purple
+
+C("Check<br>Guestbook"):::orange
+E("Check page<br>next_fetch"):::orange
+
+F("Set host<br>next_fetch to<br>yesterday"):::purple
+
+G("fetch page,<br>update last_fetch in gbook")
+H("update last_fetch")
+
+%% Edges
+A -- full/no pass --> D
+A -- full/pass --> F
+F --> AS
+
+A -- single/pass --> AP
+A -- single/no pass --> C
+C -- not in gbook --> D
+C -- in gbook --> E
+E -- after --> AP
+E -- before --> RP
+
+AP --> H
+
+D -- after --> AS
+D -- before --> RS
+
+AS --> G
+
+%% Styling
+classDef green fill:#B2DFDB,stroke:#00897B,stroke-width:2px;
+classDef orange fill:#FFE0B2,stroke:#FB8C00,stroke-width:2px;
+classDef blue fill:#BBDEFB,stroke:#1976D2,stroke-width:2px;
+classDef yellow fill:#FFF9C4,stroke:#FBC02D,stroke-width:2px;
+classDef pink fill:#F8BBD0,stroke:#C2185B,stroke-width:2px;
+classDef purple fill:#E1BEE7,stroke:#8E24AA,stroke-width:2px;
+classDef red fill:#CC0000,stroke:#FB8C00,stroke-width:2px,color:#FFFFFF;
+
 ```
 
 ### tooling
