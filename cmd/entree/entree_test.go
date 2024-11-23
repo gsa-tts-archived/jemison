@@ -29,35 +29,35 @@ func setup( /* t *testing.T */ ) func(t *testing.T) {
 
 func TestIsSingleWithPass(t *testing.T) {
 	setup()
-	ec := NewEntreeCheck("single",
+	ec, _ := NewEntreeCheck("single",
 		"https", "www.imls.gov", "/", true)
 	assert.True(t, IsSingleWithPass(ec))
 }
 
 func TestIsSingleNoPass(t *testing.T) {
 	setup()
-	ec := NewEntreeCheck("single",
+	ec, _ := NewEntreeCheck("single",
 		"https", "www.imls.gov", "/", false)
 	assert.False(t, IsSingleWithPass(ec))
 }
 
 func TestIsFullWithPass(t *testing.T) {
 	setup()
-	ec := NewEntreeCheck("full",
+	ec, _ := NewEntreeCheck("full",
 		"https", "www.imls.gov", "/", true)
 	assert.True(t, IsFullWithPass(ec))
 }
 
 func TestIsFullNoPass(t *testing.T) {
 	setup()
-	ec := NewEntreeCheck("full",
+	ec, _ := NewEntreeCheck("full",
 		"https", "www.imls.gov", "/", false)
 	assert.False(t, IsFullNoPass(ec))
 }
 
 func TestEvaluateEntreeSinglePass(t *testing.T) {
 	setup()
-	ec := NewEntreeCheck("single",
+	ec, _ := NewEntreeCheck("single",
 		"https", "www.imls.gov", "/", true)
 	assert.True(t, IsSingleWithPass(ec))
 	EvaluateEntree(ec)
@@ -89,7 +89,7 @@ type HostRow struct {
 
 func TestSetHostNextFetchToYesterday(t *testing.T) {
 	setup()
-	ec := NewEntreeCheck("full",
+	ec, _ := NewEntreeCheck("full",
 		"https", "www.imls.gov", "/", true)
 	assert.True(t, IsFullWithPass(ec))
 
@@ -133,7 +133,7 @@ func TestSetHostNextFetchToYesterday(t *testing.T) {
 
 func TestSetGuestbookFetchToYesterdayForHost(t *testing.T) {
 	setup()
-	ec := NewEntreeCheck("full",
+	ec, _ := NewEntreeCheck("full",
 		"https", "www.imls.gov", "/", true)
 	assert.True(t, IsFullWithPass(ec))
 

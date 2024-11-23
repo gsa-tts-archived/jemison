@@ -11,25 +11,26 @@ local credentials = [
 local parameters = [
   [
     'workers',
-    { cf: 10, container: 10 },
+    { cf: 10, container: 100 },
   ],
   [
     'debug_level',
-    { cf: 'warn', container: 'debug' },
+    { cf: 'warn', container: 'warn' },
   ],
   [
     'polite_sleep',
-    { cf: 2, container: 1 },
-  ],
-  [
-    'polite_cache_default_expiration',
-    { cf: B.hours(10), container: B.hours(10) },
-  ],
-  [
-    'polite_cache_cleanup_interval',
-    { cf: B.hours(3), container: B.minutes(30) },
+    { cf: 2, container: 2 },
   ],
 ];
+
+  // [
+  //   'polite_cache_default_expiration',
+  //   { cf: B.hours(10), container: B.hours(10) },
+  // ],
+  // [
+  //   'polite_cache_cleanup_interval',
+  //   { cf: B.hours(3), container: B.minutes(30) },
+  // ],
 
 {
   creds:: [[service] + x for x in credentials],

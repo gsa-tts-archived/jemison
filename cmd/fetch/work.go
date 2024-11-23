@@ -47,11 +47,17 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	polite_duration := time.Duration(polite_sleep) * time.Second
 
 	if ok && (time.Since(last_hit_time.(time.Time)) < polite_duration) {
-		queueing.InsertFetch(
-			job.Args.Scheme,
-			job.Args.Host,
-			job.Args.Path,
-		)
+		ch_qshp <- queueing.QSHP{
+			Queue:  "fetch",
+			Scheme: job.Args.Scheme,
+			Host:   job.Args.Host,
+			Path:   job.Args.Path,
+		}
+		// queueing.InsertFetch(
+		// 	job.Args.Scheme,
+		// 	job.Args.Host,
+		// 	job.Args.Path,
+		// )
 
 		// Put a *less tiny* backoff. We'll see how the queue does.
 		time.Sleep(time.Duration(rand.IntN(50)+1) * time.Millisecond)
@@ -64,7 +70,7 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		// The queueing system retries should save us here; bail if we
 		// can't get the content now.
 		if strings.Contains(err.Error(), common.NonIndexableContentType.String()) {
-			zap.L().Warn("could not fetch page content",
+			zap.L().Info("could not fetch page content",
 				zap.String("scheme", job.Args.Scheme),
 				zap.String("host", job.Args.Host),
 				zap.String("path", job.Args.Path),
@@ -94,23 +100,35 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	}
 	zap.L().Debug("stored", zap.String("key", cloudmap.Key.Render()))
 
-	queueing.InsertExtract(
-		job.Args.Scheme,
-		job.Args.Host,
-		job.Args.Path,
-	)
+	// queueing.InsertExtract(
+	// 	job.Args.Scheme,
+	// 	job.Args.Host,
+	// 	job.Args.Path,
+	// )
+	ch_qshp <- queueing.QSHP{
+		Queue:  "extract",
+		Scheme: job.Args.Scheme,
+		Host:   job.Args.Host,
+		Path:   job.Args.Path,
+	}
 
-	queueing.InsertWalk(
-		job.Args.Scheme,
-		job.Args.Host,
-		job.Args.Path,
-	)
+	// queueing.InsertWalk(
+	// 	job.Args.Scheme,
+	// 	job.Args.Host,
+	// 	job.Args.Path,
+	// )
+	ch_qshp <- queueing.QSHP{
+		Queue:  "walk",
+		Scheme: job.Args.Scheme,
+		Host:   job.Args.Host,
+		Path:   job.Args.Path,
+	}
 
-	queueing.InsertValidate("validate_fetch", common.ValidateFetchArgs{
-		Fetch: common.FetchArgs{
-			Scheme: job.Args.Scheme,
-			Host:   job.Args.Host,
-			Path:   job.Args.Path}})
+	// queueing.InsertValidate("validate_fetch", common.ValidateFetchArgs{
+	// 	Fetch: common.FetchArgs{
+	// 		Scheme: job.Args.Scheme,
+	// 		Host:   job.Args.Host,
+	// 		Path:   job.Args.Path}})
 
 	// Update the guestbook
 	last_updated := time.Now()
@@ -120,8 +138,9 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		if err != nil {
 			zap.L().Warn("could not convert time for last-updated")
 			last_updated = time.Now()
+		} else {
+			last_updated = t
 		}
-		last_updated = t
 	}
 
 	work_db.UpdateNextFetch(work_db.FetchUpdateParams{

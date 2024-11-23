@@ -3,20 +3,20 @@ package main
 import (
 	"log"
 	"net/http"
-	"time"
 
 	common "github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 )
 
-var RecentlyVisitedCache *cache.Cache
 var polite_sleep int64
 var ThisServiceName = "fetch"
 
 var RetryClient *http.Client
+
+var ch_qshp = make(chan queueing.QSHP)
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -27,7 +27,6 @@ func main() {
 
 	retryableClient := retryablehttp.NewClient()
 	retryableClient.RetryMax = 10
-	//retryableClient.Logger = zap.L()
 	RetryClient = retryableClient.StandardClient()
 
 	log.Println("environment initialized")
@@ -38,11 +37,8 @@ func main() {
 	// Pre-compute/lookup the sleep duration for backoff
 	polite_sleep = service.GetParamInt64("polite_sleep")
 
-	RecentlyVisitedCache = cache.New(
-		time.Duration(service.GetParamInt64("polite_cache_default_expiration"))*time.Second,
-		time.Duration(service.GetParamInt64("polite_cache_cleanup_interval"))*time.Second)
-
 	go InfoFetchCount()
+	go queueing.Enqueue(ch_qshp)
 
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))

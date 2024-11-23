@@ -11,11 +11,11 @@ local credentials = [
 local parameters = [
   [
     'workers',
-    { cf: 10, container: 10 },
+    { cf: 10, container: 30 },
   ],
   [
     'debug_level',
-    { cf: 'warn', container: 'debug' },
+    { cf: 'warn', container: 'warn' },
   ],
   [
     'extract_pdf',
