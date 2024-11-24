@@ -40,7 +40,12 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 	tempFilename := uuid.NewString()
 
 	s3 := kv.NewS3("fetch")
-	s3.S3PathToFile(raw, tempFilename)
+	err := s3.S3PathToFile(raw, tempFilename)
+	if err != nil {
+		zap.L().Error("could not copy s3 to local file",
+			zap.String("tempFilename", tempFilename),
+			zap.String("raw", raw))
+	}
 
 	tFile, err := os.Open(tempFilename)
 	if err != nil {

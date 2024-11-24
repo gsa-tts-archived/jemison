@@ -40,5 +40,8 @@ func main() {
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))
 	// Local and Cloud should both get this from the environment.
-	http.ListenAndServe(":"+env.Env.Port, engine)
+	err := http.ListenAndServe(":"+env.Env.Port, engine)
+	if err != nil {
+		zap.L().Fatal("failed to start http server in serve")
+	}
 }

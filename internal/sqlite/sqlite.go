@@ -68,15 +68,27 @@ func CreatePackTable(db_filename string) (*PackTable, error) {
 	}
 	db.SetMaxOpenConns(100)
 	// https://phiresky.github.io/blog/2020/sqlite-performance-tuning/
-	db.Exec("pragma journal_mode = WAL")
-	db.Exec("pragma synchronous = normal")
-	db.Exec("pragma temp_store = file")
-	db.Exec("pragma temp_store_directory = /home/vcap/app/tmp")
+	_, err = db.Exec("pragma journal_mode = WAL")
+	if err != nil {
+		zap.L().Error("pragma fail on sqlite")
+	}
+	_, err = db.Exec("pragma synchronous = normal")
+	if err != nil {
+		zap.L().Error("pragma fail on sqlite")
+	}
+	_, err = db.Exec("pragma temp_store = file")
+	if err != nil {
+		zap.L().Error("pragma fail on sqlite")
+	}
+	_, err = db.Exec("pragma temp_store_directory = /home/vcap/app/tmp")
+	if err != nil {
+		zap.L().Error("pragma fail on sqlite")
+	}
+
 	// We don't have much RAM. No.
 	//db.Exec("pragma mmap_size = 30000000000")
 	// Unsure how this effects final filesize or performance on read.
 	// db.Exec("pragma page_size = 32768")
-
 	// create tables
 	if _, err := db.ExecContext(ctx, ddl); err != nil {
 		return nil, err
@@ -95,10 +107,23 @@ func (pt *PackTable) PrepForNetwork() {
 	// https://turso.tech/blog/something-you-probably-want-to-know-about-if-youre-using-sqlite-in-golang-72547ad625f1
 	db, _ := sql.Open("sqlite3", pt.Filename)
 	pt.DB = db
-	pt.DB.ExecContext(pt.Context, "PRAGMA wal_checkpoint(TRUNCATE)")
-	pt.DB.ExecContext(pt.Context, "PRAGMA vacuum")
-	pt.DB.ExecContext(pt.Context, "PRAGMA optimize")
-	pt.DB.Close()
+	_, err := pt.DB.ExecContext(pt.Context, "PRAGMA wal_checkpoint(TRUNCATE)")
+	if err != nil {
+		zap.L().Error("pragma fail on prep for network truncate")
+	}
+	_, err = pt.DB.ExecContext(pt.Context, "PRAGMA vacuum")
+	if err != nil {
+		zap.L().Error("pragma fail on prep for network vacuum")
+	}
+	_, err = pt.DB.ExecContext(pt.Context, "PRAGMA optimize")
+	if err != nil {
+		zap.L().Error("pragma fail on prep for network optimize")
+	}
+
+	err = pt.DB.Close()
+	if err != nil {
+		zap.L().Error("pragma fail on sqlite close")
+	}
 
 }
 

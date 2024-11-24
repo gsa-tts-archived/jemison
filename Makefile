@@ -22,7 +22,7 @@ docker:
 	docker build -t jemison/build -f Dockerfile.build .
 
 .PHONY: build
-build: clean config generate
+build: clean config generate lint
 	cd cmd/migrate ; make build
 	cd cmd/admin ; make build
 	cd cmd/entree ; make build
@@ -100,3 +100,7 @@ terraform: delete_all
 docker_full_clean:
 	-docker stop $(docker ps -a -q)
 	-docker rm $(docker ps -a -q)
+
+.PHONY: lint
+lint:
+	golangci-lint run -v
