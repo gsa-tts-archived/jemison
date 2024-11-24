@@ -98,11 +98,6 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 		Path:   job.Args.Path,
 	}
 
-	// This holds us up so that the parallel workers don't spam the host.
-	common.BackoffLoop(job.Args.Host, polite_sleep, &last_hit, &last_backoff)
-
-	// zap.L().Debug("checking the hit cache")
-
 	headResp, err := RetryClient.Head(u.String())
 	if err != nil {
 		return nil, err

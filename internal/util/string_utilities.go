@@ -90,6 +90,7 @@ func IsSearchableMimeType(mime string) bool {
 
 func CollapseWhitespace(s string) string {
 	var re = regexp.MustCompile(`\s\s+`)
+	s = strings.TrimSpace(s)
 	return re.ReplaceAllString(s, " ")
 }
 

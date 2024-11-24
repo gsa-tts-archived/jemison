@@ -11,11 +11,11 @@ local credentials = [
 local parameters = [
   [
     'workers',
-    { cf: 10, container: 150 },
+    { cf: 10, container: 1000 },
   ],
   [
     'debug_level',
-    { cf: 'warn', container: 'warn' },
+    { cf: 'warn', container: 'debug' },
   ],
   [
     'polite_sleep',

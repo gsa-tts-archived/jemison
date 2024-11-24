@@ -65,13 +65,16 @@ func countPages(domain string) int64 {
 	} else {
 		new_db, err := sql.Open("sqlite3", sqlite_filename)
 		if err != nil {
-			zap.L().Panic("cannot open database", zap.String("sqlite_filename", sqlite_filename))
+			zap.L().Error("cannot open database",
+				zap.String("sqlite_filename", sqlite_filename))
+			return 0
 		}
 		defer new_db.Close()
 		queries := search_db.New(new_db)
 		pages, err := queries.CountSiteIndex(ctx)
 		if err != nil {
-			zap.L().Panic("could not get pages in database", zap.String("sqlite_filename", sqlite_filename))
+			zap.L().Error("could not get pages in database", zap.String("sqlite_filename", sqlite_filename))
+			return 0
 		}
 		cached_counts.Store(domain, pages)
 		return pages

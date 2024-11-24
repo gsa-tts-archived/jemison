@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	common "github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
@@ -11,10 +12,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var polite_sleep int64
+var PoliteSleep int64
 var ThisServiceName = "fetch"
 
 var RetryClient *http.Client
+var Gateway *HostGateway
 
 var ch_qshp = make(chan queueing.QSHP)
 
@@ -35,7 +37,9 @@ func main() {
 	service, _ := env.Env.GetUserService(ThisServiceName)
 
 	// Pre-compute/lookup the sleep duration for backoff
-	polite_sleep = service.GetParamInt64("polite_sleep")
+	PoliteSleep = service.GetParamInt64("polite_sleep")
+
+	Gateway = NewHostGateway(time.Duration(time.Duration(PoliteSleep) * time.Second))
 
 	go InfoFetchCount()
 	go queueing.Enqueue(ch_qshp)
