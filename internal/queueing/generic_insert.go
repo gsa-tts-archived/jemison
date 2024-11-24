@@ -20,8 +20,11 @@ type QSHP struct {
 
 func commonCommit(qshp QSHP, ctx context.Context, tx pgx.Tx) {
 	if err := tx.Commit(ctx); err != nil {
-		tx.Rollback(ctx)
-		zap.L().Panic("cannot commit insert tx",
+		err = tx.Rollback(ctx)
+		if err != nil {
+			zap.L().Error("cannot roll back commit")
+		}
+		zap.L().Fatal("cannot commit insert tx",
 			zap.String("host", qshp.Host),
 			zap.String("path", qshp.Path),
 			zap.String("err", err.Error()))
@@ -45,25 +48,35 @@ func Enqueue(ch_qshp <-chan QSHP) {
 		ctx, tx := common.CtxTx(pool)
 		switch qshp.Queue {
 		case "fetch":
-			client.InsertTx(ctx, tx, common.FetchArgs{
+			_, err = client.InsertTx(ctx, tx, common.FetchArgs{
 				Scheme: qshp.Scheme,
 				Host:   qshp.Host,
 				Path:   qshp.Path,
 			}, &river.InsertOpts{Queue: qshp.Queue})
+			if err != nil {
+				zap.L().Error("cannot insert into queue fetch")
+			}
 			commonCommit(qshp, ctx, tx)
 		case "extract":
-			client.InsertTx(ctx, tx, common.ExtractArgs{
+			_, err := client.InsertTx(ctx, tx, common.ExtractArgs{
 				Scheme: qshp.Scheme,
 				Host:   qshp.Host,
 				Path:   qshp.Path,
 			}, &river.InsertOpts{Queue: qshp.Queue})
+			if err != nil {
+				zap.L().Error("cannot insert into queue extract")
+			}
+
 			commonCommit(qshp, ctx, tx)
 		case "walk":
-			client.InsertTx(ctx, tx, common.WalkArgs{
+			_, err := client.InsertTx(ctx, tx, common.WalkArgs{
 				Scheme: qshp.Scheme,
 				Host:   qshp.Host,
 				Path:   qshp.Path,
 			}, &river.InsertOpts{Queue: qshp.Queue})
+			if err != nil {
+				zap.L().Error("cannot insert into queue walk")
+			}
 			commonCommit(qshp, ctx, tx)
 		default:
 			zap.L().Warn("unknown common enqueue", zap.String("queue", qshp.Queue))

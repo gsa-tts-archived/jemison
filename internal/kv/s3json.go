@@ -181,7 +181,12 @@ func (s3json *S3JSON) Load() error {
 
 	s3json.raw = raw
 	current_mime_type := s3json.GetString("content-type")
-	sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
+	updated, err := sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
+	if err != nil {
+		zap.L().Error("could not update s3json.raw")
+	} else {
+		s3json.raw = updated
+	}
 	s3json.empty = false
 	return nil
 }

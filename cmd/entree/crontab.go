@@ -32,8 +32,14 @@ Day of week  | Yes        | 0-6 or SUN-SAT  | * / , - ?
 func crontab() {
 	c := cron.New()
 	// https://crontab.guru/#*_*_*_*_*
-	c.AddFunc("0 * * * * *", section("minutely"))
-	c.AddFunc("@hourly", section("hourly"))
+	err := c.AddFunc("0 * * * * *", section("minutely"))
+	if err != nil {
+		zap.L().Error("failed to add crontab in entree")
+	}
+	err = c.AddFunc("@hourly", section("hourly"))
+	if err != nil {
+		zap.L().Error("failed to add crontab in entree")
+	}
 	c.Start()
 }
 

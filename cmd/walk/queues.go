@@ -17,7 +17,6 @@ import (
 // The work client, doing the work of `fetch`
 var dbPool *pgxpool.Pool
 var walkClient *river.Client[pgx.Tx]
-var fetchClient *river.Client[pgx.Tx]
 
 type WalkWorker struct {
 	river.WorkerDefaults[common.WalkArgs]
@@ -51,13 +50,6 @@ func InitializeQueues() {
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)
-		os.Exit(1)
-	}
-
-	// Insert-only client to `fetch`
-	fetchClient, err = river.NewClient(riverpgxv5.New(dbPool), &river.Config{})
-	if err != nil {
-		zap.L().Error("could not establish insert-only client")
 		os.Exit(1)
 	}
 

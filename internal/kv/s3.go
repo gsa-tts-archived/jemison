@@ -141,7 +141,12 @@ func (s3 *S3) S3PathToS3JSON(key string) (*S3JSON, error) {
 	s3json := NewS3JSON("extract")
 	s3json.raw = raw
 	current_mime_type := s3json.GetString("content-type")
-	sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
+	updated, err := sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
+	if err != nil {
+		zap.L().Error("could not update raw S3JSON")
+	} else {
+		s3json.raw = updated
+	}
 	s3json.empty = false
 	return s3json, nil
 }
