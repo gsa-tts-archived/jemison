@@ -40,10 +40,10 @@ up: build
 
 multi: build
 	docker compose -f multi.yaml up \
-		--scale entree=2 \
-		--scale fetch=2 \
-		--scale extract=2 \
-		--scale walk=2
+		--scale entree=1 \
+		--scale fetch=1 \
+		--scale extract=4 \
+		--scale walk=4
 
 
 .PHONY: backend

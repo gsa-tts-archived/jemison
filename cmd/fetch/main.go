@@ -39,6 +39,11 @@ func main() {
 	// Pre-compute/lookup the sleep duration for backoff
 	PoliteSleep = service.GetParamInt64("polite_sleep")
 
+	logger_level := service.GetParamString("debug_level")
+	if logger_level != "debug" {
+		retryableClient.Logger = nil
+	}
+
 	Gateway = NewHostGateway(time.Duration(time.Duration(PoliteSleep) * time.Second))
 
 	go InfoFetchCount()

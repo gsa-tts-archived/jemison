@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// https://medium.com/@luanrubensf/concurrent-map-access-in-go-a6a733c5ffd1
 type HostGateway struct {
 	politeSleep time.Duration
 	last        map[string]time.Time
@@ -36,17 +37,18 @@ func (hsm *HostGateway) GoodToGo(host string) bool {
 		// then the caller is good to go.
 		isGoodToGo := timeSinceLastHit > hsm.politeSleep
 
-		zap.L().Debug("gateway host is good to go",
-			zap.Int64("timeSinceLastHit", int64(timeSinceLastHit)),
-			zap.Int64("politeSleep", int64(hsm.politeSleep)),
-		)
-
 		if isGoodToGo {
-			// If they are good to go, we'll update the map.
+			// We're good to go, so we'll update the map.
 			hsm.last[host] = time.Now()
+			zap.L().Debug("gateway host is good to go",
+				zap.Int64("timeSinceLastHit", int64(timeSinceLastHit)),
+				zap.Int64("politeSleep", int64(hsm.politeSleep)),
+			)
 		}
+		// If we were good to go, we updated the map, and should let things continue.
+		// Otherwise, return false and this will be requeued.
 		return isGoodToGo
-	} else {
+	} else /* not OK */ {
 		// We have not seen this host before
 		// Therefore, add them to the map, and they're good to go.
 		zap.L().Debug("gateway: host never seen before")

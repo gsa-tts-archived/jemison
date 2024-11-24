@@ -109,6 +109,7 @@ func extractHtml(obj *kv.S3JSON) {
 	rawFile, err := os.Open(rawFilename)
 	if err != nil {
 		zap.L().Error("cannot open tempfile", zap.String("filename", rawFilename))
+		return
 	}
 	defer func() {
 		rawFile.Close()
@@ -117,7 +118,10 @@ func extractHtml(obj *kv.S3JSON) {
 
 	doc, err := goquery.NewDocumentFromReader(rawFile)
 	if err != nil {
-		zap.L().Fatal("cannot create new doc from raw file")
+		zap.L().Error("cannot create new doc from raw file",
+			zap.String("rawFilename", rawFilename),
+			zap.String("rawKey", raw_key.Render()))
+		return
 	}
 
 	title := _getTitle(doc)
@@ -145,6 +149,7 @@ func extractHtml(obj *kv.S3JSON) {
 	jsonString, err := json.Marshal(headers)
 	if err != nil {
 		zap.L().Error("could not marshal headers to JSON", zap.String("title", title))
+		return
 	}
 	new_obj.Set("headers", string(jsonString))
 	new_obj.Set("body", content)
