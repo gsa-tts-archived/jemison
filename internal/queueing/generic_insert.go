@@ -23,7 +23,8 @@ func commonCommit(qshp QSHP, ctx context.Context, tx pgx.Tx) {
 		tx.Rollback(ctx)
 		zap.L().Panic("cannot commit insert tx",
 			zap.String("host", qshp.Host),
-			zap.String("path", qshp.Path))
+			zap.String("path", qshp.Path),
+			zap.String("err", err.Error()))
 	}
 }
 
@@ -31,9 +32,7 @@ func Enqueue(ch_qshp <-chan QSHP) {
 	// Can we leave one connection open for the entire life of a
 	// service? Maybe. Maybe not.
 	_, pool, _ := common.CommonQueueInit()
-	ctx, tx := common.CtxTx(pool)
 	defer pool.Close()
-	defer tx.Commit(ctx)
 
 	client, err := river.NewClient(riverpgxv5.New(pool), &river.Config{})
 	if err != nil {
@@ -43,6 +42,7 @@ func Enqueue(ch_qshp <-chan QSHP) {
 
 	for {
 		qshp := <-ch_qshp
+		ctx, tx := common.CtxTx(pool)
 		switch qshp.Queue {
 		case "fetch":
 			client.InsertTx(ctx, tx, common.FetchArgs{

@@ -38,6 +38,14 @@ build: clean config generate
 up: build
 	docker compose up
 
+multi: build
+	docker compose -f multi.yaml up \
+		--scale entree=2 \
+		--scale fetch=2 \
+		--scale extract=2 \
+		--scale walk=2
+
+
 .PHONY: backend
 backend: 
 	docker compose -f backend.yaml up

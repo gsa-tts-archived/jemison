@@ -26,6 +26,8 @@ func main() {
 	HostIdMap = upsertUniqueHosts()
 	crontab()
 
+	WDB = NewGuestbookDB()
+
 	// // For a short period of time, we need to not re-insert things while crawling.
 	// // If we don't actually fetch a page, we can end up re-queueing it. Because
 	// ttl := service.GetParamInt64("cache-ttl")

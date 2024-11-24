@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
-	"github.com/jackc/pgx/v5"
-	"github.com/pingcap/log"
 	"go.uber.org/zap"
 )
 
@@ -31,11 +28,12 @@ type EntreeCheck struct {
 // and what can be accessed outside. Then, these become lowercase...
 
 func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) (*EntreeCheck, error) {
-	q, ctx, conn := GetQ()
-	defer conn.Close(ctx)
-	host_id, err := q.GetHostId(ctx, host)
+	ctx := context.Background()
+	host_id, err := WDB.Queries.GetHostId(ctx, host)
 	if err != nil {
-		zap.L().Debug("could not get host id", zap.String("host", host))
+		zap.L().Debug("could not get host id",
+			zap.String("host", host),
+			zap.String("err", err.Error()))
 		return nil, fmt.Errorf("could not get host id")
 	}
 
@@ -53,25 +51,25 @@ func EvaluateEntree(ec *EntreeCheck) {
 	it_shall_pass := false
 
 	if IsSingleWithPass(ec) {
-		log.Info("is-single-with-pass",
+		zap.L().Debug("is-single-with-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 		it_shall_pass = true
 	} else if IsSingleNoPass(ec) {
-		log.Info("is-single-no-pass",
+		zap.L().Debug("is-single-no-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 		it_shall_pass = true
 	} else if IsFullWithPass(ec) {
-		log.Info("is-full-with-pass",
+		zap.L().Debug("is-full-with-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 		SetHostNextFetchToYesterday(ec)
 		SetGuestbookFetchToYesterdayForHost(ec)
 		it_shall_pass = true
 	} else if IsFullNoPass(ec) {
-		log.Info("is-full-no-pass",
+		zap.L().Debug("is-full-no-pass",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 		it_shall_pass = true
 	} else {
-		log.Info("no entree evaluation criteria met",
+		zap.L().Debug("no entree evaluation criteria met",
 			zap.String("host", ec.Host), zap.String("path", ec.Path))
 		it_shall_pass = false
 	}
@@ -151,24 +149,23 @@ func IsFullNoPass(ec *EntreeCheck) bool {
 
 // Support functions
 
-func GetQ() (*work_db.Queries, context.Context, *pgx.Conn) {
-	ctx := context.Background()
-	db_string, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
-	if err != nil {
-		zap.L().Fatal("could not get db URL for work-db")
-	}
-	conn, err := pgx.Connect(ctx, db_string)
-	if err != nil {
-		zap.L().Fatal("could not connect to work-db")
-	}
-	queries := work_db.New(conn)
-	return queries, ctx, conn
-}
+// func GetQ() (*work_db.Queries, context.Context, *pgx.Conn) {
+// 	ctx := context.Background()
+// 	db_string, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
+// 	if err != nil {
+// 		zap.L().Fatal("could not get db URL for work-db")
+// 	}
+// 	conn, err := pgx.Connect(ctx, db_string)
+// 	if err != nil {
+// 		zap.L().Fatal("could not connect to work-db")
+// 	}
+// 	queries := work_db.New(conn)
+// 	return queries, ctx, conn
+// }
 
 func isInGuestbook(ec *EntreeCheck) bool {
-	q, ctx, conn := GetQ()
-	defer conn.Close(ctx)
-	b, err := q.CheckEntryExistsInGuestbook(ctx, ec.HostId)
+	ctx := context.Background()
+	b, err := WDB.Queries.CheckEntryExistsInGuestbook(ctx, ec.HostId)
 	if err != nil {
 		zap.L().Fatal("could not check if in guestbook",
 			zap.Int64("host_id", ec.HostId))
@@ -177,18 +174,12 @@ func isInGuestbook(ec *EntreeCheck) bool {
 }
 
 func CheckIfAfterGuestbookNextFetch(ec *EntreeCheck) bool {
-	q, ctx, conn := GetQ()
-	defer conn.Close(ctx)
-	entry, err := q.GetGuestbookEntry(ctx, work_db.GetGuestbookEntryParams{
+	ctx := context.Background()
+	entry, err := WDB.Queries.GetGuestbookEntry(ctx, work_db.GetGuestbookEntryParams{
 		Host: ec.HostId,
 		Path: ec.Path,
 	})
 	if err != nil {
-		// zap.L().Fatal("could not get guestbook entry",
-		// 	zap.Int64("host_id", ec.HostId),
-		// 	zap.String("host", ec.Host),
-		// 	zap.String("path", ec.Path),
-		// 	zap.String("err", err.Error()))
 		// If it isn't in the guestbook, then return `true`,
 		// because we want to fetch the page.
 		return true
@@ -198,14 +189,9 @@ func CheckIfAfterGuestbookNextFetch(ec *EntreeCheck) bool {
 }
 
 func CheckIfAfterHostNextFetch(ec *EntreeCheck) bool {
-	q, ctx, conn := GetQ()
-	defer conn.Close(ctx)
-	ts, err := q.GetHostNextFetch(ctx, ec.HostId)
+	ctx := context.Background()
+	ts, err := WDB.Queries.GetHostNextFetch(ctx, ec.HostId)
 	if err != nil {
-		// zap.L().Fatal("could not get guestbook entry",
-		// 	zap.Int64("host_id", ec.HostId),
-		// 	zap.String("host", ec.Host),
-		// 	zap.String("path", ec.Path))
 		// If it isn't in the host table, then return false
 		return false
 	}
@@ -214,9 +200,8 @@ func CheckIfAfterHostNextFetch(ec *EntreeCheck) bool {
 }
 
 func SetHostNextFetchToYesterday(ec *EntreeCheck) {
-	q, ctx, conn := GetQ()
-	defer conn.Close(ctx)
-	err := q.SetHostNextFetchToYesterday(ctx, ec.Host)
+	ctx := context.Background()
+	err := WDB.Queries.SetHostNextFetchToYesterday(ctx, ec.Host)
 	if err != nil {
 		zap.L().Error("could not set host fetch to yesterday",
 			zap.String("host", ec.Host))
@@ -224,9 +209,8 @@ func SetHostNextFetchToYesterday(ec *EntreeCheck) {
 }
 
 func SetGuestbookFetchToYesterdayForHost(ec *EntreeCheck) {
-	q, ctx, conn := GetQ()
-	defer conn.Close(ctx)
-	err := q.SetGuestbookFetchToYesterdayForHost(ctx, ec.HostId)
+	ctx := context.Background()
+	err := WDB.Queries.SetGuestbookFetchToYesterdayForHost(ctx, ec.HostId)
 	if err != nil {
 		zap.L().Fatal("could not set guestbook to yesterday for host",
 			zap.String("host", ec.Host))

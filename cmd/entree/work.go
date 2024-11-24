@@ -27,7 +27,12 @@ func (w *EntreeWorker) Work(ctx context.Context, job *river.Job[common.EntreeArg
 	}
 
 	// In case we don't have clean URLs...
-	path := util.TrimSuffix(job.Args.Path, "/")
+	path := "INVALID_PATH"
+	if len(job.Args.Path) > 1 {
+		path = util.TrimSuffix(job.Args.Path, "/")
+	} else {
+		path = job.Args.Path
+	}
 	ec, err := NewEntreeCheck(kind, job.Args.Scheme, job.Args.Host, path, job.Args.HallPass)
 	if err != nil {
 		// If we cannot create a new EC object, we probably couldn't find the host.

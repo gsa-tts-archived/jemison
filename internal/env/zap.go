@@ -1,11 +1,32 @@
 package env
 
 import (
+	"log"
 	"os"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+var ZapLogger *zap.Logger
+
+// type LeveledZap struct {
+// 	*zap.Logger
+// }
+// func (z *LeveledZap) Error(msg string, keysAndValues ...interface{}) {
+// 	l.WithFields(keysAndValues).Error(msg)
+// }
+
+// func (z *LeveledZap) Info(msg string, keysAndValues ...interface{}) {
+// 	l.WithFields(keysAndValues).Info(msg)
+// }
+// func (z *LeveledZap) Debug(msg string, keysAndValues ...interface{}) {
+// 	l.WithFields(keysAndValues).Debug(msg)
+// }
+
+// func (z *LeveledZap) Warn(msg string, keysAndValues ...interface{}) {
+// 	l.WithFields(keysAndValues).Warn(msg)
+// }
 
 func createLogger(this_service string) *zap.Logger {
 	encoderCfg := zap.NewProductionEncoderConfig()
@@ -50,9 +71,14 @@ func createLogger(this_service string) *zap.Logger {
 		},
 	}
 
-	return zap.Must(config.Build())
+	logger, err := config.Build()
+	if err != nil {
+		log.Fatal("cannot build zap logger from config")
+	}
+	return zap.Must(logger, nil)
 }
 
 func SetupLogging(this_service string) {
-	zap.ReplaceGlobals(zap.Must(createLogger(this_service), nil))
+	ZapLogger = createLogger(this_service)
+	zap.ReplaceGlobals(zap.Must(ZapLogger, nil))
 }

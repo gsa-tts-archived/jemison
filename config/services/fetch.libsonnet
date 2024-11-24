@@ -11,7 +11,7 @@ local credentials = [
 local parameters = [
   [
     'workers',
-    { cf: 10, container: 100 },
+    { cf: 10, container: 150 },
   ],
   [
     'debug_level',
