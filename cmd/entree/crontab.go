@@ -53,29 +53,15 @@ func section(section string) func() {
 			HallPassLedger.Remove(site.Get("host").String())
 
 			zap.L().Debug(fmt.Sprintln(site))
-			queueing.InsertFetch(
-				site.Get("scheme").String(),
-				site.Get("host").String(),
-				site.Get("path").String(),
-			)
+			ChQSHP <- queueing.QSHP{
+				Queue:  "fetch",
+				Scheme: site.Get("scheme").String(),
+				Host:   site.Get("host").String(),
+				Path:   site.Get("path").String(),
+			}
 		}
 	}
 }
-
-// func getHostSections() map[string]string {
-// 	JSON := config.ReadJsonConfig("schedule.json")
-// 	hostSections := make(map[string]string)
-
-// 	for _, section := range gjson.Parse(JSON).Get("@keys").Array() {
-// 		for _, site := range gjson.Get(JSON, section.String()).Array() {
-// 			// We should never see a -1 in the host table. Not sure
-// 			// how else to do this. The following loop will either populate
-// 			// the value or fail.
-// 			hostSections[site.Get("host").String()] = section.String()
-// 		}
-// 	}
-// 	return hostSections
-// }
 
 func upsertUniqueHosts() map[string]int64 {
 	//JSON := config.ReadConfigJsonnet("schedule.jsonnet")

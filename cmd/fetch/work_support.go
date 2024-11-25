@@ -59,19 +59,20 @@ func chunkwiseSHA1(filename string) []byte {
 	return h.Sum(nil)
 }
 
-func getUrlToFile(u url.URL) (string, int64, []byte) {
+func getUrlToFile(u url.URL) (string, int64, []byte, error) {
 	getResponse, err := RetryClient.Get(u.String())
 	if err != nil {
 		zap.L().Fatal("cannot GET content",
 			zap.String("url", u.String()),
 		)
+		return "", 0, nil, err
 	}
 	zap.L().Debug("successful GET response")
 	// Create a temporary file to download the HTML to.
 	temporaryFilename := uuid.NewString()
 	outFile, err := os.Create(temporaryFilename)
 	if err != nil {
-		zap.L().Panic("cannot create temporary file", zap.String("filename", temporaryFilename))
+		zap.L().Fatal("cannot create temporary file", zap.String("filename", temporaryFilename))
 	}
 	defer outFile.Close()
 
@@ -80,15 +81,16 @@ func getUrlToFile(u url.URL) (string, int64, []byte) {
 	// Destination, Source
 	bytesRead, err := io.Copy(outFile, getResponse.Body)
 	if err != nil {
-		zap.L().Panic("could not copy GET to file",
+		zap.L().Fatal("could not copy GET to file",
 			zap.String("url", u.String()),
 			zap.String("filename", temporaryFilename))
+		return "", 0, nil, err
 	}
 	getResponse.Body.Close()
 	// Now, it is in a file.
 	// Compute the SHA1
 	theSHA := chunkwiseSHA1(temporaryFilename)
-	return temporaryFilename, bytesRead, theSHA
+	return temporaryFilename, bytesRead, theSHA, nil
 }
 
 func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, error) {
@@ -113,7 +115,10 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 	}
 
 	// Write the raw content to a file.
-	tempFilename, bytesRead, theSHA := getUrlToFile(u)
+	tempFilename, bytesRead, theSHA, err := getUrlToFile(u)
+	if err != nil {
+		return nil, err
+	}
 	key := util.CreateS3Key(util.ToScheme(job.Args.Scheme), job.Args.Host, job.Args.Path, util.Raw)
 
 	defer func(u url.URL, key *util.Key) {

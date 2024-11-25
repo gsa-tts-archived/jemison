@@ -17,7 +17,7 @@ import (
 )
 
 var Databases sync.Map //map[string]*sql.DB
-
+var ChQSHP = make(chan queueing.QSHP)
 var ThisServiceName = "serve"
 
 func ServeHost(c *gin.Context) {
@@ -70,7 +70,11 @@ func CheckS3ForDatabases(storage *kv.S3) {
 	// Why? Because we have the machinery in the worker, and it
 	// might as well do the work that way.
 	for _, obj := range objects {
-		queueing.InsertServe(obj.Key)
+		//queueing.InsertServe(obj.Key)
+		ChQSHP <- queueing.QSHP{
+			Queue:    "serve",
+			Filename: obj.Key,
+		}
 	}
 }
 
@@ -103,6 +107,8 @@ func main() {
 	if len(dbs) > 0 {
 		start = dbs[0]
 	}
+
+	go queueing.Enqueue(ChQSHP)
 
 	/////////////////////
 	// Server/API

@@ -12,6 +12,7 @@ import (
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/sqlite"
 	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/riverqueue/river"
@@ -134,16 +135,10 @@ func FinalizeTimer(in <-chan string) {
 					}
 					os.Remove(sqlite_filename)
 
-					// Enqueue serve
-					//zap.L().Debug("inserting serve job")
-					ctx, tx := common.CtxTx(servePool)
-					serveClient.InsertTx(ctx, tx, common.ServeArgs{
+					// Enqueue next steps
+					ChQSHP <- queueing.QSHP{
+						Queue:    "serve",
 						Filename: sqlite_filename,
-					}, &river.InsertOpts{Queue: "serve"})
-					if err := tx.Commit(ctx); err != nil {
-						tx.Rollback(ctx)
-						zap.L().Panic("cannot commit insert tx",
-							zap.String("filename", sqlite_filename))
 					}
 
 					delete(clocks, host)

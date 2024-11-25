@@ -18,7 +18,7 @@ var ThisServiceName = "fetch"
 var RetryClient *http.Client
 var Gateway *HostGateway
 
-var ch_qshp = make(chan queueing.QSHP)
+var ChQSHP = make(chan queueing.QSHP)
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -47,7 +47,7 @@ func main() {
 	Gateway = NewHostGateway(time.Duration(time.Duration(PoliteSleep) * time.Second))
 
 	go InfoFetchCount()
-	go queueing.Enqueue(ch_qshp)
+	go queueing.Enqueue(ChQSHP)
 
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))

@@ -6,10 +6,12 @@ import (
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/queueing"
 	"go.uber.org/zap"
 )
 
 var ThisServiceName = "extract"
+var ChQSHP = make(chan queueing.QSHP)
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -17,6 +19,7 @@ func main() {
 	log.Println("environment initialized")
 
 	routers := common.InitializeAPI()
+	go queueing.Enqueue(ChQSHP)
 
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))

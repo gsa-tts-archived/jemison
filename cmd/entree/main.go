@@ -6,6 +6,7 @@ import (
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/queueing"
 	"go.uber.org/zap"
 )
 
@@ -13,6 +14,7 @@ import (
 
 var ThisServiceName = "entree"
 var HostIdMap = make(map[string]int64)
+var ChQSHP = make(chan queueing.QSHP)
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -27,6 +29,7 @@ func main() {
 	crontab()
 
 	WDB = NewGuestbookDB()
+	go queueing.Enqueue(ChQSHP)
 
 	// // For a short period of time, we need to not re-insert things while crawling.
 	// // If we don't actually fetch a page, we can end up re-queueing it. Because

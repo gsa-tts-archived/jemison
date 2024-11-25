@@ -6,12 +6,11 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/GSA-TTS/jemison/internal/common"
 	kv "github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/google/uuid"
 	"github.com/johbar/go-poppler"
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -78,19 +77,12 @@ func extractPdf(obj *kv.S3JSON) {
 			// e.Stats.Increment("page_count")
 
 			// Enqueue next steps
-			ctx, tx := common.CtxTx(packPool)
-			defer tx.Rollback(ctx)
-
-			packClient.InsertTx(ctx, tx, common.PackArgs{
+			ChQSHP <- queueing.QSHP{
+				Queue:  "pack",
 				Scheme: obj.Key.Scheme.String(),
 				Host:   obj.Key.Host,
 				Path:   obj.Key.Path,
-			}, &river.InsertOpts{Queue: "pack"})
-			if err := tx.Commit(ctx); err != nil {
-				zap.L().Panic("cannot commit insert tx",
-					zap.String("key", obj.Key.Render()))
 			}
-
 			// https://weaviate.io/blog/gomemlimit-a-game-changer-for-high-memory-applications
 			// https://stackoverflow.com/questions/38972003/how-to-stop-the-golang-gc-and-trigger-it-manually
 			runtime.GC()

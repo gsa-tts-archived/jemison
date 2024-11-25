@@ -14,6 +14,7 @@ import (
 )
 
 var ThisServiceName = "admin"
+var ChQSHP = make(chan queueing.QSHP)
 
 type FetchRequestInput struct {
 	Scheme string `json:"scheme" maxLength:"10" doc:"Resource scheme"`
@@ -30,7 +31,13 @@ func FetchRequestHandler(c *gin.Context) {
 	}
 	if fri.ApiKey == os.Getenv("API_KEY") || true {
 		zap.L().Debug("fetch enqueue", zap.String("host", fri.Host), zap.String("path", fri.Path))
-		queueing.InsertFetch(fri.Scheme, fri.Host, fri.Path)
+		//queueing.InsertFetch(fri.Scheme, fri.Host, fri.Path)
+		ChQSHP <- queueing.QSHP{
+			Queue:  "fetch",
+			Scheme: fri.Scheme,
+			Host:   fri.Host,
+			Path:   fri.Path,
+		}
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
@@ -62,42 +69,20 @@ func EntreeRequestHandler(c *gin.Context) {
 			zap.Bool("full", fullB),
 			zap.Bool("hallpass", hallPassB))
 
-		queueing.InsertEntree(fri.Scheme, fri.Host, fri.Path, fullB, hallPassB)
-
+		// queueing.InsertEntree(fri.Scheme, fri.Host, fri.Path, fullB, hallPassB)
+		ChQSHP <- queueing.QSHP{
+			Queue:      "entree",
+			Scheme:     fri.Scheme,
+			Host:       fri.Host,
+			Path:       fri.Path,
+			IsFull:     fullB,
+			IsHallPass: hallPassB,
+		}
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
 	}
 }
-
-// func JobCountHandler(c *gin.Context) {
-// 	ctx := context.Background()
-// 	db_url, _ := env.Env.GetDatabaseUrl(env.QueueDatabase)
-
-// 	conn, err := pgx.Connect(ctx, db_url)
-// 	if err != nil {
-// 	}
-// 	defer conn.Close(ctx)
-
-// 	queries := pg_schemas.New(conn)
-// 	counts := make(map[string]map[string]int64)
-// 	for _, service := range []string{"fetch", "extract", "pack", "validate", "walk", "serve"} {
-// 		service_counts := make(map[string]int64)
-// 		for _, state := range []string{"completed", "running", "retryable"} {
-// 			count, _ := queries.CountJobs(ctx, pg_schemas.CountJobsParams{
-// 				Kind:  service,
-// 				State: state,
-// 			})
-// 			service_counts[state] = count
-// 		}
-// 		counts[service] = service_counts
-// 	}
-
-// 	c.IndentedJSON(http.StatusOK, gin.H{
-// 		"status": "ok",
-// 		"counts": counts,
-// 	})
-// }
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -114,6 +99,7 @@ func main() {
 	}
 
 	log.Println("environment initialized")
+	go queueing.Enqueue(ChQSHP)
 
 	// // Init a cache for the workers
 	// service, _ := env.Env.GetUserService("admin")

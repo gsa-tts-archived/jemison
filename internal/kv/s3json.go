@@ -125,9 +125,11 @@ func (s3json *S3JSON) Save() error {
 	size := int64(len(s3json.raw))
 	err := store(&s3json.S3, s3json.Key.Render(), size, r, util.JSON.String())
 	if err != nil {
-		zap.L().Panic("could not store S3JSON",
+		zap.L().Fatal("could not store S3JSON",
 			zap.String("bucket_name", s3json.S3.Bucket.Name),
-			zap.String("key", s3json.Key.Render()))
+			zap.String("key", s3json.Key.Render()),
+			zap.String("err", err.Error()))
+		return err
 	}
 	return nil
 }

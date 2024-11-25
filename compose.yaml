@@ -1,3 +1,18 @@
+x-minio-common: &minio-common
+  image: minio/minio:latest
+  command: server --console-address ":9001" http://minio{1...2}/data{1...2}
+  expose:
+    - "9000"
+    - "9001"
+  environment:
+    MINIO_ROOT_USER: numbernine
+    MINIO_ROOT_PASSWORD: numbernine
+  healthcheck:
+    test: ["CMD", "mc", "ready", "local"]
+    interval: 5s
+    timeout: 5s
+    retries: 5
+
 services:
   # NEXT SERVICE PORT: 10008
   #-----------------------------------------------------
@@ -23,8 +38,8 @@ services:
       - 10001:8888
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
-      minio:
-        condition: service_healthy
+      nginx:
+        condition: service_started
       jemison-queues-db:
         condition: service_healthy
     healthcheck:
@@ -64,8 +79,8 @@ services:
       - 10007:8888
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
-      minio:
-        condition: service_healthy
+      nginx:
+        condition: service_started
       jemison-queues-db:
         condition: service_healthy
       jemison-work-db:
@@ -106,8 +121,8 @@ services:
       - 10002:8888
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
-      minio:
-        condition: service_healthy
+      nginx:
+        condition: service_started
       jemison-queues-db:
         condition: service_healthy
     healthcheck:
@@ -144,8 +159,8 @@ services:
       - 10003:8888
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
-      minio:
-        condition: service_healthy
+      nginx:
+        condition: service_started
       jemison-queues-db:
         condition: service_healthy
     healthcheck:
@@ -179,8 +194,8 @@ services:
       - 10004:8888
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
-      minio:
-        condition: service_healthy
+      nginx:
+        condition: service_started
       jemison-queues-db:
         condition: service_healthy
     healthcheck:
@@ -221,8 +236,8 @@ services:
       - 10000:8888
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
-      minio:
-        condition: service_healthy
+      nginx:
+        condition: service_started
       jemison-queues-db:
         condition: service_healthy
     healthcheck:
@@ -255,8 +270,8 @@ services:
       - 10005:8888
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
-      minio:
-        condition: service_healthy
+      nginx:
+        condition: service_started
       jemison-queues-db:
         condition: service_healthy
     healthcheck:
@@ -289,8 +304,8 @@ services:
       - 10006:8888
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
-      minio:
-        condition: service_healthy
+      nginx:
+        condition: service_started
       jemison-queues-db:
         condition: service_healthy
     healthcheck:
@@ -366,27 +381,35 @@ services:
   #-----------------------------------------------------
   # minio :9001
   #-----------------------------------------------------
-  minio:
-    image: minio/minio:latest
-    hostname: minio
-    command: server /data --console-address ":9001" 
-    expose:
-      - "9000"
-      - "9001"
-    ports:
-      - 9001:9000
-      - 9002:9001
-    environment:
-      MINIO_ROOT_USER: numbernine
-      MINIO_ROOT_PASSWORD: numbernine
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 5    
+  minio1:
+    <<: *minio-common
+    hostname: minio1
     volumes:
-      - minio-data:/data
-      
+      - data1-1:/data1
+      - data1-2:/data2
+
+  minio2:
+    <<: *minio-common
+    hostname: minio2
+    volumes:
+      - data2-1:/data1
+      - data2-2:/data2
+
+  nginx:
+    image: nginx:1.19.2-alpine
+    hostname: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    depends_on:
+      - minio1
+      - minio2
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O /dev/null http://localhost || exit 1"]
+      timeout: 10s
+
   #-----------------------------------------------------
   # pgweb :22222
   #-----------------------------------------------------
@@ -446,4 +469,7 @@ services:
 volumes:
   jemison-queues-db-vol:
   jemison-work-db-vol:
-  minio-data:
+  data1-1:
+  data1-2:
+  data2-1:
+  data2-2:

@@ -54,7 +54,7 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		// ON THIS WORKER. If there are 100 workers, we're cycling the queue much faster.
 		jitter := time.Duration(rand.IntN(100)+100) * time.Millisecond
 		time.Sleep(Gateway.TimeRemaining(job.Args.Host) + jitter)
-		ch_qshp <- queueing.QSHP{
+		ChQSHP <- queueing.QSHP{
 			Queue:  "fetch",
 			Scheme: job.Args.Scheme,
 			Host:   job.Args.Host,
@@ -116,14 +116,14 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 
 	zap.L().Debug("stored", zap.String("key", cloudmap.Key.Render()))
 
-	ch_qshp <- queueing.QSHP{
+	ChQSHP <- queueing.QSHP{
 		Queue:  "extract",
 		Scheme: job.Args.Scheme,
 		Host:   job.Args.Host,
 		Path:   job.Args.Path,
 	}
 
-	ch_qshp <- queueing.QSHP{
+	ChQSHP <- queueing.QSHP{
 		Queue:  "walk",
 		Scheme: job.Args.Scheme,
 		Host:   job.Args.Host,

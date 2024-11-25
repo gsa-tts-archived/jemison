@@ -4,7 +4,10 @@ import (
 	"context"
 	"io"
 	"log"
+	"math/rand/v2"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/GSA-TTS/jemison/internal/env"
 	minio "github.com/minio/minio-go/v7"
@@ -98,24 +101,39 @@ func newS3FromBucketName(bucket_name string) S3 {
 
 // store saves things to S3
 func store(s3 *S3, destination_key string, size int64, reader io.Reader, mime_type string) error {
-	ctx := context.Background()
-	_, err := s3.MinioClient.PutObject(
-		ctx,
-		s3.Bucket.CredentialString("bucket"),
-		destination_key,
-		reader,
-		size,
-		minio.PutObjectOptions{
-			ContentType: mime_type,
-			// This seems to set the *minimum* partsize for multipart uploads.
-			// Which... makes writing JSON objects impossible.
-			// PartSize:    5000000
-		},
-	)
-	if err != nil {
-		zap.L().Warn("S3JSON could not PUT object",
-			zap.String("destination_key", destination_key),
-			zap.String("error", err.Error()))
+	trying := true
+	backoff := 50
+	for trying {
+		ctx := context.Background()
+		_, err := s3.MinioClient.PutObject(
+			ctx,
+			s3.Bucket.CredentialString("bucket"),
+			destination_key,
+			reader,
+			size,
+			minio.PutObjectOptions{
+				ContentType: mime_type,
+				// This seems to set the *minimum* partsize for multipart uploads.
+				// Which... makes writing JSON objects impossible.
+				// PartSize:    5000000
+			},
+		)
+		// We might be going too fast.
+		if err != nil {
+			zap.L().Warn("S3JSON could not PUT object",
+				zap.String("destination_key", destination_key),
+				zap.String("error", err.Error()))
+
+			if strings.Contains("reduce", err.Error()) || strings.Contains("could not store", err.Error()) {
+				sleepyTime := time.Duration((rand.IntN(50) + backoff) * int(time.Millisecond))
+				backoff += rand.IntN(50) + 25
+				time.Sleep(sleepyTime)
+				continue
+			} else {
+				return err
+			}
+		}
+		trying = false
 	}
-	return err
+	return nil
 }

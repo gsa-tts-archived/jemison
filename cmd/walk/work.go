@@ -123,13 +123,14 @@ func walk_html(s3json *kv.S3JSON) {
 	for _, link := range links {
 		// The links come back canonicalized against the host. So,
 		// all the fields should be present.
-		queueing.InsertEntree(
-			link.Scheme,
-			link.Host,
-			link.Path,
-			false,
-			false,
-		)
+		ChQSHP <- queueing.QSHP{
+			Queue:      "entree",
+			Scheme:     link.Scheme,
+			Host:       link.Host,
+			Path:       link.Path,
+			IsFull:     false,
+			IsHallPass: false,
+		}
 	}
 }
 

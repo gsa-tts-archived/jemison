@@ -5,12 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GSA-TTS/jemison/internal/common"
 	kv "github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -156,16 +155,11 @@ func extractHtml(obj *kv.S3JSON) {
 	new_obj.Save()
 
 	// Enqueue next steps
-	ctx, tx := common.CtxTx(packPool)
-	defer tx.Rollback(ctx)
-	packClient.InsertTx(ctx, tx, common.PackArgs{
+	ChQSHP <- queueing.QSHP{
+		Queue:  "pack",
 		Scheme: obj.Key.Scheme.String(),
 		Host:   obj.Key.Host,
 		Path:   obj.Key.Path,
-	}, &river.InsertOpts{Queue: "pack"})
-	if err := tx.Commit(ctx); err != nil {
-		zap.L().Panic("cannot commit insert tx",
-			zap.String("key", obj.Key.Render()))
 	}
 
 }

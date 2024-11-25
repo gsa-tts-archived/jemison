@@ -85,12 +85,13 @@ func EvaluateEntree(ec *EntreeCheck) {
 			LastUpdated: time.Now(),
 		})
 
-		queueing.InsertFetch(
-			ec.Scheme,
-			ec.Host,
-			ec.Path)
+		ChQSHP <- queueing.QSHP{
+			Queue:  "fetch",
+			Scheme: ec.Scheme,
+			Host:   ec.Host,
+			Path:   ec.Path,
+		}
 	}
-
 }
 
 // The most likely situation for a single URL with a

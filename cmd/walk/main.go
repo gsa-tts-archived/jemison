@@ -10,12 +10,13 @@ import (
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/queueing"
 	"go.uber.org/zap"
 )
 
 var expirable_cache expirable.Cache[string, int]
 var RecentlyVisitedCache *cache.Cache
-
+var ChQSHP = make(chan queueing.QSHP)
 var ThisServiceName = "walk"
 
 func main() {
@@ -34,6 +35,8 @@ func main() {
 	RecentlyVisitedCache = cache.New(
 		time.Duration(service.GetParamInt64("polite_cache_default_expiration"))*time.Second,
 		time.Duration(service.GetParamInt64("polite_cache_cleanup_interval"))*time.Second)
+
+	go queueing.Enqueue(ChQSHP)
 
 	log.Println("WALK listening on", env.Env.Port)
 
