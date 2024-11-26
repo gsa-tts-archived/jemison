@@ -15,7 +15,7 @@ local parameters = [
   ],
   [
     'debug_level',
-    { cf: 'warn', container: 'warn' },
+    { cf: 'warn', container: 'debug' },
   ],
   [
     'external_port',

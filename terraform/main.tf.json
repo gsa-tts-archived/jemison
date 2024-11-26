@@ -1,0 +1,323 @@
+{
+   "data": {
+      "cloudfoundry_domain": {
+         "public": {
+            "name": "app.cloud.gov"
+         }
+      },
+      "cloudfoundry_space": {
+         "app_space": {
+            "name": "matthew.jadud",
+            "org_name": "sandbox-gsa"
+         }
+      }
+   },
+   "module": {
+      "queues_database": {
+         "cf_org_name": "sandbox-gsa",
+         "cf_space_name": "matthew.jadud",
+         "name": "jemison-queues-db",
+         "rds_plan_name": "micro-psql",
+         "recursive_delete": false,
+         "source": "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1",
+         "tags": [
+            "rds"
+         ]
+      },
+      "s3-private-extract": {
+         "cf_org_name": "sandbox-gsa",
+         "cf_space_name": "matthew.jadud",
+         "name": "extract",
+         "recursive_delete": false,
+         "s3_plan_name": "basic",
+         "source": "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1",
+         "tags": [
+            "s3"
+         ]
+      },
+      "s3-private-fetch": {
+         "cf_org_name": "sandbox-gsa",
+         "cf_space_name": "matthew.jadud",
+         "name": "fetch",
+         "recursive_delete": false,
+         "s3_plan_name": "basic",
+         "source": "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1",
+         "tags": [
+            "s3"
+         ]
+      },
+      "s3-private-serve": {
+         "cf_org_name": "sandbox-gsa",
+         "cf_space_name": "matthew.jadud",
+         "name": "serve",
+         "recursive_delete": false,
+         "s3_plan_name": "basic",
+         "source": "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1",
+         "tags": [
+            "s3"
+         ]
+      },
+      "work_database": {
+         "cf_org_name": "sandbox-gsa",
+         "cf_space_name": "matthew.jadud",
+         "name": "jemison-work-db",
+         "rds_plan_name": "micro-psql",
+         "recursive_delete": false,
+         "source": "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1",
+         "tags": [
+            "rds"
+         ]
+      }
+   },
+   "resource": {
+      "cloudfoundry_app": {
+         "admin": {
+            "buildpacks": [
+               "https://github.com/cloudfoundry/apt-buildpack",
+               "https://github.com/cloudfoundry/binary-buildpack.git"
+            ],
+            "disk_quota": 512,
+            "environment": {
+               "API_KEY": "${var.api_key}",
+               "DEBUG_LEVEL": "warn",
+               "ENV": "SANDBOX",
+               "GIN_MODE": "production"
+            },
+            "health_check_http_endpoint": "/heartbeat",
+            "health_check_timeout": 180,
+            "health_check_type": "port",
+            "instances": 1,
+            "memory": 256,
+            "name": "admin",
+            "path": "zips/admin.zip",
+            "routes": [
+               {
+                  "route": "cloudfoundry_route.admin_route.id"
+               }
+            ],
+            "service_binding": [
+               {
+                  "service_instance": "module.queues_database.instance_id"
+               }
+            ],
+            "source_code_hash": "filesha256(\"zips/admin.zip\")",
+            "space": "data.cloudfoundry_space.app_space.id",
+            "strategy": "rolling",
+            "timeout": 200
+         },
+         "entree": {
+            "buildpacks": [
+               "https://github.com/cloudfoundry/apt-buildpack",
+               "https://github.com/cloudfoundry/binary-buildpack.git"
+            ],
+            "disk_quota": 512,
+            "health_check_http_endpoint": "/heartbeat",
+            "health_check_timeout": 180,
+            "health_check_type": "port",
+            "instances": 1,
+            "memory": 512,
+            "name": "entree",
+            "path": "zips/entree.zip",
+            "service_binding": [
+               {
+                  "service_instance": "module.work_database.instance_id"
+               },
+               {
+                  "service_instance": "module.queues_database.instance_id"
+               }
+            ],
+            "source_code_hash": "filesha256(\"zips/entree.zip\")",
+            "space": "data.cloudfoundry_space.app_space.id",
+            "strategy": "rolling",
+            "timeout": 200
+         },
+         "extract": {
+            "buildpacks": [
+               "https://github.com/cloudfoundry/apt-buildpack",
+               "https://github.com/cloudfoundry/binary-buildpack.git"
+            ],
+            "disk_quota": 2048,
+            "environment": {
+               "API_KEY": "${var.api_key}",
+               "DEBUG_LEVEL": "warn",
+               "ENV": "SANDBOX",
+               "GIN_MODE": "production"
+            },
+            "health_check_http_endpoint": "/heartbeat",
+            "health_check_timeout": 180,
+            "health_check_type": "port",
+            "instances": 2,
+            "memory": 1024,
+            "name": "extract",
+            "path": "zips/extract.zip",
+            "service_binding": [
+               {
+                  "service_instance": "module.private-fetch.bucket_id"
+               },
+               {
+                  "service_instance": "module.private-extract.bucket_id"
+               },
+               {
+                  "service_instance": "module.queues_database.instance_id"
+               }
+            ],
+            "source_code_hash": "filesha256(\"zips/extract.zip\")",
+            "space": "data.cloudfoundry_space.app_space.id",
+            "strategy": "rolling",
+            "timeout": 200
+         },
+         "fetch": {
+            "buildpacks": [
+               "https://github.com/cloudfoundry/apt-buildpack",
+               "https://github.com/cloudfoundry/binary-buildpack.git"
+            ],
+            "disk_quota": 1024,
+            "environment": {
+               "API_KEY": "${var.api_key}",
+               "DEBUG_LEVEL": "warn",
+               "ENV": "SANDBOX",
+               "GIN_MODE": "production"
+            },
+            "health_check_http_endpoint": "/heartbeat",
+            "health_check_timeout": 180,
+            "health_check_type": "port",
+            "instances": 1,
+            "memory": 1024,
+            "name": "fetch",
+            "path": "zips/fetch.zip",
+            "service_binding": [
+               {
+                  "service_instance": "module.private-fetch.bucket_id"
+               },
+               {
+                  "service_instance": "module.work_database.instance_id"
+               },
+               {
+                  "service_instance": "module.queues_database.instance_id"
+               }
+            ],
+            "source_code_hash": "filesha256(\"zips/fetch.zip\")",
+            "space": "data.cloudfoundry_space.app_space.id",
+            "strategy": "rolling",
+            "timeout": 200
+         },
+         "pack": {
+            "buildpacks": [
+               "https://github.com/cloudfoundry/apt-buildpack",
+               "https://github.com/cloudfoundry/binary-buildpack.git"
+            ],
+            "disk_quota": 2048,
+            "environment": {
+               "API_KEY": "${var.api_key}",
+               "DEBUG_LEVEL": "warn",
+               "ENV": "SANDBOX",
+               "GIN_MODE": "production"
+            },
+            "health_check_http_endpoint": "/heartbeat",
+            "health_check_timeout": 180,
+            "health_check_type": "port",
+            "instances": 1,
+            "memory": 512,
+            "name": "pack",
+            "path": "zips/pack.zip",
+            "service_binding": [
+               {
+                  "service_instance": "module.private-extract.bucket_id"
+               },
+               {
+                  "service_instance": "module.private-serve.bucket_id"
+               },
+               {
+                  "service_instance": "module.queues_database.instance_id"
+               }
+            ],
+            "source_code_hash": "filesha256(\"zips/pack.zip\")",
+            "space": "data.cloudfoundry_space.app_space.id",
+            "strategy": "rolling",
+            "timeout": 200
+         },
+         "serve": {
+            "buildpacks": [
+               "https://github.com/cloudfoundry/apt-buildpack",
+               "https://github.com/cloudfoundry/binary-buildpack.git"
+            ],
+            "disk_quota": 6750,
+            "environment": {
+               "API_KEY": "${var.api_key}",
+               "DEBUG_LEVEL": "warn",
+               "ENV": "SANDBOX",
+               "GIN_MODE": "production"
+            },
+            "health_check_http_endpoint": "/heartbeat",
+            "health_check_timeout": 180,
+            "health_check_type": "port",
+            "instances": 1,
+            "memory": 512,
+            "name": "serve",
+            "path": "zips/serve.zip",
+            "routes": [
+               {
+                  "route": "serve"
+               }
+            ],
+            "service_binding": [
+               {
+                  "service_instance": "module.private-serve.bucket_id"
+               },
+               {
+                  "service_instance": "module.private-fetch.bucket_id"
+               },
+               {
+                  "service_instance": "module.private-serve.bucket_id"
+               },
+               {
+                  "service_instance": "module.queues_database.instance_id"
+               }
+            ],
+            "source_code_hash": "filesha256(\"zips/serve.zip\")",
+            "space": "data.cloudfoundry_space.app_space.id",
+            "strategy": "rolling",
+            "timeout": 200
+         },
+         "walk": {
+            "buildpacks": [
+               "https://github.com/cloudfoundry/apt-buildpack",
+               "https://github.com/cloudfoundry/binary-buildpack.git"
+            ],
+            "disk_quota": 1024,
+            "environment": {
+               "API_KEY": "${var.api_key}",
+               "DEBUG_LEVEL": "warn",
+               "ENV": "SANDBOX",
+               "GIN_MODE": "production"
+            },
+            "health_check_http_endpoint": "/heartbeat",
+            "health_check_timeout": 180,
+            "health_check_type": "port",
+            "instances": 2,
+            "memory": 1024,
+            "name": "walk",
+            "path": "zips/walk.zip",
+            "service_binding": [
+               {
+                  "service_instance": "module.private-fetch.bucket_id"
+               },
+               {
+                  "service_instance": "module.queues_database.instance_id"
+               }
+            ],
+            "source_code_hash": "filesha256(\"zips/walk.zip\")",
+            "space": "data.cloudfoundry_space.app_space.id",
+            "strategy": "rolling",
+            "timeout": 200
+         }
+      },
+      "cloudfoundry_route": {
+         "admin_route": {
+            "domain": "data.cloudfoundry_domain.public.id",
+            "hostname": "jemison-admin",
+            "space": "data.cloudfoundry_space.app_space.id"
+         }
+      }
+   }
+}

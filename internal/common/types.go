@@ -2,6 +2,25 @@ package common
 
 import "net/http"
 
+type BalanceArgs struct {
+	Key  string
+	Size int64
+}
+
+func (BalanceArgs) Kind() string {
+	return "balance"
+}
+
+type SpaceAvailArgs struct {
+	Host     string `json:"host"`
+	Filename string `json:"filename"`
+	Size     int64  `json:"size"`
+}
+
+func (SpaceAvailArgs) Kind() string {
+	return "balance"
+}
+
 type EntreeArgs struct {
 	Scheme    string `json:"scheme"`
 	Host      string `json:"host"`

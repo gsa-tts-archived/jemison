@@ -71,6 +71,8 @@ func CheckS3ForDatabases(storage *kv.S3) {
 	// might as well do the work that way.
 	for _, obj := range objects {
 		//queueing.InsertServe(obj.Key)
+		zap.L().Debug("copying in database",
+			zap.String("key", obj.Key))
 		ChQSHP <- queueing.QSHP{
 			Queue:    "serve",
 			Filename: obj.Key,
@@ -81,10 +83,10 @@ func CheckS3ForDatabases(storage *kv.S3) {
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
 	s3 := kv.NewS3(ThisServiceName)
-	CheckS3ForDatabases(s3)
-
 	InitializeQueues()
-	queueing.InitializeRiverQueues()
+
+	go queueing.Enqueue(ChQSHP)
+	CheckS3ForDatabases(s3)
 
 	s, _ := env.Env.GetUserService(ThisServiceName)
 	static_files_path := s.GetParamString("static_files_path")
@@ -107,8 +109,6 @@ func main() {
 	if len(dbs) > 0 {
 		start = dbs[0]
 	}
-
-	go queueing.Enqueue(ChQSHP)
 
 	/////////////////////
 	// Server/API
