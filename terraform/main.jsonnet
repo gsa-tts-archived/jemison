@@ -1,3 +1,9 @@
+/*
+ * Consider looking at 
+ * https://gitlab.com/celduin/infrastructure/celduin-infra/-/tree/master/terraform/lib
+ * more for inspiration/ideas.
+ */
+ 
 local B = import 'lib/builders.libsonnet';
 local C = import 'lib/const.libsonnet';
 
