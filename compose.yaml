@@ -96,6 +96,7 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
+      SCHEDULE: ${SCHEDULE:-""}
     restart: no
 
   #-----------------------------------------------------

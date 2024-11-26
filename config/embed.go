@@ -11,9 +11,8 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:embed *.jsonnet
-//go:embed *.json
 //go:embed *.yaml
+//go:embed schedules/*.json
 var ConfigFs embed.FS
 
 func ReadConfigJsonnet(sonnetFilename string) string {
@@ -44,7 +43,9 @@ func GetYamlFileReader(yamlFilename string) *bytes.Reader {
 }
 
 func GetScheduleFromHost(host string) string {
-	cfg := ReadJsonConfig("schedule.json")
+	// This cannot come from the Env, because that would be a circular import.
+	// So, this is a big FIXME.
+	cfg := ReadJsonConfig(GetTheSchedule())
 	hostSections := make(map[string]string, 0)
 	for _, section := range gjson.Parse(cfg).Get("@keys").Array() {
 		for _, site := range gjson.Get(cfg, section.String()).Array() {

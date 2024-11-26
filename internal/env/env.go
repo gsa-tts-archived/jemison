@@ -79,11 +79,11 @@ type env struct {
 	User          string               `mapstructure:"USER"`
 	EightServices map[string][]Service `mapstructure:"EIGHT_SERVICES"`
 	Port          string               `mapstructure:"PORT"`
-
-	VcapServices map[string][]Service
-	UserServices []Service
-	ObjectStores []Bucket
-	Databases    []Database
+	Schedule      string               `mapstructure:"SCHEDULE"`
+	VcapServices  map[string][]Service
+	UserServices  []Service
+	ObjectStores  []Bucket
+	Databases     []Database
 }
 
 type container_env struct {
@@ -129,6 +129,11 @@ func InitGlobalEnv(this_service string) {
 
 	// Grab the PORT in the cloud and locally from os.Getenv()
 	viper.BindEnv("PORT")
+
+	// Grab the schedule
+
+	Env.Schedule = config.GetTheSchedule()
+	log.Println("Setting Schedule: ", Env.Schedule)
 
 	//err := viper.ReadInConfig()
 	err := viper.ReadConfig(config.GetYamlFileReader(configName + ".yaml"))
