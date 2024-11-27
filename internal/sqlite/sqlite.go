@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 
@@ -18,12 +19,14 @@ var ddl string
 
 // FIXME: This may become an interface?
 type PackTable struct {
-	Filename string
-	Context  context.Context
-	DB       *sql.DB
-	Queries  *search_db.Queries
+	Filename     string
+	TempFilename string
+	Context      context.Context
+	DB           *sql.DB
+	Queries      *search_db.Queries
 }
 
+// Used in testing
 func OpenPackTable(db_filename string) (*PackTable, error) {
 
 	pt := PackTable{}
@@ -46,26 +49,34 @@ func OpenPackTable(db_filename string) (*PackTable, error) {
 	return &pt, nil
 }
 
-func CreatePackTable(db_filename string) (*PackTable, error) {
-
-	pt := PackTable{}
-	pt.Filename = db_filename
+// FIXME: is it possible for a DB to be open, and be being written to,
+// and then the timeout fires again, and we try and write to it again?
+// With multiple workers, maybe this is possible, if writing a DB takes
+// longer than the timeout period. (Which... when running locally, might be true.)
+// So, this needs some protections. Like... maybe a per-host lock, so
+// we don't re-open a DB while it is already open.
+func CreatePackTable(dbFilename string) (*PackTable, error) {
 
 	ctx := context.Background()
-	// What if the file already exists? We should clean up first.
-	// When testing locally, it is the same location as where we serve from.
-	// In cloud.gov, this will be on a pack instance.
-	os.Remove(db_filename)
+	// Use a temp filename until it is packed.
+	tempFilename := uuid.NewString() + ".sqlite"
+	//
+	os.Remove(tempFilename)
+
+	pt := PackTable{}
+	pt.Filename = dbFilename
+	pt.TempFilename = tempFilename
 
 	// FIXME: Any params to the DB?
-	db, err := sql.Open("sqlite3", db_filename+"?_fk=true")
+	db, err := sql.Open("sqlite3", tempFilename+"?_fk=true")
 	if err != nil {
 		zap.L().Error("cannot create SQLite file for packing",
-			zap.String("db_filename", db_filename),
+			zap.String("db_filename", tempFilename),
 			zap.String("err", err.Error()),
 		)
 		return nil, err
 	}
+
 	db.SetMaxOpenConns(100)
 	// https://phiresky.github.io/blog/2020/sqlite-performance-tuning/
 	_, err = db.Exec("pragma journal_mode = WAL")
@@ -105,7 +116,7 @@ func CreatePackTable(db_filename string) (*PackTable, error) {
 
 func (pt *PackTable) PrepForNetwork() {
 	// https://turso.tech/blog/something-you-probably-want-to-know-about-if-youre-using-sqlite-in-golang-72547ad625f1
-	db, _ := sql.Open("sqlite3", pt.Filename)
+	db, _ := sql.Open("sqlite3", pt.TempFilename)
 	pt.DB = db
 	_, err := pt.DB.ExecContext(pt.Context, "PRAGMA wal_checkpoint(TRUNCATE)")
 	if err != nil {
@@ -121,6 +132,10 @@ func (pt *PackTable) PrepForNetwork() {
 	}
 
 	err = pt.DB.Close()
+
+	// Now, rename the temp to the real thing.
+	os.Rename(pt.TempFilename, pt.Filename)
+
 	if err != nil {
 		zap.L().Error("pragma fail on sqlite close")
 	}

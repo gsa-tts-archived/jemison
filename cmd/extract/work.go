@@ -11,6 +11,14 @@ import (
 	"go.uber.org/zap"
 )
 
+const MAX_FILESIZE = 5000000
+
+// FIXME: This is checking the size of the JSON,
+// not the size of the .raw file.
+func isTooLarge(obj *kv.S3JSON) bool {
+	return obj.Size() > MAX_FILESIZE
+}
+
 func extract(obj *kv.S3JSON) {
 	mime_type := obj.GetString("content-type")
 	s, _ := env.Env.GetUserService(ThisServiceName)
@@ -22,7 +30,13 @@ func extract(obj *kv.S3JSON) {
 		}
 	case "application/pdf":
 		if s.GetParamBool("extract_pdf") {
-			extractPdf(obj)
+			if !isTooLarge(obj) {
+				extractPdf(obj)
+			} else {
+				//FIXME DELETE THIS THING
+				zap.L().Error("s3json object too large",
+					zap.String("host", obj.Key.Host), zap.String("path", obj.Key.Path))
+			}
 		}
 	}
 }

@@ -107,11 +107,15 @@ func Enqueue(ch_qshp <-chan QSHP) {
 			commonCommit(qshp, ctx, tx)
 
 		case "walk":
+			if qshp.Queue != "walk" {
+				zap.L().Error("found non-walk job coming to the walk queue",
+					zap.String("host", qshp.Host), zap.String("path", qshp.Path))
+			}
 			_, err := client.InsertTx(ctx, tx, common.WalkArgs{
 				Scheme: qshp.Scheme,
 				Host:   qshp.Host,
 				Path:   qshp.Path,
-			}, &river.InsertOpts{Queue: qshp.Queue})
+			}, &river.InsertOpts{Queue: "walk"})
 			if err != nil {
 				zap.L().Error("cannot insert into queue walk")
 			}

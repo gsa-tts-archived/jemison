@@ -71,7 +71,7 @@ func (hsm *HostGateway) TimeRemaining(host string) time.Duration {
 		until := time.Until(lastHit.Add(hsm.politeSleep))
 
 		zap.L().Debug("gateway time remaining",
-			zap.Int64("until", int64(until)))
+			zap.Float64("seconds", float64(until)/float64(time.Second)))
 
 		if until > 0 {
 			return until

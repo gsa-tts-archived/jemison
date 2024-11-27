@@ -22,15 +22,6 @@ func extractPdf(obj *kv.S3JSON) {
 	raw_copy.Extension = util.Raw
 	obj.S3.S3ToFile(raw_copy, tempFilename)
 
-	fi, err := os.Stat(tempFilename)
-	if err != nil {
-		zap.L().Fatal(err.Error())
-	}
-	size := fi.Size()
-	zap.L().Debug("tempFilename size", zap.Int64("size", size))
-
-	doc, err := poppler.Open(tempFilename)
-
 	defer func() {
 		err := os.Remove(tempFilename)
 		if err != nil {
@@ -38,6 +29,23 @@ func extractPdf(obj *kv.S3JSON) {
 				zap.String("filename", tempFilename))
 		}
 	}()
+
+	fi, err := os.Stat(tempFilename)
+	if err != nil {
+		zap.L().Fatal(err.Error())
+	}
+
+	size := fi.Size()
+	zap.L().Debug("tempFilename size", zap.Int64("size", size))
+
+	if size > MAX_FILESIZE {
+		// Give up on big files.
+		// FIXME: we need to clean up the bucket, too, and delete PDFs there
+		zap.L().Debug("file too large, not processing")
+		return
+	}
+
+	doc, err := poppler.Open(tempFilename)
 
 	if err != nil {
 		zap.L().Warn("poppler failed to open pdf",

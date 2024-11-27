@@ -124,6 +124,7 @@ func FinalizeTimer(in <-chan string) {
 			for host, clock := range clocks {
 				if time.Since(clock) > TIMEOUT_DURATION {
 
+					PHL.Lock(host)
 					PackTheDatabase(host)
 					sqlite_filename := sqlite.SqliteFilename(host)
 					s3 := kv.NewS3("serve")
@@ -134,6 +135,7 @@ func FinalizeTimer(in <-chan string) {
 							zap.String("err", err.Error()))
 					}
 					os.Remove(sqlite_filename)
+					PHL.Unlock(host)
 
 					// Enqueue next steps
 					ChQSHP <- queueing.QSHP{

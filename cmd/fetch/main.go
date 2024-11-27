@@ -8,6 +8,7 @@ import (
 	common "github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/queueing"
+	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
 	"github.com/hashicorp/go-retryablehttp"
 	"go.uber.org/zap"
 )
@@ -17,6 +18,9 @@ var ThisServiceName = "fetch"
 
 var RetryClient *http.Client
 var Gateway *HostGateway
+
+var WDB *work_db.WorkDB
+var QDB *work_db.QueueDB
 
 var ChQSHP = make(chan queueing.QSHP)
 
@@ -44,10 +48,13 @@ func main() {
 		retryableClient.Logger = nil
 	}
 
-	Gateway = NewHostGateway(time.Duration(time.Duration(PoliteSleep) * time.Second))
+	Gateway = NewHostGateway(time.Duration(PoliteSleep) * time.Second)
 
 	go InfoFetchCount()
+	WDB = work_db.NewGuestbookDB()
+
 	go queueing.Enqueue(ChQSHP)
+	go queueing.ClearCompletedPeriodically()
 
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))

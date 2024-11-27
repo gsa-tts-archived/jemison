@@ -10,6 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// entree-1             | {"level":"fatal","timestamp":"2024-11-27T13:42:14.431Z","caller":"work_db/custom.go:29","msg":"could not connect to DB1","pid":13,"stacktrace":"github.com/GSA-TTS/jemison/internal/work_db/work_db.GetWorkDbQueryContext\n\t/home/jadudm/git/search/jemison/app/internal/work_db/work_db/custom.go:29\ngithub.com/GSA-TTS/jemison/internal/work_db/work_db.UpdateNextFetch\n\t/home/jadudm/git/search/jemison/app/internal/work_db/work_db/custom.go:36\nmain.EvaluateEntree\n\t/home/jadudm/git/search/jemison/app/cmd/entree/accept_logic.go:81\nmain.(*EntreeWorker).Work\n\t/home/jadudm/git/search/jemison/app/cmd/entree/work.go:45\ngithub.com/riverqueue/river.(*wrapperWorkUnit[...]).Work\n\t/home/jadudm/go/pkg/mod/github.com/riverqueue/river@v0.13.0/work_unit_wrapper.go:30\ngithub.com/riverqueue/river.(*jobExecutor).execute.func2\n\t/home/jadudm/go/pkg/mod/github.com/riverqueue/river@v0.13.0/job_executor.go:216\ngithub.com/riverqueue/river.(*jobExecutor).execute\n\t/home/jadudm/go/pkg/mod/github.com/riverqueue/river@v0.13.0/job_executor.go:239\ngithub.com/riverqueue/river.(*jobExecutor).Execute\n\t/home/jadudm/go/pkg/mod/github.com/riverqueue/river@v0.13.0/job_executor.go:157"}
+
 func (w *EntreeWorker) Work(ctx context.Context, job *river.Job[common.EntreeArgs]) error {
 	// We're the new front door.
 	// When a request comes in, we will run the algorithm described in

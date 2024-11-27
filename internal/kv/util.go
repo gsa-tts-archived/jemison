@@ -99,10 +99,19 @@ func newS3FromBucketName(bucket_name string) S3 {
 	return s3
 }
 
+func containsAll(target string, pieces []string) bool {
+	allExist := true
+	for _, s := range pieces {
+		allExist = allExist && strings.Contains(target, s)
+	}
+	return allExist
+}
+
 // store saves things to S3
 func store(s3 *S3, destination_key string, size int64, reader io.Reader, mime_type string) error {
 	trying := true
 	backoff := 50
+
 	for trying {
 		ctx := context.Background()
 		_, err := s3.MinioClient.PutObject(
@@ -124,16 +133,20 @@ func store(s3 *S3, destination_key string, size int64, reader io.Reader, mime_ty
 				zap.String("destination_key", destination_key),
 				zap.String("error", err.Error()))
 
-			if strings.Contains("reduce", err.Error()) || strings.Contains("could not store", err.Error()) {
+			// Resource requested is unwritable, please reduce your request rate
+			if containsAll(err.Error(), []string{"reduce", "rate"}) || containsAll(err.Error(), []string{"not", "store"}) {
+				zap.L().Warn("reducing request rate")
 				sleepyTime := time.Duration((rand.IntN(50) + backoff) * int(time.Millisecond))
 				backoff += rand.IntN(50) + 25
 				time.Sleep(sleepyTime)
 				continue
 			} else {
+				zap.L().Error("s3 storage error", zap.String("err", err.Error()))
 				return err
 			}
+		} else {
+			trying = false
 		}
-		trying = false
 	}
 	return nil
 }

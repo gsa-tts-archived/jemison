@@ -222,6 +222,10 @@ func (s3json *S3JSON) Set(sjson_path string, value string) {
 	s3json.raw = b
 }
 
+func (s3json *S3JSON) Size() int64 {
+	return int64(len(s3json.raw))
+}
+
 // type Storage interface {
 // 	Store(string, JSON) error
 // 	List(string) ([]*ObjInfo, error)

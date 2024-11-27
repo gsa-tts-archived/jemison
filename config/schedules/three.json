@@ -1,0 +1,19 @@
+{
+   "monthly": [
+      {
+         "host": "www.fac.gov",
+         "path": "/",
+         "scheme": "https"
+      },
+      {
+         "host": "cloud.gov",
+         "path": "/",
+         "scheme": "https"
+      },
+      {
+         "host": "search.gov",
+         "path": "/",
+         "scheme": "https"
+      }
+   ]
+}

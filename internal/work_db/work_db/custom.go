@@ -12,10 +12,10 @@ import (
 )
 
 type FetchUpdateParams struct {
-	Scheme      string
-	Host        string
-	Path        string
-	LastUpdated time.Time
+	Scheme       string
+	Host         string
+	Path         string
+	LastModified time.Time
 }
 
 func GetWorkDbQueryContext() (context.Context, *pgx.Conn, *Queries) {
@@ -32,17 +32,18 @@ func GetWorkDbQueryContext() (context.Context, *pgx.Conn, *Queries) {
 	return ctx, conn, queries
 }
 
-func UpdateNextFetch(params FetchUpdateParams) {
-	ctx, conn, queries := GetWorkDbQueryContext()
-	defer conn.Close(ctx)
-	host_id, err := queries.GetHostId(ctx, params.Host)
+func (q *Queries) UpdateNextFetch(params FetchUpdateParams) {
+	// ctx, conn, queries := GetWorkDbQueryContext()
+	// defer conn.Close(ctx)
+	ctx := context.Background()
+	host_id, err := q.GetHostId(ctx, params.Host)
 	if err != nil {
 		zap.L().Fatal("cannot get host id to update next fetch",
 			zap.Int64("host_id", host_id),
 			zap.String("host", params.Host),
 			zap.String("path", params.Path))
 	}
-	//host_id, _ := queries.GetHostId(ctx, host)
+
 	schedule := config.GetScheduleFromHost(params.Host)
 
 	zap.L().Debug("schedule for host",
@@ -50,12 +51,12 @@ func UpdateNextFetch(params FetchUpdateParams) {
 		zap.String("schedule", schedule))
 
 	next_fetch := config.HostToPgTimestamp(params.Host, time.Now())
-	queries.UpdateGuestbookFetch(ctx, UpdateGuestbookFetchParams{
+	q.UpdateGuestbookFetch(ctx, UpdateGuestbookFetchParams{
 		Scheme: params.Scheme,
 		Host:   host_id,
 		Path:   params.Path,
 		LastUpdated: pgtype.Timestamp{
-			Time:             params.LastUpdated,
+			Time:             params.LastModified,
 			InfinityModifier: 0,
 			Valid:            true,
 		},

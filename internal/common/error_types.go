@@ -4,8 +4,10 @@ type ErrorType int
 
 const (
 	NonIndexableContentType ErrorType = iota
+	FileTooLargeToFetch
+	FileTooSmallToProcess
 )
 
 func (et ErrorType) String() string {
-	return [...]string{"NONDXTYPE"}[et]
+	return [...]string{"NONDXTYPE", "TOOLARGETOFETCH", "TOOSMALLTOPROCESS"}[et]
 }

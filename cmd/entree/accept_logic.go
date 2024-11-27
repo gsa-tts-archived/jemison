@@ -78,11 +78,11 @@ func EvaluateEntree(ec *EntreeCheck) {
 		// We need to update the guestbook now, because we will end up re-walking
 		// the page if we don't. This is true in each case.
 		// Fetch will update a second time.
-		work_db.UpdateNextFetch(work_db.FetchUpdateParams{
-			Scheme:      ec.Scheme,
-			Host:        ec.Host,
-			Path:        ec.Path,
-			LastUpdated: time.Now(),
+		WDB.Queries.UpdateNextFetch(work_db.FetchUpdateParams{
+			Scheme:       ec.Scheme,
+			Host:         ec.Host,
+			Path:         ec.Path,
+			LastModified: time.Now(),
 		})
 
 		ChQSHP <- queueing.QSHP{

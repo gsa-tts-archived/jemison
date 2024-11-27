@@ -29,13 +29,31 @@ var fetchCount atomic.Int64
 func InfoFetchCount() {
 	// Probably should be a config value.
 	ticker := time.NewTicker(60 * time.Second)
-
+	recent := []int64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	last := int64(0)
+	ndx := 0
 	for {
+		// Wait for the ticker
 		<-ticker.C
 		cnt := fetchCount.Load()
-		zap.L().Info("pages fetched",
-			zap.Int64("pages", cnt))
+		diff := cnt - last
+		recent[ndx] = diff
+		if last != 0 {
+			var total int64 = 0
+			for _, num := range recent {
+				total += num
+			}
+			zap.L().Info("pages fetched",
+				zap.Int64("pages", cnt),
+				zap.Int64("ppm (5m avg)", total/int64(len(recent))))
+		}
+		ndx = (ndx + 1) % len(recent)
+		last = cnt
 	}
+}
+
+func randRange(min, max int) int64 {
+	return int64(rand.IntN(max-min)) + int64(min)
 }
 
 func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]) error {
@@ -48,12 +66,11 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	// good to go. So, we requeue.
 
 	if !Gateway.GoodToGo(job.Args.Host) {
-		// If we are not good to go, we will requeue. But, we're going to save the
-		// thrashing just a bit. We'll requeue after some time between 100 and 200ms.
-		// This means we're going to go through the queue at a rate of ~10 items/second
-		// ON THIS WORKER. If there are 100 workers, we're cycling the queue much faster.
-		jitter := time.Duration(rand.IntN(100)+100) * time.Millisecond
-		time.Sleep(Gateway.TimeRemaining(job.Args.Host) + jitter)
+		// If this host is not good to go, reschedule it for some time in the future.
+		// jitter := time.Duration(randRange(-10, 10)) * time.Millisecond
+		// sleepyTime := Gateway.TimeRemaining(job.Args.Host) + jitter
+		// time.Sleep(sleepyTime)
+		time.Sleep(time.Duration(randRange(50, 100)) * time.Millisecond)
 		ChQSHP <- queueing.QSHP{
 			Queue:  "fetch",
 			Scheme: job.Args.Scheme,
@@ -74,25 +91,24 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	// Now, A1 will come around on the queue again, and if it is time, it
 	// will proceed.
 
-	//common.BackoffLoop(job.Args.Host, PoliteSleep, &LastHitMap, &LastBackoffMap)
 	zap.L().Debug("fetching page content", zap.String("url", host_and_path(job)))
 	page_json, err := fetch_page_content(job)
 
 	if err != nil {
 		// The queueing system retries should save us here; bail if we
 		// can't get the content now.
-		if strings.Contains(err.Error(), common.NonIndexableContentType.String()) {
-			zap.L().Info("could not fetch page content",
-				zap.String("scheme", job.Args.Scheme),
-				zap.String("host", job.Args.Host),
-				zap.String("path", job.Args.Path),
-			)
+		if strings.Contains(err.Error(), common.NonIndexableContentType.String()) ||
+			strings.Contains(err.Error(), common.FileTooLargeToFetch.String()) ||
+			strings.Contains(err.Error(), common.FileTooSmallToProcess.String()) {
 			// Return nil, because we want to consume the job, but not requeue it
+			zap.L().Info("common file error", zap.String("type", err.Error()))
 			return nil
 		}
 
 		// FIXME: If it is not the NonIndexable error, something else went wrong.
 		// Send it back to the queue for now.
+		// FIXME: we probably need a retry rate lower than 25. Log it and take a miss
+		// might be a better strategy as we go live.
 		return err
 	}
 
@@ -137,33 +153,27 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	// 		Path:   job.Args.Path}})
 
 	// Update the guestbook
-	last_updated := time.Now()
-	if v, ok := page_json["last-updated"]; ok {
-		layout := "2006-01-02 15:04:05"
-		t, err := time.Parse(layout, v)
+	lastModified := time.Now()
+	if v, ok := page_json["last-modified"]; ok {
+		//layout := "2006-01-02 15:04:05"
+		t, err := time.Parse(time.RFC1123, v)
 		if err != nil {
-			zap.L().Warn("could not convert time for last-updated")
-			last_updated = time.Now()
+			zap.L().Warn("could not convert last-modified")
+			lastModified = time.Now()
 		} else {
-			last_updated = t
+			lastModified = t
 		}
 	}
-
-	work_db.UpdateNextFetch(work_db.FetchUpdateParams{
-		Scheme:      job.Args.Scheme,
-		Host:        job.Args.Host,
-		Path:        job.Args.Path,
-		LastUpdated: last_updated,
+	WDB.Queries.UpdateNextFetch(work_db.FetchUpdateParams{
+		Scheme:       job.Args.Scheme,
+		Host:         job.Args.Host,
+		Path:         job.Args.Path,
+		LastModified: lastModified,
 	})
 
+	zap.L().Info("fetched", zap.String("host", job.Args.Host), zap.String("path", job.Args.Path))
 	// A cute counter for the logs.
 	fetchCount.Add(1)
-
-	zap.L().Debug("fetched",
-		zap.String("scheme", job.Args.Scheme),
-		zap.String("host", job.Args.Host),
-		zap.String("path", job.Args.Path),
-	)
 
 	return nil
 }

@@ -1,4 +1,4 @@
-package main
+package work_db
 
 import (
 	"context"
@@ -6,19 +6,21 @@ import (
 	"time"
 
 	"github.com/GSA-TTS/jemison/internal/env"
-	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
-var WDB *WorkDB
-
 type WorkDB struct {
-	Queries *work_db.Queries
+	Queries *Queries
 	Config  *pgxpool.Config
 	Pool    *pgxpool.Pool
 	//DB      *pgx.Conn
+}
+
+type QueueDB struct {
+	Config *pgxpool.Config
+	Pool   *pgxpool.Pool
 }
 
 func NewGuestbookDB() *WorkDB {
@@ -47,13 +49,38 @@ func NewGuestbookDB() *WorkDB {
 	// if err != nil {
 	// 	zap.L().Fatal("could not connect to work-db")
 	// }
-	queries := work_db.New(pool)
+	queries := New(pool)
 
 	return &WorkDB{
 		Queries: queries,
 		Config:  cfg,
 		//DB:      db,
 		Pool: pool,
+	}
+}
+
+func NewQueueDB() *QueueDB {
+	db_string, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
+	if err != nil {
+		zap.L().Fatal("could not get db URL for queue-db")
+	}
+
+	cfg := Config(db_string)
+	// Create database connection
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
+	if err != nil {
+		zap.L().Fatal("could not create pool",
+			zap.String("err", err.Error()))
+	}
+
+	err = pool.Ping(context.Background())
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
+
+	return &QueueDB{
+		Config: cfg,
+		Pool:   pool,
 	}
 }
 

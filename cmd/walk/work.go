@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"log"
 	"net/url"
 	"os"
 	"strings"
@@ -35,6 +34,11 @@ func go_for_a_walk(s3json *kv.S3JSON) {
 // extract_links
 func extract_links(s3json *kv.S3JSON) []*url.URL {
 
+	// Return a unique set
+	link_set := make(map[string]bool)
+	// Remove all trailing slashes.
+	links := make([]*url.URL, 0)
+
 	raw := s3json.GetString("raw")
 	// This is a key to a file.
 	tempFilename := uuid.NewString()
@@ -45,34 +49,35 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 		zap.L().Error("could not copy s3 to local file",
 			zap.String("tempFilename", tempFilename),
 			zap.String("raw", raw))
+		return links
 	}
 
 	tFile, err := os.Open(tempFilename)
 	if err != nil {
 		zap.L().Error("cannot open temporary file", zap.String("filename", tempFilename))
+		return links
 	}
 	defer func() { tFile.Close(); os.Remove(tempFilename) }()
 
 	fi, err := os.Stat(tempFilename)
 	if err != nil {
-		zap.L().Fatal(err.Error())
+		zap.L().Error(err.Error())
+		return links
 	}
 	// get the size
 	size := fi.Size()
 	zap.L().Debug("tempFilename size", zap.Int64("size", size))
 
 	doc, err := goquery.NewDocumentFromReader(tFile)
+
 	if err != nil {
-		log.Println("WALK cannot convert to document")
-		log.Fatal(err)
+		zap.L().Error("WALK cannot convert to document", zap.String("key", s3json.Key.Render()))
+		return links
 	}
 
 	// Pages that are javascript-only, or require javascript to display will
 	// have no links.
 	// zap.L().Debug("doc", zap.String("all", fmt.Sprintln(doc.Text())))
-
-	// Return a unique set
-	link_set := make(map[string]bool)
 
 	doc.Find("a[href]").Each(func(ndx int, sel *goquery.Selection) {
 		link, exists := sel.Attr("href")
@@ -99,15 +104,15 @@ func extract_links(s3json *kv.S3JSON) []*url.URL {
 		}
 	})
 
-	// Remove all trailing slashes.
-	links := make([]*url.URL, 0)
 	for link := range link_set {
 		link = trimSuffix(link, "/")
 		u, err := url.Parse(link)
 		if err != nil {
-			log.Println("WALK ExtractLinks did a bad with", link)
+			zap.L().Warn("WALK ExtractLinks did a bad with",
+				zap.String("badLink", link))
+		} else {
+			links = append(links, u)
 		}
-		links = append(links, u)
 	}
 
 	//log.Println("EXTRACTED", links)
@@ -205,11 +210,18 @@ func trimSuffix(s, suffix string) string {
 }
 
 func (w *WalkWorker) Work(ctx context.Context, job *river.Job[common.WalkArgs]) error {
+	if job.Attempt > 2 {
+		zap.L().Warn("walking zombie; dropping",
+			zap.String("host", job.Args.Host), zap.String("path", job.Args.Path))
+		return nil
+	}
+
 	zap.L().Debug("walk job",
 		zap.String("scheme", job.Args.Scheme),
 		zap.String("host", job.Args.Host),
 		zap.String("path", job.Args.Path),
 	)
+
 	s3json := kv.NewEmptyS3JSON("fetch",
 		util.ToScheme(job.Args.Scheme),
 		job.Args.Host,

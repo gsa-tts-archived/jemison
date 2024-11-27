@@ -12,6 +12,7 @@ import (
 var ThisServiceName = "pack"
 var ChFinalize = make(chan string)
 var ChQSHP = make(chan queueing.QSHP)
+var PHL *PerHostLock = nil
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -21,8 +22,11 @@ func main() {
 
 	log.Println("environment initialized")
 
+	PHL = NewPerHostLock()
+
 	go FinalizeTimer(ChFinalize)
 	go queueing.Enqueue(ChQSHP)
+	go queueing.ClearCompletedPeriodically()
 
 	// Local and Cloud should both get this from the environment.
 	http.ListenAndServe(":"+env.Env.Port, engine)
