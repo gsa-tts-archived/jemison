@@ -63,7 +63,7 @@ func chunkwiseSHA1(filename string) []byte {
 func getUrlToFile(u url.URL) (string, int64, []byte, error) {
 	getResponse, err := RetryClient.Get(u.String())
 	if err != nil {
-		zap.L().Fatal("cannot GET content",
+		zap.L().Error("cannot GET content",
 			zap.String("url", u.String()),
 		)
 		return "", 0, nil, err
@@ -73,7 +73,8 @@ func getUrlToFile(u url.URL) (string, int64, []byte, error) {
 	temporaryFilename := uuid.NewString()
 	outFile, err := os.Create(temporaryFilename)
 	if err != nil {
-		zap.L().Fatal("cannot create temporary file", zap.String("filename", temporaryFilename))
+		zap.L().Error("cannot create temporary file", zap.String("filename", temporaryFilename))
+		return "", 0, nil, err
 	}
 	defer outFile.Close()
 

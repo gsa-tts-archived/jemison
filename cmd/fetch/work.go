@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/rand/v2"
 	"strings"
 	"sync"
@@ -70,13 +71,16 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		// jitter := time.Duration(randRange(-10, 10)) * time.Millisecond
 		// sleepyTime := Gateway.TimeRemaining(job.Args.Host) + jitter
 		// time.Sleep(sleepyTime)
-		time.Sleep(time.Duration(randRange(50, 100)) * time.Millisecond)
+		// time.Sleep(time.Duration(randRange(50, 100)) * time.Millisecond)
+		nextPool := RoundRobinWorkerPool.Load()
 		ChQSHP <- queueing.QSHP{
-			Queue:  "fetch",
+			Queue:  fmt.Sprintf("fetch-%d", nextPool),
 			Scheme: job.Args.Scheme,
 			Host:   job.Args.Host,
 			Path:   job.Args.Path,
 		}
+		nextPool = (nextPool + 1) % RoundRobinSize
+		RoundRobinWorkerPool.Store(nextPool)
 		return nil
 	}
 
@@ -145,12 +149,6 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		Host:   job.Args.Host,
 		Path:   job.Args.Path,
 	}
-
-	// queueing.InsertValidate("validate_fetch", common.ValidateFetchArgs{
-	// 	Fetch: common.FetchArgs{
-	// 		Scheme: job.Args.Scheme,
-	// 		Host:   job.Args.Host,
-	// 		Path:   job.Args.Path}})
 
 	// Update the guestbook
 	lastModified := time.Now()

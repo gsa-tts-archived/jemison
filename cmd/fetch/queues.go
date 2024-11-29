@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -19,7 +20,8 @@ import (
 
 // The work client, doing the work of `fetch`
 var fetchPool *pgxpool.Pool
-var fetchClient *river.Client[pgx.Tx]
+
+//var fetchClient *river.Client[pgx.Tx]
 
 // var extractPool *pgxpool.Pool
 
@@ -33,16 +35,12 @@ type FetchWorker struct {
 }
 
 func InitializeQueues() {
+	var fetchClient *river.Client[pgx.Tx]
 	queueing.InitializeRiverQueues()
 
 	ctx, fP, workers := common.CommonQueueInit()
-	// _, eP, _ := common.CommonQueueInit()
-	// _, wP, _ := common.CommonQueueInit()
 	fetchPool = fP
-	// extractPool = eP
-	// walkPool = wP
 
-	// Essentially adds a worker "type" to the work engine.
 	river.AddWorker(workers, &FetchWorker{})
 
 	// Grab the number of workers from the config.
@@ -53,35 +51,52 @@ func InitializeQueues() {
 		os.Exit(1)
 	}
 
-	// Work client
+	// I'm going to create a round-robin pool of workers.
+	// That is, if workerCount is 10, I'm going to create
+	// 10x10 workers, in 10x queues. This way, I can round-robin
+	// jobs to the queues. This should improve throughput significantly.
+	// May have to have more configs, so this is better able to be controlled.
+	workerCount := fetchService.GetParamInt64("workers")
+	RoundRobinSize = workerCount
+
+	// Start the 'main' queue
 	fetchClient, err = river.NewClient(riverpgxv5.New(fetchPool), &river.Config{
 		Queues: map[string]river.QueueConfig{
-			ThisServiceName: {MaxWorkers: int(fetchService.GetParamInt64("workers"))},
+			ThisServiceName: {MaxWorkers: int(workerCount)},
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
-		zap.L().Error("could not establish worker pool")
+		zap.L().Error("could not establish main worker pool")
 		log.Println(err)
 		os.Exit(1)
 	}
-
-	// Insert-only client to `extract`
-	// extractClient, err = river.NewClient(riverpgxv5.New(extractPool), &river.Config{})
-	// if err != nil {
-	// 	zap.L().Error("could not establish insert-only client")
-	// 	os.Exit(1)
-	// }
-	// walkClient, err = river.NewClient(riverpgxv5.New(walkPool), &river.Config{})
-	// if err != nil {
-	// 	zap.L().Error("could not establish insert-only client")
-	// 	os.Exit(1)
-	// }
 
 	// Start the work clients
 	if err := fetchClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.")
 		os.Exit(42)
+	}
+
+	// start the round-robin queues
+	for n := range workerCount {
+		queueName := fmt.Sprintf("%s-%d", ThisServiceName, n)
+		fetchClient, err = river.NewClient(riverpgxv5.New(fetchPool), &river.Config{
+			Queues: map[string]river.QueueConfig{
+				queueName: {MaxWorkers: int(workerCount)},
+			},
+			// FetchCooldown: time.Duration(n*50) * time.Millisecond,
+			Workers: workers,
+		})
+		if err != nil {
+			zap.L().Error("could not establish worker pool", zap.Int64("pool number", n))
+			log.Println(err)
+			os.Exit(1)
+		}
+		// Start the work clients
+		if err := fetchClient.Start(ctx); err != nil {
+			zap.L().Error("workers are not the means of production. exiting.")
+			os.Exit(42)
+		}
 	}
 }

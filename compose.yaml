@@ -53,7 +53,7 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
-    restart: no
+    restart: always
 
 
   #-----------------------------------------------------
@@ -97,7 +97,7 @@ services:
       DEBUG_LEVEL: debug
       GIN_MODE: debug
       SCHEDULE: ${SCHEDULE:-""}
-    restart: no
+    restart: always
 
   #-----------------------------------------------------
   # extract :10002
@@ -137,7 +137,7 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
-    restart: no
+    restart: always
 
   #-----------------------------------------------------
   # fetch :10003
@@ -176,7 +176,7 @@ services:
       API_KEY: lego
       DEBUG_LEVEL: debug
       GIN_MODE: release
-    restart: no
+    restart: always
 
   #-----------------------------------------------------
   # pack :10004
@@ -210,7 +210,7 @@ services:
       DEBUG_LEVEL: "debug"
       GIN_MODE: debug
       PORT: 8888
-    restart: no
+    restart: always
 
   #-----------------------------------------------------
   # serve :10000
@@ -252,7 +252,7 @@ services:
       DEBUG_LEVEL: "warn"
       PORT: 8888
       GIN_MODE: release
-    restart: no
+    restart: always
 
   #-----------------------------------------------------
   # validate :10005
@@ -286,7 +286,7 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
-    restart: no
+    restart: always
 
   #-----------------------------------------------------
   # walk :10006
@@ -320,7 +320,7 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
-    restart: no
+    restart: always
 
   #-----------------------------------------------------
   # river queue watcher :11111

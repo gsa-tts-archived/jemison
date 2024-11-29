@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"net/http"
 	"os"
 
-	common "github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/gin-gonic/gin"
-	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -31,17 +29,23 @@ func FetchRequestHandler(c *gin.Context) {
 	if fri.ApiKey == os.Getenv("API_KEY") {
 		zap.L().Debug("api enqueue", zap.String("host", fri.Host), zap.String("path", fri.Path))
 
-		if fetchClient == nil {
-			zap.L().Error("fetchClient IS NIL")
-		}
+		// if fetchClient == nil {
+		// 	zap.L().Error("fetchClient IS NIL")
+		// }
 
-		fetchClient.Insert(context.Background(), common.FetchArgs{
+		// fetchClient.Insert(context.Background(), common.FetchArgs{
+		// 	Scheme: fri.Scheme,
+		// 	Host:   fri.Host,
+		// 	Path:   fri.Path,
+		// }, &river.InsertOpts{
+		// 	Queue: "fetch",
+		// })
+		ChQSHP <- queueing.QSHP{
+			Queue:  "fetch",
 			Scheme: fri.Scheme,
 			Host:   fri.Host,
 			Path:   fri.Path,
-		}, &river.InsertOpts{
-			Queue: "fetch",
-		})
+		}
 
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"status": "ok",

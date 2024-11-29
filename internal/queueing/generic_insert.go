@@ -2,6 +2,7 @@ package queueing
 
 import (
 	"context"
+	"strings"
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/jackc/pgx/v5"
@@ -48,7 +49,15 @@ func Enqueue(ch_qshp <-chan QSHP) {
 	for {
 		qshp := <-ch_qshp
 		ctx, tx := common.CtxTx(pool)
-		switch qshp.Queue {
+
+		queue_to_match := "NONE"
+		if strings.Contains(qshp.Queue, "fetch") {
+			queue_to_match = "fetch"
+		} else {
+			queue_to_match = qshp.Queue
+		}
+
+		switch queue_to_match {
 
 		case "entree":
 			_, err := client.InsertTx(ctx, tx, common.EntreeArgs{

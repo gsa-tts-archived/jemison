@@ -226,8 +226,13 @@ func (w *WalkWorker) Work(ctx context.Context, job *river.Job[common.WalkArgs]) 
 		util.ToScheme(job.Args.Scheme),
 		job.Args.Host,
 		job.Args.Path)
-	s3json.Load()
-
+	err := s3json.Load()
+	if err != nil {
+		// Don't do anything if we can't load the S3.
+		// Quietly skip
+		// FIXME: log this in the future
+		return nil
+	}
 	// If we're here, we already fetched the content.
 	// So, add ourselves to the cache. Don't re-crawl ourselves
 	// FIXME: figure out if the scheme ends up in the JSON
