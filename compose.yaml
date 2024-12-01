@@ -176,6 +176,7 @@ services:
       API_KEY: lego
       DEBUG_LEVEL: debug
       GIN_MODE: release
+      SCHEDULE: ${SCHEDULE:-""}
     restart: always
 
   #-----------------------------------------------------

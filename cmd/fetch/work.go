@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -57,31 +58,47 @@ func randRange(min, max int) int64 {
 	return int64(rand.IntN(max-min)) + int64(min)
 }
 
-func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]) error {
-	// This is complex. Remember, there could be 100s of workers, and we could have
-	// multiple, independent `fetch` services running.
-	//
-	// First, we check to see if we're good to go.
-	// This is a synchronized map, and it looks at the host, asking if it has come through
-	// in less time than the PoliteSleep interval. If it is too soon, we are *not*
-	// good to go. So, we requeue.
+func stripHostToAscii(host string) string {
+	reg, _ := regexp.Compile("[^a-z]")
+	result := reg.ReplaceAllString(strings.ToLower(host), "")
+	return result
+}
 
-	if !Gateway.GoodToGo(job.Args.Host) {
-		// If this host is not good to go, reschedule it for some time in the future.
-		// jitter := time.Duration(randRange(-10, 10)) * time.Millisecond
-		// sleepyTime := Gateway.TimeRemaining(job.Args.Host) + jitter
-		// time.Sleep(sleepyTime)
-		// time.Sleep(time.Duration(randRange(50, 100)) * time.Millisecond)
-		nextPool := RoundRobinWorkerPool.Load()
+func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]) error {
+
+	// Have we seen them before?
+	if Gateway.HostExists(job.Args.Host) {
+		// If we have, and it is too soon, send them to their queue.
+		zap.L().Debug("host exists")
+		if !Gateway.GoodToGo(job.Args.Host) {
+			zap.L().Debug("not good to go")
+			asciiHost := stripHostToAscii(job.Args.Host)
+			asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
+			ChQSHP <- queueing.QSHP{
+				Queue:  asciiQueueName,
+				Scheme: job.Args.Scheme,
+				Host:   job.Args.Host,
+				Path:   job.Args.Path,
+			}
+			// We queued them elsewhere, so this job is done and done right.
+			return nil
+		}
+		zap.L().Debug("good to go")
+		// If they are good to go, just let them run through and be worked.
+	} else {
+		// They do not exist. So, we should add them in to the gateway,
+		// and then requeue, so that they are in their own queue.
+		zap.L().Debug("host does not exist",
+			zap.String("host", job.Args.Host))
+		Gateway.GoodToGo(job.Args.Host)
+		asciiHost := stripHostToAscii(job.Args.Host)
+		asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
 		ChQSHP <- queueing.QSHP{
-			Queue:  fmt.Sprintf("fetch-%d", nextPool),
+			Queue:  asciiQueueName,
 			Scheme: job.Args.Scheme,
 			Host:   job.Args.Host,
 			Path:   job.Args.Path,
 		}
-		nextPool = (nextPool + 1) % RoundRobinSize
-		RoundRobinWorkerPool.Store(nextPool)
-		return nil
 	}
 
 	// If we are good to go, it means that we got the lock, and the time has elapsed

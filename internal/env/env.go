@@ -131,7 +131,6 @@ func InitGlobalEnv(this_service string) {
 	viper.BindEnv("PORT")
 
 	// Grab the schedule
-
 	Env.Schedule = config.GetTheSchedule()
 	log.Println("Setting Schedule: ", Env.Schedule)
 

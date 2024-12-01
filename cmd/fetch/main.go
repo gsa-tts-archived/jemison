@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"sync/atomic"
 	"time"
 
 	common "github.com/GSA-TTS/jemison/internal/common"
@@ -11,6 +10,7 @@ import (
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -25,8 +25,7 @@ var QDB *work_db.QueueDB
 
 var ChQSHP = make(chan queueing.QSHP)
 
-var RoundRobinWorkerPool atomic.Int64
-var RoundRobinSize int64
+var Workers *river.Workers
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -59,8 +58,6 @@ func main() {
 
 	go queueing.Enqueue(ChQSHP)
 	go queueing.ClearCompletedPeriodically()
-
-	RoundRobinWorkerPool.Store(0)
 
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))

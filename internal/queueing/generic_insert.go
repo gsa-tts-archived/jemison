@@ -51,7 +51,7 @@ func Enqueue(ch_qshp <-chan QSHP) {
 		ctx, tx := common.CtxTx(pool)
 
 		queue_to_match := "NONE"
-		if strings.Contains(qshp.Queue, "fetch") {
+		if strings.HasPrefix(qshp.Queue, "fetch") {
 			queue_to_match = "fetch"
 		} else {
 			queue_to_match = qshp.Queue

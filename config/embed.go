@@ -55,6 +55,19 @@ func GetScheduleFromHost(host string) string {
 	return hostSections[host]
 }
 
+func GetListOfHosts() []string {
+	sched := GetTheSchedule()
+	zap.L().Debug("reading in hosts", zap.String("schedule", sched))
+	cfg := ReadJsonConfig(sched)
+	hosts := make([]string, 0)
+	for _, section := range gjson.Parse(cfg).Get("@keys").Array() {
+		for _, site := range gjson.Get(cfg, section.String()).Array() {
+			hosts = append(hosts, site.Get("host").String())
+		}
+	}
+	return hosts
+}
+
 func SectionToTimestamp(section string, start_time time.Time) time.Time {
 	switch section {
 	case "daily":
