@@ -47,7 +47,7 @@ local parameters = [
     'results_per_query',
     { cf: 10, container: 10 },
   ],
-];
+] + B.parameters;
 
 {
   creds:: [[service] + x for x in credentials],

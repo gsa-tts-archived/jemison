@@ -81,20 +81,28 @@ func CreatePackTable(dbFilename string) (*PackTable, error) {
 	// https://phiresky.github.io/blog/2020/sqlite-performance-tuning/
 	_, err = db.Exec("pragma journal_mode = WAL")
 	if err != nil {
-		zap.L().Error("pragma fail on sqlite")
+		zap.L().Error("pragma fail journal_mode", zap.String("err", err.Error()))
 	}
 	_, err = db.Exec("pragma synchronous = normal")
 	if err != nil {
-		zap.L().Error("pragma fail on sqlite")
+		zap.L().Error("pragma fail synchronous", zap.String("err", err.Error()))
 	}
 	_, err = db.Exec("pragma temp_store = file")
 	if err != nil {
-		zap.L().Error("pragma fail on sqlite")
+		zap.L().Error("pragma fail temp_store", zap.String("err", err.Error()))
 	}
-	_, err = db.Exec("pragma temp_store_directory = /home/vcap/app/tmp")
-	if err != nil {
-		zap.L().Error("pragma fail on sqlite")
-	}
+
+	// path := "/home/vcap/app/tmp"
+	// if _, err := os.Stat(path); os.IsNotExist(err) {
+	// 	err := os.Mkdir(path, os.ModeDir)
+	// 	if err != nil {
+	// 		zap.L().Error("could not create tmp directory for sqlite", zap.String("err", err.Error()))
+	// 	}
+	// }
+	// _, err = db.Exec(fmt.Sprintf("pragma temp_store_directory = %s", path))
+	// if err != nil {
+	// 	zap.L().Error("pragma fail temp_store_directory", zap.String("err", err.Error()))
+	// }
 
 	// We don't have much RAM. No.
 	//db.Exec("pragma mmap_size = 30000000000")

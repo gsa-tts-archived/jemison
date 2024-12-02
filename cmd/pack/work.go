@@ -19,6 +19,8 @@ import (
 	"go.uber.org/zap"
 )
 
+type Ping struct{}
+
 func getSpaceAvailable() uint64 {
 	var stat syscall.Statfs_t
 
@@ -56,7 +58,7 @@ func PackTheDatabase(host string) {
 	// Calculate size
 	var size int64 = 0
 	for _, s3obj := range list_of_objects {
-		zap.L().Debug("size", zap.String("key", s3obj.Key), zap.Int64("size", s3obj.Size))
+		//zap.L().Debug("size", zap.String("key", s3obj.Key), zap.Int64("size", s3obj.Size))
 		size += s3obj.Size
 	}
 	available := getSpaceAvailable()
@@ -98,6 +100,8 @@ func PackTheDatabase(host string) {
 	pt.PrepForNetwork()
 }
 
+var limit = make(chan Ping, 1)
+
 // We get pings on domains as they go through
 // When the timer fires, we queue that domain to the finalize queue.
 func FinalizeTimer(in <-chan string) {
@@ -107,7 +111,9 @@ func FinalizeTimer(in <-chan string) {
 	s, _ := env.Env.GetUserService("pack")
 	TIMEOUT_DURATION := time.Duration(s.GetParamInt64("packing_timeout_seconds")) * time.Second
 	zap.L().Debug("finalize starting timer")
-	timeout := time.NewTimer(TIMEOUT_DURATION)
+
+	// How often should we check? Once per minute?
+	timeout := time.NewTicker(1 * time.Minute)
 
 	for {
 		select {
@@ -121,35 +127,47 @@ func FinalizeTimer(in <-chan string) {
 		case <-timeout.C:
 			// Every <timeout> seconds, we'll see if anyone has a clock that is greater,
 			// which will mean nothing has come through recently.
+			last_update := time.Now()
+			next_to_pack := "NONE"
+
 			for host, clock := range clocks {
-				if time.Since(clock) > TIMEOUT_DURATION {
-
-					PHL.Lock(host)
-					PackTheDatabase(host)
-					sqlite_filename := sqlite.SqliteFilename(host)
-					s3 := kv.NewS3("serve")
-					err := s3.FileToS3Path(sqlite_filename, sqlite_filename, util.SQLite3.String())
-					if err != nil {
-						zap.L().Fatal("pack could not store to file",
-							zap.String("sqlite_filename", sqlite_filename),
-							zap.String("err", err.Error()))
-					}
-					os.Remove(sqlite_filename)
-					PHL.Unlock(host)
-
-					// Enqueue next steps
-					ChQSHP <- queueing.QSHP{
-						Queue:    "serve",
-						Filename: sqlite_filename,
-					}
-
-					delete(clocks, host)
-					runtime.GC()
+				if time.Since(clock) > TIMEOUT_DURATION && clock.Before(last_update) {
+					last_update = clock
+					next_to_pack = host
 				}
 			}
+
+			if next_to_pack != "NONE" {
+				// Only pack one DB at a time.
+				limit <- Ping{}
+				sqlite_filename := sqlite.SqliteFilename(next_to_pack)
+
+				zap.L().Info("locking for pack", zap.String("host", next_to_pack))
+				PackTheDatabase(next_to_pack)
+
+				s3 := kv.NewS3("serve")
+				err := s3.FileToS3Path(sqlite_filename, sqlite_filename, util.SQLite3.String())
+				if err != nil {
+					zap.L().Fatal("pack could not store to file",
+						zap.String("sqlite_filename", sqlite_filename),
+						zap.String("err", err.Error()))
+				}
+				os.Remove(sqlite_filename)
+
+				<-limit
+				zap.L().Info("unlocked", zap.String("host", next_to_pack))
+
+				// Enqueue next steps
+				ChQSHP <- queueing.QSHP{
+					Queue:    "serve",
+					Filename: sqlite_filename,
+				}
+
+				delete(clocks, next_to_pack)
+				runtime.GC()
+
+			}
 		}
-		//zap.L().Debug("finalize reset")
-		timeout.Reset(TIMEOUT_DURATION)
 	}
 }
 

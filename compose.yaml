@@ -184,10 +184,11 @@ services:
   #-----------------------------------------------------
   pack:
     image: jemison/dev
+    #privileged: true
     build: 
       context: .
       dockerfile: ./cmd/pack/Dockerfile
-    entrypoint: /home/vcap/app/cmd/pack/service.exe
+    entrypoint: /home/vcap/app/cmd/pack/run.sh
     volumes:
       - type: bind
         source: .

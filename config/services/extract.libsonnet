@@ -29,7 +29,7 @@ local parameters = [
     'walkabout',
     { cf: true, container: true },
   ],
-];
+] + B.parameters;
 
 {
   creds:: [[service] + x for x in credentials],

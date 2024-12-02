@@ -7,6 +7,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GSA-TTS/jemison/internal/env"
@@ -15,12 +16,18 @@ import (
 	"go.uber.org/zap"
 )
 
+var s3cache sync.Map
+
 // NewS3FromBucketName creates an S3 object containing bucket information
 // from VCAP and a minio client ready to talk to the bucket. S3JSON objects
 // carry the information so they can load/save.
 func newS3FromBucketName(bucket_name string) S3 {
 	if !env.IsValidBucketName(bucket_name) {
 		log.Fatal("KV INVALID BUCKET NAME ", bucket_name)
+	}
+
+	if v, ok := s3cache.Load(bucket_name); ok {
+		return v.(S3)
 	}
 
 	s3 := S3{}
@@ -65,9 +72,9 @@ func newS3FromBucketName(bucket_name string) S3 {
 
 	found, err := minioClient.BucketExists(ctx, s3.Bucket.CredentialString("bucket"))
 	if err != nil {
-		//log.Println("KV could not check if bucket exists ", bucket_name)
-		//log.Fatal(err)
-		zap.L().Fatal("could not check if bucket exists", zap.String("bucket_name", bucket_name))
+		zap.L().Fatal("could not check if bucket exists",
+			zap.String("bucket_name", bucket_name),
+			zap.String("err", err.Error()))
 	}
 
 	if found {
@@ -78,6 +85,7 @@ func newS3FromBucketName(bucket_name string) S3 {
 		// Make sure to insert the metadata into the sync.Map
 		// when we find a bucket that already exists.
 		// buckets.Store(bucket_name, s3)
+		s3cache.Store(bucket_name, s3)
 		return s3
 	}
 
@@ -96,6 +104,7 @@ func newS3FromBucketName(bucket_name string) S3 {
 		}
 	} // Skip container creation in CF
 
+	s3cache.Store(bucket_name, s3)
 	return s3
 }
 

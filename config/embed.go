@@ -42,10 +42,10 @@ func GetYamlFileReader(yamlFilename string) *bytes.Reader {
 	return bytes.NewReader(yaml_bytes)
 }
 
-func GetScheduleFromHost(host string) string {
+func GetScheduleFromHost(host string, schedule string) string {
 	// This cannot come from the Env, because that would be a circular import.
 	// So, this is a big FIXME.
-	cfg := ReadJsonConfig(GetTheSchedule())
+	cfg := ReadJsonConfig(schedule)
 	hostSections := make(map[string]string, 0)
 	for _, section := range gjson.Parse(cfg).Get("@keys").Array() {
 		for _, site := range gjson.Get(cfg, section.String()).Array() {
@@ -55,10 +55,9 @@ func GetScheduleFromHost(host string) string {
 	return hostSections[host]
 }
 
-func GetListOfHosts() []string {
-	sched := GetTheSchedule()
-	zap.L().Debug("reading in hosts", zap.String("schedule", sched))
-	cfg := ReadJsonConfig(sched)
+func GetListOfHosts(schedule string) []string {
+	zap.L().Debug("reading in hosts", zap.String("schedule", schedule))
+	cfg := ReadJsonConfig(schedule)
 	hosts := make([]string, 0)
 	for _, section := range gjson.Parse(cfg).Get("@keys").Array() {
 		for _, site := range gjson.Get(cfg, section.String()).Array() {
@@ -88,9 +87,9 @@ func SectionToTimestamp(section string, start_time time.Time) time.Time {
 	}
 }
 
-func HostToPgTimestamp(host string, start_time time.Time) pgtype.Timestamp {
-	schedule := GetScheduleFromHost(host)
-	return SectionToPgTimestamp(schedule, start_time)
+func HostToPgTimestamp(host string, schedule string, start_time time.Time) pgtype.Timestamp {
+	sched := GetScheduleFromHost(host, schedule)
+	return SectionToPgTimestamp(sched, start_time)
 }
 
 func SectionToPgTimestamp(section string, start_time time.Time) pgtype.Timestamp {

@@ -21,7 +21,7 @@ local parameters = [
     'polite_sleep',
     { cf: 2, container: 2 },
   ],
-];
+] + B.parameters;
 
   // [
   //   'polite_cache_default_expiration',

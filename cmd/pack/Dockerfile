@@ -9,6 +9,6 @@ WORKDIR /home/vcap/app/cmd/pack
 RUN make container_build
 RUN chmod 755 /home/vcap/app/cmd/pack/run.sh
 
-CMD ["/home/vcap/app/cmd/pack/run-fast.sh"]
+CMD ["/home/vcap/app/cmd/pack/run.sh"]
 
 

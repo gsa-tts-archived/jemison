@@ -36,21 +36,21 @@ SELECT EXISTS(SELECT 1::bool FROM guestbook WHERE host = $1);
 -- This is likely called by `fetch`
 -- name: UpdateGuestbookFetch :one
 INSERT INTO guestbook
-  -- 1       2     3        4             -           5
-  (scheme, host, path, last_updated, last_fetched, next_fetch)
+  -- 1       2     3        4             5               6             7            -              8
+  (scheme, host, path, content_sha1, content_length, content_type, last_updated, last_fetched, next_fetch)
   VALUES 
   -- always insert three seconds in the past
   -- this way, if we check too fast, we're guaranteed to see
   -- that we last fetched it in the past.
-  ($1, $2, $3, $4, NOW()+make_interval(secs => -3), $5)
+  ($1, $2, $3, $4, $5, $6, $7, NOW()+make_interval(secs => -3), $8)
   ON CONFLICT (host, path) DO UPDATE
   SET
     scheme = EXCLUDED.scheme,
     host = EXCLUDED.host,
     path = EXCLUDED.path,
-    content_sha1 = EXCLUDED.content_sha1,
-    content_length = EXCLUDED.content_length,
-    content_type = EXCLUDED.content_type,
+    content_sha1 = COALESCE($4, EXCLUDED.content_sha1),
+    content_length = COALESCE($5, EXCLUDED.content_length),
+    content_type = COALESCE($6, EXCLUDED.content_type),
     last_updated = EXCLUDED.last_updated,
     last_fetched = EXCLUDED.last_fetched,
     next_fetch = EXCLUDED.next_fetch

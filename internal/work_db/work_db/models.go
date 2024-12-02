@@ -8,11 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type ContentType struct {
-	ID          int32       `json:"id"`
-	ContentType pgtype.Text `json:"content_type"`
-}
-
 type Guestbook struct {
 	ID            int64            `json:"id"`
 	Scheme        string           `json:"scheme"`
@@ -20,7 +15,7 @@ type Guestbook struct {
 	Path          string           `json:"path"`
 	ContentSha1   pgtype.Text      `json:"content_sha1"`
 	ContentLength pgtype.Int4      `json:"content_length"`
-	ContentType   pgtype.Int4      `json:"content_type"`
+	ContentType   pgtype.Text      `json:"content_type"`
 	LastUpdated   pgtype.Timestamp `json:"last_updated"`
 	LastFetched   pgtype.Timestamp `json:"last_fetched"`
 	NextFetch     pgtype.Timestamp `json:"next_fetch"`

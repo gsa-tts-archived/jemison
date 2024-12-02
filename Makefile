@@ -18,7 +18,7 @@ config:
 	cd config ; make all || exit 1
 
 docker: 
-	docker build -t jemison/dev -f Dockerfile.base .
+	docker build -t jemison/dev -f Dockerfile.dev .
 	docker build -t jemison/build -f Dockerfile.build .
 
 .PHONY: build

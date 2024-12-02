@@ -12,10 +12,11 @@ CREATE TABLE IF NOT EXISTS hosts (
   UNIQUE(host)
 );
 
-CREATE TABLE IF NOT EXISTS content_types (
-  id INTEGER generated always as identity primary key,
-  content_type TEXT
-);
+-- CREATE TABLE IF NOT EXISTS content_types (
+--   id INTEGER generated always as identity primary key,
+--   content_type TEXT
+--   UNIQUE(content_type)
+-- );
 
 CREATE TABLE IF NOT EXISTS guestbook (
   id BIGINT generated always as identity primary key,
@@ -24,10 +25,11 @@ CREATE TABLE IF NOT EXISTS guestbook (
   path TEXT NOT NULL,
   content_sha1 TEXT,
   content_length INTEGER,
-  content_type INTEGER references content_types(id),
+  content_type TEXT,
   last_updated TIMESTAMP NOT NULL,
   last_fetched TIMESTAMP NOT NULL,
   next_fetch TIMESTAMP NOT NULL,
+  -- FIXME: Add ETag
   UNIQUE (host, path)
 );
 

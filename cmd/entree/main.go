@@ -29,8 +29,8 @@ func main() {
 
 	log.Println("environment initialized")
 
-	HostIdMap = upsertUniqueHosts()
-	crontab()
+	HostIdMap = upsertUniqueHosts(env.Env.Schedule)
+	crontab(env.Env.Schedule)
 
 	WDB = work_db.NewGuestbookDB()
 	QDB = work_db.NewQueueDB()

@@ -69,7 +69,6 @@ func EntreeRequestHandler(c *gin.Context) {
 			zap.Bool("full", fullB),
 			zap.Bool("hallpass", hallPassB))
 
-		// queueing.InsertEntree(fri.Scheme, fri.Host, fri.Path, fullB, hallPassB)
 		ChQSHP <- queueing.QSHP{
 			Queue:      "entree",
 			Scheme:     fri.Scheme,
@@ -77,6 +76,29 @@ func EntreeRequestHandler(c *gin.Context) {
 			Path:       fri.Path,
 			IsFull:     fullB,
 			IsHallPass: hallPassB,
+		}
+		c.IndentedJSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
+	}
+}
+
+func PackRequestHandler(c *gin.Context) {
+	var fri FetchRequestInput
+
+	if err := c.BindJSON(&fri); err != nil {
+		return
+	}
+	if fri.ApiKey == os.Getenv("API_KEY") || true {
+
+		zap.L().Debug("pack enqueue",
+			zap.String("host", fri.Host))
+
+		ChQSHP <- queueing.QSHP{
+			Queue:  "pack",
+			Scheme: fri.Scheme,
+			Host:   fri.Host,
+			Path:   fri.Path,
 		}
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"status": "ok",
@@ -95,6 +117,7 @@ func main() {
 		v1.GET("/heartbeat", common.Heartbeat)
 		v1.PUT("/fetch", FetchRequestHandler)
 		v1.PUT("/entree/:fullorone/:hallpass", EntreeRequestHandler)
+		v1.PUT("/pack", PackRequestHandler)
 		// v1.GET("/jobs", JobCountHandler)
 	}
 

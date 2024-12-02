@@ -30,6 +30,19 @@ func packHtml(pt *sqlite.PackTable, s3json *kv.S3JSON) {
 			zap.String("title", s3json.GetString("title")))
 	}
 
+	// Insert the headers
+	_, err = pt.Queries.InsertHeader(pt.Context, schemas.InsertHeaderParams{
+		PathID: path_id,
+		// FIXME: There's a level hiding in here...
+		Header: s3json.GetString("header"),
+	})
+	if err != nil {
+		zap.L().Error("could not insert header when packing",
+			zap.String("_key", s3json.GetString("_key")),
+			zap.String("err", err.Error()),
+			zap.String("header", s3json.GetString("header")))
+	}
+
 	// Insert the content
 	body := s3json.GetString("body")
 	_, err = pt.Queries.InsertBody(pt.Context, schemas.InsertBodyParams{

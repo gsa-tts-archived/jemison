@@ -29,7 +29,7 @@ local parameters = [
     'polite_cache_cleanup_interval',
     { cf: B.minutes(120), container: B.minutes(120) },
   ],
-];
+] + B.parameters;
 
 {
   creds:: [[service] + x for x in credentials],

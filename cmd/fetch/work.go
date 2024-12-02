@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -179,11 +180,22 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			lastModified = t
 		}
 	}
+
+	cl, err := strconv.Atoi(page_json["content-length"])
+	if err != nil {
+		zap.L().Warn("could not convert length to int",
+			zap.String("host", job.Args.Host),
+			zap.String("path", job.Args.Path))
+	}
+
 	WDB.Queries.UpdateNextFetch(work_db.FetchUpdateParams{
-		Scheme:       job.Args.Scheme,
-		Host:         job.Args.Host,
-		Path:         job.Args.Path,
-		LastModified: lastModified,
+		Scheme:        job.Args.Scheme,
+		Host:          job.Args.Host,
+		Path:          job.Args.Path,
+		LastModified:  lastModified,
+		ContentLength: int64(cl),
+		ContentType:   page_json["content-type"],
+		ContentSha1:   page_json["sha1"],
 	})
 
 	zap.L().Info("fetched", zap.String("host", job.Args.Host), zap.String("path", job.Args.Path))

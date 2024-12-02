@@ -9,6 +9,7 @@ RUN apt-get update \
     libpoppler-glib-dev \
     poppler-utils \
     software-properties-common \
+    s3fs \
     tree \
     wget 
 
@@ -48,6 +49,11 @@ WORKDIR /go_install
 RUN rm -rf /usr/local/go \
     && wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz \
     && tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
+
+WORKDIR /mountpoint
+RUN wget https://s3.amazonaws.com/mountpoint-s3-release/latest/x86_64/mount-s3.deb \
+    && dpkg -i mount-s3.deb
+
 
 ENV PATH=$PATH:/usr/local/go/bin:/root/go/bin
 RUN go install golang.org/x/tools/cmd/goimports@latest    

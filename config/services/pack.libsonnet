@@ -11,11 +11,11 @@ local credentials = [
 local parameters = [
   [
     'workers',
-    { cf: 10, container: 10 },
+    { cf: 10, container: 5 },
   ],
   [
     'debug_level',
-    { cf: 'warn', container: 'info' },
+    { cf: 'warn', container: 'debug' },
   ],
   [
     # This used to be really critical, because the packer was 
@@ -24,9 +24,9 @@ local parameters = [
     # multiple times, it is OK. Also, we won't build more than once
     # every "timeout seconds," so really it is more of a flush.
     'packing_timeout_seconds',
-    { cf: B.minutes(3), container: B.minutes(2) },
+    { cf: B.minutes(3), container: 15 },
   ],
-];
+] + B.parameters;
 
 {
   creds:: [[service] + x for x in credentials],

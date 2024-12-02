@@ -17,7 +17,7 @@ local parameters = [
     'debug_level',
     { cf: 'warn', container: 'warn' },
   ],
-];
+] + B.parameters;
 
 {
   creds:: [[service] + x for x in credentials],

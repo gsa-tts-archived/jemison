@@ -12,10 +12,13 @@ import (
 )
 
 type FetchUpdateParams struct {
-	Scheme       string
-	Host         string
-	Path         string
-	LastModified time.Time
+	Scheme        string
+	Host          string
+	Path          string
+	LastModified  time.Time
+	ContentSha1   string
+	ContentLength int64
+	ContentType   string
 }
 
 func GetWorkDbQueryContext() (context.Context, *pgx.Conn, *Queries) {
@@ -44,13 +47,44 @@ func (q *Queries) UpdateNextFetch(params FetchUpdateParams) {
 			zap.String("path", params.Path))
 	}
 
-	schedule := config.GetScheduleFromHost(params.Host)
+	schedule := config.GetScheduleFromHost(params.Host, env.Env.Schedule)
 
 	zap.L().Debug("schedule for host",
 		zap.String("host", params.Host),
 		zap.String("schedule", schedule))
 
-	next_fetch := config.HostToPgTimestamp(params.Host, time.Now())
+	// Prep for nulls...
+	contentsha1 := pgtype.Text{
+		Valid: false,
+	}
+	if len(params.ContentSha1) > 0 {
+		contentsha1 = pgtype.Text{
+			String: params.ContentSha1,
+			Valid:  true,
+		}
+	}
+
+	contenttype := pgtype.Text{
+		Valid: false,
+	}
+	if len(params.ContentSha1) > 0 {
+		contenttype = pgtype.Text{
+			String: params.ContentType,
+			Valid:  true,
+		}
+	}
+
+	contentlength := pgtype.Int4{
+		Valid: false,
+	}
+	if params.ContentLength != 0 {
+		contentlength = pgtype.Int4{
+			Valid: true,
+			Int32: int32(params.ContentLength),
+		}
+	}
+
+	next_fetch := config.HostToPgTimestamp(params.Host, env.Env.Schedule, time.Now())
 	q.UpdateGuestbookFetch(ctx, UpdateGuestbookFetchParams{
 		Scheme: params.Scheme,
 		Host:   host_id,
@@ -60,6 +94,20 @@ func (q *Queries) UpdateNextFetch(params FetchUpdateParams) {
 			InfinityModifier: 0,
 			Valid:            true,
 		},
-		NextFetch: next_fetch,
+		ContentSha1:   contentsha1,
+		ContentLength: contentlength,
+		ContentType:   contenttype,
+		NextFetch:     next_fetch,
 	})
 }
+
+/*
+	arg.Scheme,
+	arg.Host,
+	arg.Path,
+	arg.ContentSha1,
+	arg.ContentLength,
+	arg.ContentType,
+	arg.LastUpdated,
+	arg.NextFetch,
+*/

@@ -29,22 +29,22 @@ Month        | Yes        | 1-12 or JAN-DEC | * / , -
 Day of week  | Yes        | 0-6 or SUN-SAT  | * / , - ?
 */
 
-func crontab() {
+func crontab(schedule string) {
 	c := cron.New()
 	// https://crontab.guru/#*_*_*_*_*
-	err := c.AddFunc("0 * * * * *", section("minutely"))
+	err := c.AddFunc("0 * * * * *", section("minutely", schedule))
 	if err != nil {
 		zap.L().Error("failed to add crontab in entree")
 	}
-	err = c.AddFunc("@hourly", section("hourly"))
+	err = c.AddFunc("@hourly", section("hourly", schedule))
 	if err != nil {
 		zap.L().Error("failed to add crontab in entree")
 	}
 	c.Start()
 }
 
-func section(section string) func() {
-	JSON := config.ReadJsonConfig(config.GetTheSchedule())
+func section(section string, schedule string) func() {
+	JSON := config.ReadJsonConfig(schedule)
 	return func() {
 		zap.L().Debug(section)
 		for _, site := range gjson.Get(JSON, section).Array() {
@@ -62,8 +62,8 @@ func section(section string) func() {
 	}
 }
 
-func upsertUniqueHosts() map[string]int64 {
-	JSON := config.ReadJsonConfig(config.GetTheSchedule())
+func upsertUniqueHosts(schedule string) map[string]int64 {
+	JSON := config.ReadJsonConfig(schedule)
 	hostSections := make(map[string]string)
 	uniqueHosts := make(map[string]int64)
 
