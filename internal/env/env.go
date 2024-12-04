@@ -21,6 +21,8 @@ var DEBUG_ENV = false
 const QueueDatabase = "jemison-queues-db"
 const JemisonWorkDatabase = "jemison-work-db"
 
+var SearchDatabases = []string{"s0"}
+
 var validBucketNames = []string{
 	"extract",
 	"fetch",
@@ -180,7 +182,10 @@ func InitGlobalEnv(this_service string) {
 	SetGinReleaseMode(this_service)
 
 	// Grab the schedule
-	s, _ := Env.GetUserService(this_service)
+	s, err := Env.GetUserService(this_service)
+	if err != nil {
+		log.Println("could not get service for ", this_service)
+	}
 	Env.Schedule = s.GetParamString("schedule")
 	log.Println("Setting Schedule: ", Env.Schedule)
 

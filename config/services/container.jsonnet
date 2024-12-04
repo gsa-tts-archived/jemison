@@ -2,6 +2,7 @@ local A = import 'admin.libsonnet';
 local EN = import 'entree.libsonnet';
 local EX = import 'extract.libsonnet';
 local F = import 'fetch.libsonnet';
+local M = import 'migrate.libsonnet';
 local P = import 'pack.libsonnet';
 local S = import 'serve.libsonnet';
 local V = import 'validate.libsonnet';
@@ -22,6 +23,7 @@ local VCAP = import 'vcap_services.libsonnet';
       EN.container,
       EX.container,
       F.container,
+      M.container,
       P.container,
       S.container,
       V.container,
@@ -33,6 +35,7 @@ local VCAP = import 'vcap_services.libsonnet';
     [
       ['jemison-queues-db', 'jemison-queues-db', 5432],
       ['jemison-work-db', 'jemison-work-db', 5432],
+      ['s0', 's0', 5432],
     ]
   ),
 }

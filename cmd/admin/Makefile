@@ -10,6 +10,7 @@ check:
 generate:
 	cd ../../internal/sqlite ; sqlc generate || exit 1
 	cd ../../internal/work_db ; sqlc generate || exit 1
+	cd ../../internal/search_db ; sqlc generate || exit 1
 
 build: clean generate
 	go build -buildvcs=false -o service.exe

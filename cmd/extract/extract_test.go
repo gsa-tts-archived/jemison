@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"iter"
 	"log"
 	"os"
@@ -54,12 +55,12 @@ func Map[T, U any](seq iter.Seq[T], f func(T) U) iter.Seq[U] {
 
 func TestExtractHeaders(t *testing.T) {
 	pt := setup(t, "headers.db")
-	path_id, err := pt.Queries.InsertPath(pt.Context, "/constitution")
+	path_id, err := pt.Queries.InsertPath(context.Background(), "/constitution")
 	if err != nil {
 		t.Error(err)
 	}
 
-	_, err = pt.Queries.InsertTitle(pt.Context, schemas.InsertTitleParams{
+	_, err = pt.Queries.InsertTitle(context.Background(), schemas.InsertTitleParams{
 		PathID: path_id,
 		Title:  "The Constitution",
 	})
@@ -81,7 +82,7 @@ func TestExtractHeaders(t *testing.T) {
 	for tag, headers := range H {
 		lvl := _getLevel(tag)
 		for _, h := range headers {
-			id, err := pt.Queries.InsertHeader(pt.Context, schemas.InsertHeaderParams{
+			id, err := pt.Queries.InsertHeader(context.Background(), schemas.InsertHeaderParams{
 				PathID: path_id,
 				Level:  lvl,
 				Header: h,
@@ -94,7 +95,7 @@ func TestExtractHeaders(t *testing.T) {
 	}
 
 	search_params := schemas.NewSearch("north")
-	res, _ := pt.Queries.Search(pt.Context, search_params)
+	res, _ := pt.Queries.Search(context.Background(), search_params)
 	found := false
 	for _, r := range res {
 		if strings.Contains(r.Snippet, "north") && strings.Contains(r.Snippet, "carolina") {

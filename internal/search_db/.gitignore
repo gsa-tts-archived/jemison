@@ -1,0 +1,8 @@
+schemas/db.*
+schemas/models.*
+schemas/query.*
+pg_schemas/*
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*

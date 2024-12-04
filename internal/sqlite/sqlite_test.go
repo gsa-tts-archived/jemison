@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"fmt"
 	"math/rand/v2"
 	"os"
@@ -36,7 +37,7 @@ func TestCreateTable(t *testing.T) {
 
 func TestInsertPath(t *testing.T) {
 	pt := setup(t, "one_path.db")
-	id, _ := pt.Queries.InsertPath(pt.Context, "/a")
+	id, _ := pt.Queries.InsertPath(context.Background(), "/a")
 	assert.Equal(t, 1, id)
 	pt.PrepForNetwork()
 }
@@ -46,7 +47,7 @@ func TestInsertPath(t *testing.T) {
 func TestInsertManyPaths(t *testing.T) {
 	pt := setup(t, "many_paths.db")
 	for i := range 100 {
-		id, _ := pt.Queries.InsertPath(pt.Context, fmt.Sprintf("/path/%d", i+1))
+		id, _ := pt.Queries.InsertPath(context.Background(), fmt.Sprintf("/path/%d", i+1))
 		assert.Equal(t, i+1, id)
 	}
 	pt.PrepForNetwork()
@@ -54,7 +55,7 @@ func TestInsertManyPaths(t *testing.T) {
 
 func TestInsertOneTitle(t *testing.T) {
 	pt := open(t, "many_paths.db")
-	pt.Queries.InsertTitle(pt.Context, schemas.InsertTitleParams{
+	pt.Queries.InsertTitle(context.Background(), schemas.InsertTitleParams{
 		PathID: 1,
 		Title:  strings.ToLower("The Most Incredible wind windy winding Title"),
 	})
@@ -62,7 +63,7 @@ func TestInsertOneTitle(t *testing.T) {
 
 func TestInsertBadTitle(t *testing.T) {
 	pt := open(t, "many_paths.db")
-	_, err := pt.Queries.InsertTitle(pt.Context, schemas.InsertTitleParams{
+	_, err := pt.Queries.InsertTitle(context.Background(), schemas.InsertTitleParams{
 		PathID: 0,
 		Title:  strings.ToLower("The Most Incredible Title"),
 	})
@@ -77,7 +78,7 @@ func TestInsertManyTitles(t *testing.T) {
 	babbler.Count = 3
 	babbler.Separator = " "
 	for ndx := range 100 {
-		id, err := pt.Queries.InsertTitle(pt.Context, schemas.InsertTitleParams{
+		id, err := pt.Queries.InsertTitle(context.Background(), schemas.InsertTitleParams{
 			PathID: int64(ndx + 1),
 			Title:  strings.ToLower(fmt.Sprintf("Title Number %d: "+babbler.Babble(), ndx+2)),
 		})
@@ -100,7 +101,7 @@ func TestInsertManyHeaders(t *testing.T) {
 		}
 
 		for range rand.IntN(6) {
-			_, err := pt.Queries.InsertHeader(pt.Context, schemas.InsertHeaderParams{
+			_, err := pt.Queries.InsertHeader(context.Background(), schemas.InsertHeaderParams{
 				PathID: int64(ndx + 1),
 				Level:  int64(rand.IntN(6) + 1),
 				Header: fmt.Sprintf("%s Title Number %d: "+babbler.Babble(), windy, ndx+2),
@@ -119,7 +120,7 @@ func TestInsertContent(t *testing.T) {
 	babbler.Separator = " "
 	pt := open(t, "many_paths.db")
 	for ndx := range 100 {
-		id, err := pt.Queries.InsertBody(pt.Context, schemas.InsertBodyParams{
+		id, err := pt.Queries.InsertBody(context.Background(), schemas.InsertBodyParams{
 			PathID: int64(rand.IntN(90) + 1),
 			Body:   strings.ToLower(babbler.Babble()),
 			Tag:    "p",
@@ -133,7 +134,7 @@ func TestInsertContent(t *testing.T) {
 
 func TestSearch(t *testing.T) {
 	pt := open(t, "many_paths.db")
-	r, err := pt.Queries.Search(pt.Context, schemas.NewSearch("wind*"))
+	r, err := pt.Queries.Search(context.Background(), schemas.NewSearch("wind*"))
 	if err != nil {
 		t.Error(err)
 	}

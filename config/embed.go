@@ -67,6 +67,22 @@ func GetListOfHosts(schedule string) []string {
 	return hosts
 }
 
+func GetHostBackend(host, schedule string) string {
+	cfg := ReadJsonConfig(schedule)
+	backend := "postgres"
+	for _, section := range gjson.Parse(cfg).Get("@keys").Array() {
+		for _, site := range gjson.Get(cfg, section.String()).Array() {
+			if host == site.Get("host").String() {
+				b := site.Get("backend").String()
+				if b == "sqlite" || b == "postgres" {
+					backend = b
+				}
+			}
+		}
+	}
+	return backend
+}
+
 func SectionToTimestamp(section string, start_time time.Time) time.Time {
 	switch section {
 	case "daily":

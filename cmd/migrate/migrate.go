@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"log"
 	"net/url"
 
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/postgres"
@@ -15,22 +16,32 @@ import (
 // Carry our migrations with us as part of the build.
 // This eliminates wondering where they are when we deploy.
 //
-//go:embed db/migrations/*.sql
-var fs embed.FS
+//go:embed work_db/db/migrations/*.sql
+var workFS embed.FS
+
+//go:embed search_db/db/migrations/*.sql
+var searchFS embed.FS
+
+type location struct {
+	FS            embed.FS
+	MigrationsDir string
+}
 
 // Assumes config has been read
-func MigrateJemisonDB() {
+func MigrateDB(dbUri string, loc location) {
 
-	db1_url, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
+	db1_url, err := env.Env.GetDatabaseUrl(dbUri)
 	if err != nil {
-		zap.L().Fatal("could not get url for jemison-work-db")
+		zap.L().Fatal("could not get url for",
+			zap.String("URI", dbUri))
 	}
 
 	u, _ := url.Parse(db1_url)
 	db := dbmate.New(u)
-	db.FS = fs
+	db.FS = loc.FS
+	db.MigrationsDir = []string{loc.MigrationsDir}
 
-	fmt.Println("Migrations:")
+	log.Println("Migrations:")
 	migrations, err := db.FindMigrations()
 	if err != nil {
 		panic(err)
@@ -39,9 +50,29 @@ func MigrateJemisonDB() {
 		fmt.Println(m.Version, m.FilePath)
 	}
 
-	fmt.Println("\nApplying...")
+	log.Println("\nApplying...")
 	err = db.CreateAndMigrate()
 	if err != nil {
 		panic(err)
+	}
+}
+
+func MigrateJemisonDB() {
+	dbs := make(map[string]location)
+
+	dbs[env.JemisonWorkDatabase] = location{
+		FS:            workFS,
+		MigrationsDir: "work_db/db/migrations",
+	}
+
+	for _, db := range env.SearchDatabases {
+		dbs[db] = location{
+			FS:            searchFS,
+			MigrationsDir: "search_db/db/migrations",
+		}
+	}
+
+	for k, v := range dbs {
+		MigrateDB(k, v)
 	}
 }

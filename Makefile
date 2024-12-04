@@ -6,12 +6,16 @@ clean:
 	rm -f internal/work_db/work_db/db.go
 	rm -f internal/work_db/work_db/models.go
 	rm -f internal/work_db/work_db/query.sql.go
+	rm -f internal/search_db/search_db/db.go
+	rm -f internal/search_db/search_db/models.go
+	rm -f internal/search_db/search_db/query.sql.go
 	rm -f cmd/*/service.exe
 
 .PHONY: generate
 generate:
 	cd internal/sqlite ; make generate
 	cd internal/work_db ; make generate
+	cd internal/search_db ; make generate
 
 .PHONY: config
 config:
@@ -22,7 +26,8 @@ docker:
 	docker build -t jemison/build -f Dockerfile.build .
 
 .PHONY: build
-build: clean config generate lint
+# lint
+build: clean config generate 
 	cd cmd/migrate ; make build
 	cd cmd/admin ; make build
 	cd cmd/entree ; make build

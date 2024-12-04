@@ -3,7 +3,8 @@
       {
          "host": "www.fac.gov",
          "path": "/",
-         "scheme": "https"
+         "scheme": "https",
+         "backend": "postgres"
       },
       {
          "host": "cloud.gov",

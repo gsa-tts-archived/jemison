@@ -2,13 +2,11 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"runtime"
-	"strings"
-	"syscall"
 	"time"
 
+	"github.com/GSA-TTS/jemison/config"
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/kv"
@@ -18,89 +16,6 @@ import (
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
-
-type Ping struct{}
-
-func getSpaceAvailable() uint64 {
-	var stat syscall.Statfs_t
-
-	err := syscall.Statfs("/", &stat)
-	if err != nil {
-		zap.L().Fatal("could not get disk space for packing")
-	}
-
-	// Available space in bytes
-	availableBytes := stat.Bavail * uint64(stat.Bsize)
-	return availableBytes
-}
-
-func optionalSlash(path string) string {
-	if strings.HasSuffix(path, "/") {
-		return path
-	} else {
-		return path + "/"
-	}
-}
-
-func PackTheDatabase(host string) {
-
-	// Look into the "extract" bucket and get a
-	// list of all the objects there.
-	s3 := kv.NewS3("extract")
-
-	list_of_objects, err := s3.List(optionalSlash(host))
-	if err != nil {
-		zap.L().Fatal("could not list objects",
-			zap.String("bucket", "extract"),
-			zap.String("host", host))
-	}
-
-	// Calculate size
-	var size int64 = 0
-	for _, s3obj := range list_of_objects {
-		//zap.L().Debug("size", zap.String("key", s3obj.Key), zap.Int64("size", s3obj.Size))
-		size += s3obj.Size
-	}
-	available := getSpaceAvailable()
-	if (float64(size) * 1.1) > float64(available) {
-		// If we have more to pack than is available on the machine
-		// 1) we're in trouble
-		// 2) we want to send this back to the queue.
-		//
-		// FIXME: Add a client to queue this back for ourselves.
-		zap.L().Warn("not enough space to pack the database",
-			zap.Float64("database size", float64(size)), zap.Float64("available", float64(available)))
-		return
-	}
-
-	pt, err := sqlite.CreatePackTable(sqlite.SqliteFilename(host))
-	if err != nil {
-		log.Println("Could not create pack table for", host)
-		log.Fatal(err)
-	}
-
-	for _, s3obj := range list_of_objects {
-		s3json, err := s3.S3PathToS3JSON(s3obj.Key)
-		if err != nil {
-			zap.L().Error("could not fetch object for packing",
-				zap.String("key", s3json.Key.Render()))
-		}
-
-		contentType := s3json.GetString("content-type")
-		switch contentType {
-		case "text/html":
-			packHtml(pt, s3json)
-		case "application/pdf":
-			packPdf(pt, s3json)
-		}
-	}
-
-	// Cleanup time.
-	pt.DB.Close()
-	pt.PrepForNetwork()
-}
-
-var limit = make(chan Ping, 1)
 
 // We get pings on domains as they go through
 // When the timer fires, we queue that domain to the finalize queue.
@@ -113,7 +28,7 @@ func FinalizeTimer(in <-chan string) {
 	zap.L().Debug("finalize starting timer")
 
 	// How often should we check? Once per minute?
-	timeout := time.NewTicker(1 * time.Minute)
+	timeout := time.NewTicker(10 * time.Second)
 
 	for {
 		select {
@@ -138,34 +53,38 @@ func FinalizeTimer(in <-chan string) {
 			}
 
 			if next_to_pack != "NONE" {
-				// Only pack one DB at a time.
-				limit <- Ping{}
+				backend := config.GetHostBackend(next_to_pack, env.Env.Schedule)
+				// limit <- Ping{}
+				// FIXME: This only applies if it is an SQLite DB...
 				sqlite_filename := sqlite.SqliteFilename(next_to_pack)
 
-				zap.L().Info("locking for pack", zap.String("host", next_to_pack))
-				PackTheDatabase(next_to_pack)
-
-				s3 := kv.NewS3("serve")
-				err := s3.FileToS3Path(sqlite_filename, sqlite_filename, util.SQLite3.String())
-				if err != nil {
-					zap.L().Fatal("pack could not store to file",
-						zap.String("sqlite_filename", sqlite_filename),
-						zap.String("err", err.Error()))
+				switch backend {
+				case "sqlite":
+					// Only pack one DB at a time.
+					zap.L().Info("locking for pack", zap.String("host", next_to_pack))
+					PackSqliteDatabase(next_to_pack)
+					s3 := kv.NewS3("serve")
+					err := s3.FileToS3Path(sqlite_filename, sqlite_filename, util.SQLite3.String())
+					if err != nil {
+						zap.L().Fatal("pack could not send file to s3",
+							zap.String("sqlite_filename", sqlite_filename),
+							zap.String("err", err.Error()))
+					}
+					os.Remove(sqlite_filename)
+					zap.L().Info("unlocked", zap.String("host", next_to_pack))
+				case "postgres":
+					zap.L().Info("writing search data to postgres")
+					PackPostgresDatabase(next_to_pack)
 				}
-				os.Remove(sqlite_filename)
-
-				<-limit
-				zap.L().Info("unlocked", zap.String("host", next_to_pack))
+				// <-limit
 
 				// Enqueue next steps
 				ChQSHP <- queueing.QSHP{
 					Queue:    "serve",
 					Filename: sqlite_filename,
 				}
-
 				delete(clocks, next_to_pack)
 				runtime.GC()
-
 			}
 		}
 	}

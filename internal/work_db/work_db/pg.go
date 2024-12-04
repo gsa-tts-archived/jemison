@@ -23,6 +23,13 @@ type QueueDB struct {
 	Pool   *pgxpool.Pool
 }
 
+type SearchDB struct {
+	Index   string
+	Queries *Queries
+	Config  *pgxpool.Config
+	Pool    *pgxpool.Pool
+}
+
 func NewGuestbookDB() *WorkDB {
 	db_string, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
 	if err != nil {
@@ -81,6 +88,35 @@ func NewQueueDB() *QueueDB {
 	return &QueueDB{
 		Config: cfg,
 		Pool:   pool,
+	}
+}
+
+func NewSearchDB(searchDB string) *SearchDB {
+	db_string, err := env.Env.GetDatabaseUrl(searchDB)
+	if err != nil {
+		zap.L().Fatal("could not get db URL for ", zap.String("searchDB", searchDB))
+	}
+
+	cfg := Config(db_string)
+	// Create database connection
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
+	if err != nil {
+		zap.L().Fatal("could not create pool",
+			zap.String("err", err.Error()))
+	}
+
+	err = pool.Ping(context.Background())
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
+
+	queries := New(pool)
+
+	return &SearchDB{
+		Index:   searchDB,
+		Queries: queries,
+		Config:  cfg,
+		Pool:    pool,
 	}
 }
 

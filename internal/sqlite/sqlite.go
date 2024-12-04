@@ -21,7 +21,6 @@ var ddl string
 type PackTable struct {
 	Filename     string
 	TempFilename string
-	Context      context.Context
 	DB           *sql.DB
 	Queries      *search_db.Queries
 }
@@ -32,8 +31,6 @@ func OpenPackTable(db_filename string) (*PackTable, error) {
 	pt := PackTable{}
 	pt.Filename = db_filename
 
-	ctx := context.Background()
-
 	// FIXME: Any params to the DB?
 	db, err := sql.Open("sqlite3", db_filename+"?_fk=true")
 	if err != nil {
@@ -43,7 +40,6 @@ func OpenPackTable(db_filename string) (*PackTable, error) {
 
 	queries := search_db.New(db)
 
-	pt.Context = ctx
 	pt.DB = db
 	pt.Queries = queries
 	return &pt, nil
@@ -92,30 +88,12 @@ func CreatePackTable(dbFilename string) (*PackTable, error) {
 		zap.L().Error("pragma fail temp_store", zap.String("err", err.Error()))
 	}
 
-	// path := "/home/vcap/app/tmp"
-	// if _, err := os.Stat(path); os.IsNotExist(err) {
-	// 	err := os.Mkdir(path, os.ModeDir)
-	// 	if err != nil {
-	// 		zap.L().Error("could not create tmp directory for sqlite", zap.String("err", err.Error()))
-	// 	}
-	// }
-	// _, err = db.Exec(fmt.Sprintf("pragma temp_store_directory = %s", path))
-	// if err != nil {
-	// 	zap.L().Error("pragma fail temp_store_directory", zap.String("err", err.Error()))
-	// }
-
-	// We don't have much RAM. No.
-	//db.Exec("pragma mmap_size = 30000000000")
-	// Unsure how this effects final filesize or performance on read.
-	// db.Exec("pragma page_size = 32768")
-	// create tables
 	if _, err := db.ExecContext(ctx, ddl); err != nil {
 		return nil, err
 	}
 
 	queries := search_db.New(db)
 
-	pt.Context = ctx
 	pt.DB = db
 	pt.Queries = queries
 
@@ -126,15 +104,15 @@ func (pt *PackTable) PrepForNetwork() {
 	// https://turso.tech/blog/something-you-probably-want-to-know-about-if-youre-using-sqlite-in-golang-72547ad625f1
 	db, _ := sql.Open("sqlite3", pt.TempFilename)
 	pt.DB = db
-	_, err := pt.DB.ExecContext(pt.Context, "PRAGMA wal_checkpoint(TRUNCATE)")
+	_, err := pt.DB.ExecContext(context.Background(), "PRAGMA wal_checkpoint(TRUNCATE)")
 	if err != nil {
 		zap.L().Error("pragma fail on prep for network truncate")
 	}
-	_, err = pt.DB.ExecContext(pt.Context, "PRAGMA vacuum")
+	_, err = pt.DB.ExecContext(context.Background(), "PRAGMA vacuum")
 	if err != nil {
 		zap.L().Error("pragma fail on prep for network vacuum")
 	}
-	_, err = pt.DB.ExecContext(pt.Context, "PRAGMA optimize")
+	_, err = pt.DB.ExecContext(context.Background(), "PRAGMA optimize")
 	if err != nil {
 		zap.L().Error("pragma fail on prep for network optimize")
 	}

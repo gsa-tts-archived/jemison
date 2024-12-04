@@ -31,39 +31,14 @@ services:
         condition: service_healthy
 
   #-----------------------------------------------------
-  # postgres - jemison-queues-db
+  # postgres common
   #-----------------------------------------------------
-  jemison-queues-db:
+  x-pg-common: &pg-common
     image: postgres:16-alpine
-    ports:
-      - 5432:5432
-    volumes:
-      - jemison-queues-db-vol:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
-      POSTGRES_HOST_AUTH_METHOD: "trust"
-    healthcheck:
-      # test: ["CMD-SHELL", "pg_isready", "-d", "postgres", "-U", "postgres"]
-      test: ["CMD-SHELL", "pg_isready -d postgres -U postgres"]
-      interval: 30s
-      timeout: 60s
-      retries: 5
-      start_period: 80s
-
-  #-----------------------------------------------------
-  # postgres - jemison-work-db
-  #-----------------------------------------------------
-  jemison-work-db:
-    image: postgres:16-alpine
-    ports:
-      - 6543:5432
-    volumes:
-      - jemison-work-db-vol:/var/lib/postgresql/data
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
-      POSTGRES_HOST_AUTH_METHOD: "trust"
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: "trust"
     healthcheck:
       # test: ["CMD-SHELL", "pg_isready", "-d", "postgres", "-U", "postgres"]
       test: ["CMD-SHELL", "pg_isready -d postgres -U postgres"]
@@ -71,6 +46,38 @@ services:
       timeout: 60s
       retries: 5
       start_period: 80s  
+
+  #-----------------------------------------------------
+  # postgres/jemison-queues-db :5432
+  #-----------------------------------------------------
+  jemison-queues-db:
+    <<: *pg-common
+    ports:
+      - 5432:5432
+    volumes:
+      - jemison-queues-db-vol:/var/lib/postgresql/data
+
+  #-----------------------------------------------------
+  # postgres/jemison-work-db :6543
+  #-----------------------------------------------------
+  jemison-work-db:
+    <<: *pg-common
+    ports:
+      - 6543:5432
+    volumes:
+      - jemison-work-db-vol:/var/lib/postgresql/data
+
+  #-----------------------------------------------------
+  # search s0 :7654
+  #-----------------------------------------------------
+  s0:
+    <<: *pg-common
+    ports:
+      - 7654:5432
+    volumes:
+      - jemison-s0:/var/lib/postgresql/data
+
+
 
   #-----------------------------------------------------
   # minio :9001
@@ -138,6 +145,7 @@ services:
 volumes:
   jemison-queues-db-vol:
   jemison-work-db-vol:
+  jemison-s0:
   data1-1:
   data1-2:
   data2-1:
