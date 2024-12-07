@@ -1,21 +1,17 @@
 .PHONY: clean
 clean:
-	rm -f internal/sqlite/schemas/db.go
-	rm -f internal/sqlite/schemas/models.go
-	rm -f internal/sqlite/schemas/query.sql.go
-	rm -f internal/work_db/work_db/db.go
-	rm -f internal/work_db/work_db/models.go
-	rm -f internal/work_db/work_db/query.sql.go
-	rm -f internal/search_db/search_db/db.go
-	rm -f internal/search_db/search_db/models.go
-	rm -f internal/search_db/search_db/query.sql.go
+	rm -f sql/work_db/schema/db.go
+	rm -f sql/work_db/schema/models.go
+	rm -f sql/work_db/schema/query.sql.go
+	rm -f sql/search_db/schema/db.go
+	rm -f sql/search_db/schema/models.go
+	rm -f sql/search_db/schema/query.sql.go
 	rm -f cmd/*/service.exe
 
 .PHONY: generate
 generate:
-	cd internal/sqlite ; make generate
-	cd internal/work_db ; make generate
-	cd internal/search_db ; make generate
+	cd sql/work_db ; make generate
+	# cd sql/search_db ; make generate
 
 .PHONY: config
 config:
@@ -28,15 +24,25 @@ docker:
 .PHONY: build
 # lint
 build: clean config generate 
+	echo "build migrate"
 	cd cmd/migrate ; make build
+	echo "build admin"
 	cd cmd/admin ; make build
+	echo "build entree"
 	cd cmd/entree ; make build
+	echo "build extract"
 	cd cmd/extract ; make build
+	echo "build fetch"
 	cd cmd/fetch ; make build
+	echo "build pack"
 	cd cmd/pack ; make build
+	echo "build serve"
 	cd cmd/serve ; make build
+	echo "build validate"
 	cd cmd/validate ; make build
+	echo "build walk"
 	cd cmd/walk ; make build
+	echo "copy assets"
 	cd assets ; rm -rf static/assets ; unzip -qq static.zip
 
 .PHONY: up

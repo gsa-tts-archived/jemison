@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/GSA-TTS/jemison/internal/queueing"
-	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
+	work_db "github.com/GSA-TTS/jemison/sql/work_db/schema"
 	"go.uber.org/zap"
 )
 
@@ -149,20 +149,6 @@ func IsFullNoPass(ec *EntreeCheck) bool {
 }
 
 // Support functions
-
-// func GetQ() (*work_db.Queries, context.Context, *pgx.Conn) {
-// 	ctx := context.Background()
-// 	db_string, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
-// 	if err != nil {
-// 		zap.L().Fatal("could not get db URL for work-db")
-// 	}
-// 	conn, err := pgx.Connect(ctx, db_string)
-// 	if err != nil {
-// 		zap.L().Fatal("could not connect to work-db")
-// 	}
-// 	queries := work_db.New(conn)
-// 	return queries, ctx, conn
-// }
 
 func isInGuestbook(ec *EntreeCheck) bool {
 	ctx := context.Background()

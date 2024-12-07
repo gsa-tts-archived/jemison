@@ -8,9 +8,8 @@ check:
 	staticcheck
 
 generate:
-	cd ../../internal/sqlite ; sqlc generate || exit 1
-	cd ../../internal/work_db ; sqlc generate || exit 1
-	cd ../../internal/search_db ; sqlc generate || exit 1
+	cd ../../sql/work_db ; sqlc generate || exit 1
+	cd ../../sql/search_db ; sqlc generate || exit 1
 
 # -tags=viper_bind_struct 
 build: generate

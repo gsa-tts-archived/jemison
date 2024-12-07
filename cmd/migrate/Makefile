@@ -7,10 +7,15 @@ test:
 check:
 	staticcheck
 
+copy:
+	cp -R ../../sql/search_db . 
+	cp -R ../../sql/work_db . 
+
 # -tags=viper_bind_struct 
-build: 
+build: clean copy
 	go build -buildvcs=false -o service.exe
 
 clean:
 	rm -f service.exe
-	rm -f schemas/*.go
+	rm -rf search_db
+	rm -rf work_db

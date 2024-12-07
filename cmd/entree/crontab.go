@@ -10,7 +10,7 @@ import (
 	"github.com/GSA-TTS/jemison/config"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/queueing"
-	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
+	work_db "github.com/GSA-TTS/jemison/sql/work_db/schema"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/robfig/cron"

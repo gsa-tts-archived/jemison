@@ -17,7 +17,7 @@ import (
 	kv "github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/util"
-	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
+	work_db "github.com/GSA-TTS/jemison/sql/work_db/schema"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )

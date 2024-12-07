@@ -8,8 +8,8 @@ check:
 	staticcheck
 
 generate:
-	cd ../../internal/sqlite ; sqlc generate || exit 1
-
+	echo "nothing to generate"
+	
 build: generate
 	go build -buildvcs=false -o service.exe
 

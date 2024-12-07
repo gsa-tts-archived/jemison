@@ -8,7 +8,7 @@ import (
 	common "github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/queueing"
-	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
+	work_db "github.com/GSA-TTS/jemison/sql/work_db/schema"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"

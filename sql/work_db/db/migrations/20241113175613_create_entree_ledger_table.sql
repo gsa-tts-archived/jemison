@@ -58,7 +58,7 @@ insert into tlds
 ---------------------------------------------------
 create table content_types (
   id integer not null,
-  content_type text not null
+  content_type text not null,
   unique(content_type)
 );
 
@@ -74,8 +74,9 @@ insert into content_types
 create table tags (
   id integer not null,
   tag text not null,
-  attr text null,
+  attr text,
   unique(tag)
+)
 ;
 
 insert into tags
@@ -85,15 +86,15 @@ insert into tags
   (2, 'p'),
   (3, 'div'),
   (4, 'h1'),
-  (5,'h2'),
-  (6,'h3'),
-  (7,'h4'),
-  (8,'h5'),
-  (9,'h6'),
-  (10,'a'),
-  (11,'div'),
-  (12,'th'),
-  (13,'td')
+  (5, 'h2'),
+  (6, 'h3'),
+  (7, 'h4'),
+  (8, 'h5'),
+  (9, 'h6'),
+  (10, 'a'),
+  (11, 'div'),
+  (12, 'th'),
+  (13, 'td')
   on conflict do nothing
 ;
 
@@ -104,6 +105,12 @@ insert into tags
   on conflict do nothing
 ;
 
+
+create function public.max_bigint()
+  returns bigint
+  language sql immutable parallel safe as
+'select 18446744073709551615';
+
 create table hosts (
   id bigint generated always as identity primary key,
   next_fetch timestamp not null,
@@ -112,8 +119,9 @@ create table hosts (
   unique(id),
   unique(domain),
   constraint domain64_domain 
-    check (domain64 > 0 and domain64 <= select(x'FFFFFFFFFFFFFFFF'))
-);
+    check (domain64 > 0 and domain64 <= max_bigint())
+)
+;
 
 create table guestbook (
   id bigint generated always as identity primary key,
@@ -131,10 +139,10 @@ create table guestbook (
 
 
 CREATE TABLE raw_content (
-  id PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  id bigint generated always as identity primary key,
   -- domain64 TEXT NOT NULL,
   -- path TEXT NOT NULL,
-  guestbook_id references guestbook(id) NOT NULL,
+  guestbook_id bigint references guestbook(id) NOT NULL,
   tag TEXT default 'p',
   content TEXT NOT NULL
 )

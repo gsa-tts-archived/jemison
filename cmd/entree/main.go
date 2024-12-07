@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 
+	work_db "github.com/GSA-TTS/jemison/cmd/migrate/work_db/schema"
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/queueing"
-	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
 	"go.uber.org/zap"
 )
 

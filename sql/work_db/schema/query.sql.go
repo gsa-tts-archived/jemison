@@ -12,10 +12,10 @@ import (
 )
 
 const checkEntryExistsInGuestbook = `-- name: CheckEntryExistsInGuestbook :one
-SELECT EXISTS(SELECT 1::bool FROM guestbook WHERE host = $1)
+select exists(select 1::bool from guestbook where host = $1)
 `
 
-func (q *Queries) CheckEntryExistsInGuestbook(ctx context.Context, host int64) (bool, error) {
+func (q *Queries) CheckEntryExistsInGuestbook(ctx context.Context, host int32) (bool, error) {
 	row := q.db.QueryRow(ctx, checkEntryExistsInGuestbook, host)
 	var exists bool
 	err := row.Scan(&exists)
@@ -23,13 +23,13 @@ func (q *Queries) CheckEntryExistsInGuestbook(ctx context.Context, host int64) (
 }
 
 const getGuestbookEntries = `-- name: GetGuestbookEntries :many
-SELECT path FROM guestbook 
-WHERE 
+select path from guestbook 
+where 
   host = $1
 `
 
-// Returns all the entries for a host
-func (q *Queries) GetGuestbookEntries(ctx context.Context, host int64) ([]string, error) {
+// returns all the entries for a host
+func (q *Queries) GetGuestbookEntries(ctx context.Context, host int32) ([]string, error) {
 	rows, err := q.db.Query(ctx, getGuestbookEntries, host)
 	if err != nil {
 		return nil, err
@@ -51,63 +51,62 @@ func (q *Queries) GetGuestbookEntries(ctx context.Context, host int64) ([]string
 
 const getGuestbookEntry = `-- name: GetGuestbookEntry :one
 
-  -- id BIGINT generated always as identity primary key,
-  -- scheme scheme NOT NULL,
-  -- host BIGINT references hosts(id) NOT NULL,
-  -- path TEXT NOT NULL,
-  -- content_sha1 TEXT,
-  -- content_length INTEGER,
-  -- content_type INTEGER references content_types(id),
-  -- last_updated TIMESTAMP NOT NULL,
-  -- last_fetched TIMESTAMP NOT NULL,
-  -- next_fetch TIMESTAMP NOT NULL,
-  -- UNIQUE (host, path)
+  -- id bigint generated always as identity primary key,
+  -- scheme scheme not null,
+  -- host bigint references hosts(id) not null,
+  -- path text not null,
+  -- content_sha1 text,
+  -- content_length integer,
+  -- content_type integer references content_types(id),
+  -- last_updated timestamp not null,
+  -- last_fetched timestamp not null,
+  -- next_fetch timestamp not null,
+  -- unique (host, path)
 
-SELECT id, scheme, host, path, content_sha1, content_length, content_type, last_updated, last_fetched, next_fetch FROM guestbook 
-WHERE 
+select id, last_modified, last_fetched, next_fetch, scheme, host, content_type, content_length, path from guestbook 
+where 
   host = $1 
-  AND
+  and
   path = $2
-  LIMIT 1
+  limit 1
 `
 
 type GetGuestbookEntryParams struct {
-	Host int64  `json:"host"`
+	Host int32  `json:"host"`
 	Path string `json:"path"`
 }
 
 // ------------------------------------------------------------
 // `guestbook` table
 // ------------------------------------------------------------
-// Returns a single guestbook entry
+// returns a single guestbook entry
 // based on the unique host/path combo.
 func (q *Queries) GetGuestbookEntry(ctx context.Context, arg GetGuestbookEntryParams) (Guestbook, error) {
 	row := q.db.QueryRow(ctx, getGuestbookEntry, arg.Host, arg.Path)
 	var i Guestbook
 	err := row.Scan(
 		&i.ID,
-		&i.Scheme,
-		&i.Host,
-		&i.Path,
-		&i.ContentSha1,
-		&i.ContentLength,
-		&i.ContentType,
-		&i.LastUpdated,
+		&i.LastModified,
 		&i.LastFetched,
 		&i.NextFetch,
+		&i.Scheme,
+		&i.Host,
+		&i.ContentType,
+		&i.ContentLength,
+		&i.Path,
 	)
 	return i, err
 }
 
 const getHostId = `-- name: GetHostId :one
-SELECT id FROM hosts WHERE host = $1
+select id from hosts where host = $1
 `
 
 // ------------------------------------------------------------
 // `host` table
 // ------------------------------------------------------------
-// Find a host ID
-func (q *Queries) GetHostId(ctx context.Context, host string) (int64, error) {
+// find a host id
+func (q *Queries) GetHostId(ctx context.Context, host pgtype.Text) (int64, error) {
 	row := q.db.QueryRow(ctx, getHostId, host)
 	var id int64
 	err := row.Scan(&id)
@@ -115,7 +114,7 @@ func (q *Queries) GetHostId(ctx context.Context, host string) (int64, error) {
 }
 
 const getHostNextFetch = `-- name: GetHostNextFetch :one
-SELECT next_fetch from hosts WHERE id = $1
+select next_fetch from hosts where id = $1
 `
 
 func (q *Queries) GetHostNextFetch(ctx context.Context, id int64) (pgtype.Timestamp, error) {
@@ -126,75 +125,76 @@ func (q *Queries) GetHostNextFetch(ctx context.Context, id int64) (pgtype.Timest
 }
 
 const setGuestbookFetchToYesterdayForHost = `-- name: SetGuestbookFetchToYesterdayForHost :exec
-UPDATE guestbook
-  SET 
-    next_fetch = NOW()+make_interval(days => -1)
-  WHERE
+update guestbook
+  set 
+    next_fetch = now()+make_interval(days => -1)
+  where
     host = $1
 `
 
-func (q *Queries) SetGuestbookFetchToYesterdayForHost(ctx context.Context, host int64) error {
+func (q *Queries) SetGuestbookFetchToYesterdayForHost(ctx context.Context, host int32) error {
 	_, err := q.db.Exec(ctx, setGuestbookFetchToYesterdayForHost, host)
 	return err
 }
 
 const setHostNextFetchToYesterday = `-- name: SetHostNextFetchToYesterday :exec
-UPDATE hosts
-  SET
-    next_fetch = NOW()+make_interval(days => -1)
-  WHERE
+update hosts
+  set
+    next_fetch = now()+make_interval(days => -1)
+  where
     host = $1
 `
 
-func (q *Queries) SetHostNextFetchToYesterday(ctx context.Context, host string) error {
+func (q *Queries) SetHostNextFetchToYesterday(ctx context.Context, host pgtype.Text) error {
 	_, err := q.db.Exec(ctx, setHostNextFetchToYesterday, host)
 	return err
 }
 
 const updateGuestbookFetch = `-- name: UpdateGuestbookFetch :one
-INSERT INTO guestbook
-  -- 1       2     3        4             5               6             7            -              8
-  (scheme, host, path, content_sha1, content_length, content_type, last_updated, last_fetched, next_fetch)
-  VALUES 
+insert into guestbook
+  -- 1       2     3        4
+  (scheme, host, path, content_length, 
+  --    5               6             7         8
+  content_type, last_modified, last_fetched, next_fetch)
+  values 
   -- always insert three seconds in the past
   -- this way, if we check too fast, we're guaranteed to see
   -- that we last fetched it in the past.
-  ($1, $2, $3, $4, $5, $6, $7, NOW()+make_interval(secs => -3), $8)
-  ON CONFLICT (host, path) DO UPDATE
-  SET
-    scheme = EXCLUDED.scheme,
-    host = EXCLUDED.host,
-    path = EXCLUDED.path,
-    content_sha1 = COALESCE($4, EXCLUDED.content_sha1),
-    content_length = COALESCE($5, EXCLUDED.content_length),
-    content_type = COALESCE($6, EXCLUDED.content_type),
-    last_updated = EXCLUDED.last_updated,
-    last_fetched = EXCLUDED.last_fetched,
-    next_fetch = EXCLUDED.next_fetch
-  RETURNING id
+  ($1, $2, $3, $4, $5, $6, $7, $8)
+  on conflict (host, path) do update
+  set
+    scheme = excluded.scheme,
+    host = excluded.host,
+    path = excluded.path,
+    content_length = coalesce($4, excluded.content_length),
+    content_type = coalesce($5, excluded.content_type),
+    last_modified = coalesce(excluded.last_updated),
+    last_fetched = now()+make_interval(secs => -3),
+    next_fetch = excluded.next_fetch
+  returning id
 `
 
 type UpdateGuestbookFetchParams struct {
-	Scheme        string           `json:"scheme"`
-	Host          int64            `json:"host"`
+	Scheme        int32            `json:"scheme"`
+	Host          int32            `json:"host"`
 	Path          string           `json:"path"`
-	ContentSha1   pgtype.Text      `json:"content_sha1"`
-	ContentLength pgtype.Int4      `json:"content_length"`
-	ContentType   pgtype.Text      `json:"content_type"`
-	LastUpdated   pgtype.Timestamp `json:"last_updated"`
+	ContentLength int32            `json:"content_length"`
+	ContentType   pgtype.Int4      `json:"content_type"`
+	LastModified  pgtype.Timestamp `json:"last_modified"`
+	LastFetched   pgtype.Timestamp `json:"last_fetched"`
 	NextFetch     pgtype.Timestamp `json:"next_fetch"`
 }
 
-// This is likely called by `fetch`
+// this is likely called by `fetch`
 func (q *Queries) UpdateGuestbookFetch(ctx context.Context, arg UpdateGuestbookFetchParams) (int64, error) {
 	row := q.db.QueryRow(ctx, updateGuestbookFetch,
 		arg.Scheme,
 		arg.Host,
 		arg.Path,
-		arg.ContentSha1,
 		arg.ContentLength,
 		arg.ContentType,
-		arg.LastUpdated,
+		arg.LastModified,
+		arg.LastFetched,
 		arg.NextFetch,
 	)
 	var id int64
@@ -203,34 +203,34 @@ func (q *Queries) UpdateGuestbookFetch(ctx context.Context, arg UpdateGuestbookF
 }
 
 const updateHostNextFetch = `-- name: UpdateHostNextFetch :one
-  --   CASE 
-  --     WHEN $1::TEXT = 'weekly' THEN NOW()+make_interval(weeks => 1, days => -1)
-  --     WHEN $1 = 'bi-weekly' THEN NOW()+make_interval(weeks => 2, days => -1)
-  --     WHEN $1 = 'monthly' THEN NOW()+make_interval(months => 1, days => -1)
-  --     WHEN $1 = 'bi-monthly' THEN NOW()+make_interval(months => 2, days => -1)
-  --     WHEN $1 = 'quarterly' THEN NOW()+make_interval(months=> 3, days => -1)
-  --   END)
+  --   case 
+  --     when $1::text = 'weekly' then now()+make_interval(weeks => 1, days => -1)
+  --     when $1 = 'bi-weekly' then now()+make_interval(weeks => 2, days => -1)
+  --     when $1 = 'monthly' then now()+make_interval(months => 1, days => -1)
+  --     when $1 = 'bi-monthly' then now()+make_interval(months => 2, days => -1)
+  --     when $1 = 'quarterly' then now()+make_interval(months=> 3, days => -1)
+  --   end)
   -- )
 
-INSERT INTO hosts
+insert into hosts
   (host, next_fetch)
-  VALUES ($1, $2)
-  ON CONFLICT (host)
-  WHERE host = $1
-  DO UPDATE
-    SET 
-      host = EXCLUDED.host,
-      next_fetch = EXCLUDED.next_fetch
-  RETURNING id
+  values ($1, $2)
+  on conflict (host)
+  where host = $1
+  do update
+    set 
+      host = excluded.host,
+      next_fetch = excluded.next_fetch
+  returning id
 `
 
 type UpdateHostNextFetchParams struct {
-	Host      string           `json:"host"`
+	Host      pgtype.Text      `json:"host"`
 	NextFetch pgtype.Timestamp `json:"next_fetch"`
 }
 
-// (SELECT
-// FIXM: This is the same as Upsert. Reduce to one function.
+// (select
+// fixm: this is the same as upsert. reduce to one function.
 func (q *Queries) UpdateHostNextFetch(ctx context.Context, arg UpdateHostNextFetchParams) (int64, error) {
 	row := q.db.QueryRow(ctx, updateHostNextFetch, arg.Host, arg.NextFetch)
 	var id int64
@@ -239,26 +239,26 @@ func (q *Queries) UpdateHostNextFetch(ctx context.Context, arg UpdateHostNextFet
 }
 
 const upsertUniqueHost = `-- name: UpsertUniqueHost :one
-INSERT INTO hosts 
+insert into hosts 
   (host, next_fetch) 
-  VALUES ($1, $2) 
-  -- See https://stackoverflow.com/a/37543015
-  -- This is a workaround; it forces the ` + "`" + `id` + "`" + ` to be 
+  values ($1, $2) 
+  -- see https://stackoverflow.com/a/37543015
+  -- this is a workaround; it forces the ` + "`" + `id` + "`" + ` to be 
   -- returned in all cases.
-  ON CONFLICT (host) DO UPDATE
-    SET host = EXCLUDED.host,
-    next_fetch = EXCLUDED.next_fetch
-  RETURNING id
+  on conflict (host) do update
+    set host = excluded.host,
+    next_fetch = excluded.next_fetch
+  returning id
 `
 
 type UpsertUniqueHostParams struct {
-	Host      string           `json:"host"`
+	Host      pgtype.Text      `json:"host"`
 	NextFetch pgtype.Timestamp `json:"next_fetch"`
 }
 
-// This gets used at startup. We walk the config
+// this gets used at startup. we walk the config
 // file and load the table with unique hosts, so that
-// we can use the IDs in the `guestbook` table.
+// we can use the ids in the `guestbook` table.
 func (q *Queries) UpsertUniqueHost(ctx context.Context, arg UpsertUniqueHostParams) (int64, error) {
 	row := q.db.QueryRow(ctx, upsertUniqueHost, arg.Host, arg.NextFetch)
 	var id int64

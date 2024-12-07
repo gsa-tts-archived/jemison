@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	work_db "github.com/GSA-TTS/jemison/cmd/migrate/work_db/schema"
 	"github.com/GSA-TTS/jemison/internal/env"
-	"github.com/GSA-TTS/jemison/internal/work_db/work_db"
 	"github.com/jackc/pgx/v5"
 	"github.com/zeebo/assert"
 	"go.uber.org/zap"

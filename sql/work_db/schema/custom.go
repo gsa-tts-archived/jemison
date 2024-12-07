@@ -84,6 +84,16 @@ func (q *Queries) UpdateNextFetch(params FetchUpdateParams) {
 		}
 	}
 
+	/*
+			Scheme        int32            `json:"scheme"`
+		Host          int32            `json:"host"`
+		Path          string           `json:"path"`
+		ContentLength int32            `json:"content_length"`
+		ContentType   pgtype.Int4      `json:"content_type"`
+		LastModified  pgtype.Timestamp `json:"last_modified"`
+		LastFetched   pgtype.Timestamp `json:"last_fetched"`
+		NextFetch     pgtype.Timestamp `json:"next_fetch"`
+	*/
 	next_fetch := config.HostToPgTimestamp(params.Host, env.Env.Schedule, time.Now())
 	q.UpdateGuestbookFetch(ctx, UpdateGuestbookFetchParams{
 		Scheme: params.Scheme,
@@ -94,7 +104,6 @@ func (q *Queries) UpdateNextFetch(params FetchUpdateParams) {
 			InfinityModifier: 0,
 			Valid:            true,
 		},
-		ContentSha1:   contentsha1,
 		ContentLength: contentlength,
 		ContentType:   contenttype,
 		NextFetch:     next_fetch,
