@@ -15,6 +15,12 @@ local domains = {
     },
     name: 'goarmy',
   },
+    '000003': {
+    children: {
+      '000001': 'www',
+    },
+    name: 'jadud',
+  },
 };
 
 assert assertions.validateDomains(domains);

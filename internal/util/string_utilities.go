@@ -1,6 +1,7 @@
 package util
 
 import (
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -101,4 +102,16 @@ func TrimSuffix(s, suffix string) string {
 	} else {
 		return s
 	}
+}
+
+func CanonicalizeURL(s string) (string, error) {
+	u, err := url.Parse(s)
+	if err != nil {
+		return "", err
+	}
+	u.Host = strings.ToLower(u.Host)
+	if len(u.Path) > 1 {
+		u.Path = strings.TrimSuffix(u.Path, "/")
+	}
+	return u.Host + u.Path, nil
 }

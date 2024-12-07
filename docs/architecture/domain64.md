@@ -14,7 +14,7 @@ FF:FFFFFF:FFFFFF:FF
 or
 
 ```
-tld:domain:subdomain:subsub
+tld:domain:subdomain:RESERVED
 ```
 
 This lets us track 
@@ -29,7 +29,9 @@ For example
 ```
 01:000001:000000:00 gov.gsa
 01:000001:000001:00 gov.gsa.tts
-01:000001:000002:00 gov.gsa.api
+01:000001:000002:00 gov.gsa.api.staging
+01:000001:000003:00 gov.gsa.api.prod
+
 ```
 
 Subdomains might be deeper: gov.nasa.`earthdata.uat.cdn`, for example. 
@@ -43,6 +45,7 @@ Subdomains might be deeper: gov.nasa.`earthdata.uat.cdn`, for example.
 ## for partitioning
 
 On a table that contains a `domain64` value, we can partition based on numeric ranges very efficiently.
+
 
 ```sql
 CREATE TABLE govgsa PARTITION OF gov
