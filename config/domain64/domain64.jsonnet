@@ -4,6 +4,7 @@ local mil = import 'mil.libsonnet';
 local net = import 'net.libsonnet';
 local edu = import 'edu.libsonnet';
 local org = import 'org.libsonnet';
+local schedules = import 'schedules.libsonnet';
 
 local assertion = import 'assertions.libsonnet';
 local util = import 'util.libsonnet';
@@ -43,6 +44,19 @@ local domain64ToFqdn(allFQDN, allDomain64) = {
   for pair in std.mapWithIndex(function(ndx, d64) [allFQDN[ndx], d64], allDomain64)
 };
 
+local fqdnToSchedule(tld, fqdns, schedules) = {
+  [pair[0]]: pair[1] 
+  for pair
+  in
+  std.filter(function(p) std.endsWith(p[0], tld), 
+  std.flattenArrays(
+  [
+    [[fqdn, key] for fqdn in schedules[key]]
+    for key in std.objectFields(schedules)
+  ]
+  ))
+};
+
 local tld_arr = ['gov', 'mil', 'com', 'net', 'edu', 'org'];
 local domain_arr = [gov.domains, mil.domains, com.domains, net.domains, edu.domains, org.domains];
 
@@ -53,6 +67,10 @@ local domain_arr = [gov.domains, mil.domains, com.domains, net.domains, edu.doma
     Domain64s: allDomain64(pair[0], pair[1]),
     FQDNToDomain64: fqdnToDomain64(self.FQDNs, self.Domain64s),
     Domain64ToFQDN: domain64ToFqdn(self.FQDNs, self.Domain64s),
+    Schedules: {
+      [d64]: schedules[d64]
+      for d64 in self.Domain64s
+    },
     assert assertion.andMap([std.length(d64) == 16 for d64 in allDomain64(pair[0], pair[1])]),
     assert assertion.andMap([assertion.validateDomains(domains) for domains in domain_arr])
   }

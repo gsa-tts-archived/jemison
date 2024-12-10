@@ -13,11 +13,13 @@ import (
 
 	_ "embed"
 
+	"github.com/GSA-TTS/jemison/config"
 	common "github.com/GSA-TTS/jemison/internal/common"
 	kv "github.com/GSA-TTS/jemison/internal/kv"
+	"github.com/GSA-TTS/jemison/internal/postgres/work_db"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/util"
-	work_db "github.com/GSA-TTS/jemison/sql/work_db/schema"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
@@ -188,15 +190,68 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			zap.String("path", job.Args.Path))
 	}
 
-	WDB.Queries.UpdateNextFetch(work_db.FetchUpdateParams{
-		Scheme:        job.Args.Scheme,
-		Host:          job.Args.Host,
-		Path:          job.Args.Path,
-		LastModified:  lastModified,
-		ContentLength: int64(cl),
-		ContentType:   page_json["content-type"],
-		ContentSha1:   page_json["sha1"],
-	})
+	scheme := JDB.GetScheme("https")
+	if err != nil {
+		zap.L().Error("could not fetch page scheme")
+		scheme = 1
+	}
+
+	contentType := JDB.GetContentType(page_json["content-type"])
+	if err != nil {
+		zap.L().Error("could not fetch page scheme")
+		scheme = 1
+	}
+
+	d64, err := config.FQDNToDomain64(job.Args.Host)
+	if err != nil {
+		zap.L().Error("could not find Domain64 for FQDN",
+			zap.String("fqdn", job.Args.Host))
+	}
+
+	schedule := config.GetSchedule(job.Args.Host)
+	delta := time.Duration(30 * 24 * time.Hour)
+	switch schedule {
+	case config.Daily:
+		delta = time.Duration(24 * time.Hour)
+	case config.Weekly:
+		delta = time.Duration(7 * 24 * time.Hour)
+	case config.BiWeekly:
+		delta = time.Duration(14 * 24 * time.Hour)
+	case config.Monthly:
+		// pass
+	case config.Quarterly:
+		delta = time.Duration(3 * 30 * 24 * time.Hour)
+	case config.BiAnnually:
+		delta = time.Duration(6 * 30 * 24 * time.Hour)
+	case config.Annually:
+		delta = time.Duration(12 * 30 * 24 * time.Hour)
+	default:
+		// pass
+	}
+	next_fetch := time.Now().Add(delta)
+
+	JDB.WorkDBQueries.UpdateGuestbookFetch(
+		context.Background(),
+		work_db.UpdateGuestbookFetchParams{
+			Scheme:        scheme,
+			Host:          d64,
+			Path:          job.Args.Path,
+			ContentLength: int32(cl),
+			ContentType: pgtype.Int4{
+				Valid: true,
+				Int32: int32(contentType),
+			},
+			LastModified: pgtype.Timestamp{
+				Valid:            true,
+				InfinityModifier: 0,
+				Time:             lastModified,
+			},
+			NextFetch: pgtype.Timestamp{
+				Valid:            true,
+				InfinityModifier: 0,
+				Time:             next_fetch,
+			},
+		})
 
 	zap.L().Info("fetched", zap.String("host", job.Args.Host), zap.String("path", job.Args.Path))
 	// A cute counter for the logs.

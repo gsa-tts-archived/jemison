@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/GSA-TTS/jemison/internal/env"
@@ -17,6 +18,7 @@ type JemisonDB struct {
 	Pool            map[string]*pgxpool.Pool
 	WorkDBQueries   *work_db.Queries
 	SearchDBQueries *search_db.Queries
+	constCache      sync.Map
 }
 
 func NewJemisonDB() *JemisonDB {
@@ -77,4 +79,37 @@ func Config(db_string string) *pgxpool.Config {
 	dbConfig.ConnConfig.ConnectTimeout = defaultConnectTimeout
 
 	return dbConfig
+}
+
+// The cache is a key/value store, so prepend
+// keys to avoid collisions. It should be impossible,
+// but still... that's the convention of these functions.
+func (jdb *JemisonDB) GetScheme(scheme string) int32 {
+	if val, ok := jdb.constCache.Load("scheme:" + scheme); ok {
+		return val.(int32)
+	} else {
+		scheme_int, err := jdb.WorkDBQueries.GetScheme(context.Background(), scheme)
+		if err != nil {
+			zap.L().Error("could not fetch scheme",
+				zap.String("scheme", scheme))
+			return 1
+		}
+		jdb.constCache.Store("scheme:"+scheme, int32(scheme_int))
+		return int32(scheme_int)
+	}
+}
+
+func (jdb *JemisonDB) GetContentType(ct string) int32 {
+	if val, ok := jdb.constCache.Load("contenttype:" + ct); ok {
+		return val.(int32)
+	} else {
+		ct_int, err := jdb.WorkDBQueries.GetContentType(context.Background(), ct)
+		if err != nil {
+			zap.L().Error("could not fetch content_type",
+				zap.String("content_type", ct))
+			return 1
+		}
+		jdb.constCache.Store("contenttype:"+ct, ct_int)
+		return ct_int
+	}
 }

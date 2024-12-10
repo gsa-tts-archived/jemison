@@ -1,0 +1,68 @@
+{
+   "ConstToContentType": {
+      "1": "binary/octet_stream",
+      "2": "text/html",
+      "3": "application/pdf"
+   },
+   "ConstToScheme": {
+      "1": "https",
+      "2": "http",
+      "3": "sftp",
+      "4": "ftp"
+   },
+   "ConstToTag": {
+      "1": "title",
+      "10": "a",
+      "11": "th",
+      "12": "td",
+      "2": "p",
+      "3": "div",
+      "4": "h1",
+      "5": "h2",
+      "6": "h3",
+      "7": "h4",
+      "8": "h5",
+      "9": "h6"
+   },
+   "ConstToTld": {
+      "1": "gov",
+      "2": "mil",
+      "3": "com",
+      "4": "edu",
+      "5": "net",
+      "6": "org"
+   },
+   "ContentTypeToConst": {
+      "application/pdf": 3,
+      "binary/octet_stream": 1,
+      "text/html": 2
+   },
+   "SchemeToConst": {
+      "ftp": 4,
+      "http": 2,
+      "https": 1,
+      "sftp": 3
+   },
+   "TagToConst": {
+      "a": 10,
+      "div": 3,
+      "h1": 4,
+      "h2": 5,
+      "h3": 6,
+      "h4": 7,
+      "h5": 8,
+      "h6": 9,
+      "p": 2,
+      "td": 12,
+      "th": 11,
+      "title": 1
+   },
+   "TldToConst": {
+      "com": 3,
+      "edu": 4,
+      "gov": 1,
+      "mil": 2,
+      "net": 5,
+      "org": 6
+   }
+}

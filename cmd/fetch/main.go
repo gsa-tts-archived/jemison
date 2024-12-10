@@ -7,8 +7,8 @@ import (
 
 	common "github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/postgres"
 	"github.com/GSA-TTS/jemison/internal/queueing"
-	work_db "github.com/GSA-TTS/jemison/sql/work_db/schema"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
@@ -20,8 +20,7 @@ var ThisServiceName = "fetch"
 var RetryClient *http.Client
 var Gateway *HostGateway
 
-var WDB *work_db.WorkDB
-var QDB *work_db.QueueDB
+var JDB = postgres.NewJemisonDB()
 
 var ChQSHP = make(chan queueing.QSHP)
 
@@ -54,7 +53,6 @@ func main() {
 	Gateway = NewHostGateway(time.Duration(PoliteSleep) * time.Second)
 
 	go InfoFetchCount()
-	WDB = work_db.NewGuestbookDB()
 
 	go queueing.Enqueue(ChQSHP)
 	go queueing.ClearCompletedPeriodically()

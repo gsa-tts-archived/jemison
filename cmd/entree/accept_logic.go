@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	work_db "github.com/GSA-TTS/jemison/internal/postgres/work_db"
 	"github.com/GSA-TTS/jemison/internal/queueing"
-	work_db "github.com/GSA-TTS/jemison/sql/work_db/schema"
 	"go.uber.org/zap"
 )
 
@@ -79,10 +79,9 @@ func EvaluateEntree(ec *EntreeCheck) {
 		// the page if we don't. This is true in each case.
 		// Fetch will update a second time.
 		WDB.Queries.UpdateNextFetch(work_db.FetchUpdateParams{
-			Scheme:       ec.Scheme,
-			Host:         ec.Host,
-			Path:         ec.Path,
-			LastModified: time.Now(),
+			Scheme: ec.Scheme,
+			Host:   ec.Host,
+			Path:   ec.Path,
 		})
 
 		ChQSHP <- queueing.QSHP{
