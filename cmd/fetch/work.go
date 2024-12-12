@@ -191,10 +191,6 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 	}
 
 	scheme := JDB.GetScheme("https")
-	if err != nil {
-		zap.L().Error("could not fetch page scheme")
-		scheme = 1
-	}
 
 	contentType := JDB.GetContentType(page_json["content-type"])
 	if err != nil {
@@ -208,39 +204,16 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			zap.String("fqdn", job.Args.Host))
 	}
 
-	schedule := config.GetSchedule(job.Args.Host)
-	delta := time.Duration(30 * 24 * time.Hour)
-	switch schedule {
-	case config.Daily:
-		delta = time.Duration(24 * time.Hour)
-	case config.Weekly:
-		delta = time.Duration(7 * 24 * time.Hour)
-	case config.BiWeekly:
-		delta = time.Duration(14 * 24 * time.Hour)
-	case config.Monthly:
-		// pass
-	case config.Quarterly:
-		delta = time.Duration(3 * 30 * 24 * time.Hour)
-	case config.BiAnnually:
-		delta = time.Duration(6 * 30 * 24 * time.Hour)
-	case config.Annually:
-		delta = time.Duration(12 * 30 * 24 * time.Hour)
-	default:
-		// pass
-	}
-	next_fetch := time.Now().Add(delta)
+	next_fetch := JDB.GetNextFetch(job.Args.Host)
 
 	JDB.WorkDBQueries.UpdateGuestbookFetch(
 		context.Background(),
 		work_db.UpdateGuestbookFetchParams{
 			Scheme:        scheme,
-			Host:          d64,
+			Domain64:      d64,
 			Path:          job.Args.Path,
 			ContentLength: int32(cl),
-			ContentType: pgtype.Int4{
-				Valid: true,
-				Int32: int32(contentType),
-			},
+			ContentType:   int32(contentType),
 			LastModified: pgtype.Timestamp{
 				Valid:            true,
 				InfinityModifier: 0,

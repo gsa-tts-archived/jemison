@@ -1,17 +1,12 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	_ "embed"
 
 	"github.com/GSA-TTS/jemison/config"
-	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/queueing"
-	work_db "github.com/GSA-TTS/jemison/sql/work_db/schema"
-	"github.com/jackc/pgx/v5"
 
 	"github.com/robfig/cron"
 	"github.com/tidwall/gjson"
@@ -60,53 +55,4 @@ func section(section string, schedule string) func() {
 			}
 		}
 	}
-}
-
-func upsertUniqueHosts(schedule string) map[string]int64 {
-	JSON := config.ReadJsonConfig(schedule)
-	hostSections := make(map[string]string)
-	uniqueHosts := make(map[string]int64)
-
-	ctx := context.Background()
-
-	db_string, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
-	if err != nil {
-		zap.L().Fatal("could not get db URL for DB1")
-	}
-	conn, err := pgx.Connect(ctx, db_string)
-	if err != nil {
-		zap.L().Fatal("could not connect to DB1")
-	}
-	defer conn.Close(ctx)
-
-	queries := work_db.New(conn)
-
-	for _, section := range gjson.Parse(JSON).Get("@keys").Array() {
-		for _, site := range gjson.Get(JSON, section.String()).Array() {
-			// We should never see a -1 in the host table. Not sure
-			// how else to do this. The following loop will either populate
-			// the value or fail.
-			hostSections[site.Get("host").String()] = section.String()
-		}
-	}
-
-	// Iterate through the set, and create a unique map of ... oh. I could have
-	// just created the map in the first place... FIXME later...
-	for h, section := range hostSections {
-		// The section is 'weekly', 'monthly', etc.
-		// zap.L().Debug("upserting", zap.String("host", h), zap.String("section", section))
-		next_fetch := config.SectionToPgTimestamp(section, time.Now())
-		id, err := queries.UpsertUniqueHost(ctx, work_db.UpsertUniqueHostParams{
-			NextFetch: next_fetch,
-			Host:      h,
-		})
-		if err != nil {
-			zap.L().Error("did not get `id` back for host",
-				zap.String("host", h),
-				zap.String("err", err.Error()))
-		}
-		uniqueHosts[h] = id
-	}
-
-	return uniqueHosts
 }

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GSA-TTS/jemison/config"
 	"github.com/GSA-TTS/jemison/internal/env"
 	search_db "github.com/GSA-TTS/jemison/internal/postgres/search_db"
 	work_db "github.com/GSA-TTS/jemison/internal/postgres/work_db"
@@ -112,4 +113,30 @@ func (jdb *JemisonDB) GetContentType(ct string) int32 {
 		jdb.constCache.Store("contenttype:"+ct, ct_int)
 		return ct_int
 	}
+}
+
+func (jdb *JemisonDB) GetNextFetch(fqdn string) time.Time {
+
+	schedule := config.GetSchedule(fqdn)
+	delta := time.Duration(30 * 24 * time.Hour)
+	switch schedule {
+	case config.Daily:
+		delta = time.Duration(24 * time.Hour)
+	case config.Weekly:
+		delta = time.Duration(7 * 24 * time.Hour)
+	case config.BiWeekly:
+		delta = time.Duration(14 * 24 * time.Hour)
+	case config.Monthly:
+		// pass
+	case config.Quarterly:
+		delta = time.Duration(3 * 30 * 24 * time.Hour)
+	case config.BiAnnually:
+		delta = time.Duration(6 * 30 * 24 * time.Hour)
+	case config.Annually:
+		delta = time.Duration(12 * 30 * 24 * time.Hour)
+	default:
+		// pass
+	}
+	next_fetch := time.Now().Add(delta)
+	return next_fetch
 }

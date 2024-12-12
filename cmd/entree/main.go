@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	work_db "github.com/GSA-TTS/jemison/cmd/migrate/work_db/schema"
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/postgres"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"go.uber.org/zap"
 )
@@ -17,8 +17,7 @@ var ThisServiceName = "entree"
 var HostIdMap = make(map[string]int64)
 var ChQSHP = make(chan queueing.QSHP)
 
-var WDB *work_db.WorkDB
-var QDB *work_db.QueueDB
+var JDB = postgres.NewJemisonDB()
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -29,11 +28,7 @@ func main() {
 
 	log.Println("environment initialized")
 
-	HostIdMap = upsertUniqueHosts(env.Env.Schedule)
 	crontab(env.Env.Schedule)
-
-	WDB = work_db.NewGuestbookDB()
-	QDB = work_db.NewQueueDB()
 
 	go queueing.Enqueue(ChQSHP)
 

@@ -64,6 +64,18 @@ func FQDNToDomain64(fqdn string) (int64, error) {
 	return int64(value), nil
 }
 
+func HexToDec64(hex string) (int64, error) {
+	value, err := strconv.ParseInt(hex, 16, 64)
+	if err != nil {
+		return 0, err
+	}
+	return value, nil
+}
+
+func Dec64ToHex(dec int64) string {
+	return fmt.Sprintf("%16x", dec)
+}
+
 func GetSchedule(fqdn string) Schedule {
 	primeCache()
 	tld, escaped, err := tldAndEscaped(fqdn)

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	work_db "github.com/GSA-TTS/jemison/cmd/migrate/work_db/schema"
 	"github.com/GSA-TTS/jemison/internal/env"
+	work_db "github.com/GSA-TTS/jemison/internal/postgres/work_db"
 	"github.com/jackc/pgx/v5"
 	"github.com/zeebo/assert"
 	"go.uber.org/zap"
@@ -141,16 +141,12 @@ func TestSetGuestbookFetchToYesterdayForHost(t *testing.T) {
 	// In this test, there are no entries.
 	SetGuestbookFetchToYesterdayForHost(ec)
 
-	q, ctx, conn := GetWorkDB()
+	_, ctx, conn := GetWorkDB()
 	defer conn.Close(ctx)
-	host_id, err := q.GetHostId(ctx, ec.Host)
-	if err != nil {
-		zap.L().Fatal("could not get host id", zap.String("host", ec.Host))
-	}
 
 	// See what we did to the DB.
 	rows, err := conn.Query(ctx,
-		`SELECT host, next_fetch FROM guestbook WHERE host = $1`, host_id)
+		`SELECT host, next_fetch FROM guestbook WHERE domain64 = $1`, ec.Domain64)
 	if err != nil {
 		t.Error(err)
 	}
@@ -167,22 +163,18 @@ func TestSetGuestbookFetchToYesterdayForHost2(t *testing.T) {
 	assert.True(t, IsFullWithPass(ec))
 
 	// Insert a guestbook entry to fake things
-	q, ctx, conn := GetWorkDB()
+	_, ctx, conn := GetWorkDB()
 	defer conn.Close(ctx)
-	host_id, err := q.GetHostId(ctx, ec.Host)
-	if err != nil {
-		zap.L().Fatal("could not get host id", zap.String("host", ec.Host))
-	}
 
 	// Delete everything from the guestbook for this test.
 	conn.Exec(ctx, "TRUNCATE guestbook")
 
-	_, err = conn.Exec(ctx,
+	_, err := conn.Exec(ctx,
 		`INSERT INTO guestbook
-		(scheme, host, path, last_updated, last_fetched, next_fetch)
+		(scheme, domain64, path, last_updated, last_fetched, next_fetch)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		`,
-		"https", host_id, "/",
+		"https", ec.Domain64, "/",
 		time.Now(), time.Now(), time.Now().Add(time.Duration(3*24*time.Hour)))
 
 	if err != nil {
@@ -195,7 +187,7 @@ func TestSetGuestbookFetchToYesterdayForHost2(t *testing.T) {
 
 	// See what we did to the DB.
 	rows, err := conn.Query(ctx,
-		`SELECT host, next_fetch FROM guestbook WHERE host = $1`, host_id)
+		`SELECT host, next_fetch FROM guestbook WHERE domain64 = $1`, ec.Domain64)
 	if err != nil {
 		t.Error(err)
 	}
@@ -208,7 +200,7 @@ func TestSetGuestbookFetchToYesterdayForHost2(t *testing.T) {
 			t.Error(err)
 		}
 		log.Println("HR", hr)
-		assert.Equal(t, hr.Id, host_id)
+		assert.Equal(t, hr.Id, ec.Domain64)
 		assert.True(t, time.Now().After(hr.NextFetch))
 	}
 
@@ -216,7 +208,7 @@ func TestSetGuestbookFetchToYesterdayForHost2(t *testing.T) {
 	_, err = conn.Exec(ctx,
 		`DELETE FROM guestbook
 			WHERE
-	  		host = $1`, host_id)
+	  		domain64 = $1`, ec.Domain64)
 	if err != nil {
 		t.Error(err)
 	}

@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/GSA-TTS/jemison/config"
 	work_db "github.com/GSA-TTS/jemison/internal/postgres/work_db"
 	"github.com/GSA-TTS/jemison/internal/queueing"
+	"github.com/jackc/pgx/v5/pgtype"
 	"go.uber.org/zap"
 )
 
@@ -20,7 +21,7 @@ type EntreeCheck struct {
 	HallPass bool
 	Scheme   string
 	Host     string
-	HostId   int64
+	Domain64 int64
 	Path     string
 }
 
@@ -28,13 +29,10 @@ type EntreeCheck struct {
 // and what can be accessed outside. Then, these become lowercase...
 
 func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) (*EntreeCheck, error) {
-	ctx := context.Background()
-	host_id, err := WDB.Queries.GetHostId(ctx, host)
+	// host_id, err := JDB.WorkDBQueries.GetHostId(ctx, host)
+	d64, err := config.FQDNToDomain64(host)
 	if err != nil {
-		zap.L().Debug("could not get host id",
-			zap.String("host", host),
-			zap.String("err", err.Error()))
-		return nil, fmt.Errorf("could not get host id")
+		return nil, err
 	}
 
 	return &EntreeCheck{
@@ -42,7 +40,7 @@ func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) (*EntreeChec
 		HallPass: hallPass,
 		Scheme:   scheme,
 		Host:     host,
-		HostId:   host_id,
+		Domain64: d64,
 		Path:     path,
 	}, nil
 }
@@ -78,11 +76,26 @@ func EvaluateEntree(ec *EntreeCheck) {
 		// We need to update the guestbook now, because we will end up re-walking
 		// the page if we don't. This is true in each case.
 		// Fetch will update a second time.
-		WDB.Queries.UpdateNextFetch(work_db.FetchUpdateParams{
-			Scheme: ec.Scheme,
-			Host:   ec.Host,
-			Path:   ec.Path,
-		})
+
+		scheme := JDB.GetScheme(ec.Scheme)
+		d64, err := config.FQDNToDomain64(ec.Host)
+		if err != nil {
+			zap.L().Error("could not find Domain64 for FQDN",
+				zap.String("fqdn", ec.Host))
+		}
+		next_fetch := JDB.GetNextFetch(ec.Host)
+		JDB.WorkDBQueries.UpdateGuestbookNextFetch(context.Background(),
+			work_db.UpdateGuestbookNextFetchParams{
+				Scheme:   scheme,
+				Domain64: d64,
+				Path:     ec.Path,
+				NextFetch: pgtype.Timestamp{
+					Time:             next_fetch,
+					Valid:            true,
+					InfinityModifier: 0,
+				},
+			},
+		)
 
 		ChQSHP <- queueing.QSHP{
 			Queue:  "fetch",
@@ -151,19 +164,20 @@ func IsFullNoPass(ec *EntreeCheck) bool {
 
 func isInGuestbook(ec *EntreeCheck) bool {
 	ctx := context.Background()
-	b, err := WDB.Queries.CheckEntryExistsInGuestbook(ctx, ec.HostId)
+	b, err := JDB.WorkDBQueries.CheckEntryExistsInGuestbook(ctx, ec.Domain64)
 	if err != nil {
 		zap.L().Fatal("could not check if in guestbook",
-			zap.Int64("host_id", ec.HostId))
+			zap.Int64("domain64", ec.Domain64),
+			zap.String("domain64_hex", config.Dec64ToHex(ec.Domain64)))
 	}
 	return b
 }
 
 func CheckIfAfterGuestbookNextFetch(ec *EntreeCheck) bool {
 	ctx := context.Background()
-	entry, err := WDB.Queries.GetGuestbookEntry(ctx, work_db.GetGuestbookEntryParams{
-		Host: ec.HostId,
-		Path: ec.Path,
+	entry, err := JDB.WorkDBQueries.GetGuestbookEntry(ctx, work_db.GetGuestbookEntryParams{
+		Domain64: ec.Domain64,
+		Path:     ec.Path,
 	})
 	if err != nil {
 		// If it isn't in the guestbook, then return `true`,
@@ -176,7 +190,7 @@ func CheckIfAfterGuestbookNextFetch(ec *EntreeCheck) bool {
 
 func CheckIfAfterHostNextFetch(ec *EntreeCheck) bool {
 	ctx := context.Background()
-	ts, err := WDB.Queries.GetHostNextFetch(ctx, ec.HostId)
+	ts, err := JDB.WorkDBQueries.GetHostNextFetch(ctx, ec.Domain64)
 	if err != nil {
 		// If it isn't in the host table, then return false
 		return false
@@ -187,7 +201,7 @@ func CheckIfAfterHostNextFetch(ec *EntreeCheck) bool {
 
 func SetHostNextFetchToYesterday(ec *EntreeCheck) {
 	ctx := context.Background()
-	err := WDB.Queries.SetHostNextFetchToYesterday(ctx, ec.Host)
+	err := JDB.WorkDBQueries.SetHostNextFetchToYesterday(ctx, ec.Domain64)
 	if err != nil {
 		zap.L().Error("could not set host fetch to yesterday",
 			zap.String("host", ec.Host))
@@ -196,7 +210,7 @@ func SetHostNextFetchToYesterday(ec *EntreeCheck) {
 
 func SetGuestbookFetchToYesterdayForHost(ec *EntreeCheck) {
 	ctx := context.Background()
-	err := WDB.Queries.SetGuestbookFetchToYesterdayForHost(ctx, ec.HostId)
+	err := JDB.WorkDBQueries.SetGuestbookFetchToYesterdayForHost(ctx, ec.Domain64)
 	if err != nil {
 		zap.L().Fatal("could not set guestbook to yesterday for host",
 			zap.String("host", ec.Host))
