@@ -1,17 +1,17 @@
 .PHONY: clean
 clean:
-	rm -f sql/work_db/schema/db.go
-	rm -f sql/work_db/schema/models.go
-	rm -f sql/work_db/schema/query.sql.go
-	rm -f sql/search_db/schema/db.go
-	rm -f sql/search_db/schema/models.go
-	rm -f sql/search_db/schema/query.sql.go
+	rm -f internal/postgres/work_db/schema/db.go
+	rm -f internal/postgres/work_db/schema/models.go
+	rm -f internal/postgres/work_db/schema/query.sql.go
+	rm -f internal/postgres/search_db/schema/db.go
+	rm -f internal/postgres/search_db/schema/models.go
+	rm -f internal/postgres/search_db/schema/query.sql.go
 	rm -f cmd/*/service.exe
 
 .PHONY: generate
 generate:
-	cd sql/work_db ; make generate
-	# cd sql/search_db ; make generate
+	cd internal/postgres ; make generate
+	# cd internal/postgres/search_db ; make generate
 
 .PHONY: config
 config:
@@ -34,12 +34,12 @@ build: clean config generate
 	cd cmd/extract ; make build
 	echo "build fetch"
 	cd cmd/fetch ; make build
-	echo "build pack"
-	cd cmd/pack ; make build
-	echo "build serve"
-	cd cmd/serve ; make build
-	echo "build validate"
-	cd cmd/validate ; make build
+	# echo "build pack"
+	# cd cmd/pack ; make build
+	# echo "build serve"
+	# cd cmd/serve ; make build
+	# echo "build validate"
+	# cd cmd/validate ; make build
 	echo "build walk"
 	cd cmd/walk ; make build
 	echo "copy assets"

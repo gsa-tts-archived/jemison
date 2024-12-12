@@ -14,10 +14,9 @@ import (
 // var expirable_cache expirable.Cache[string, int]
 
 var ThisServiceName = "entree"
-var HostIdMap = make(map[string]int64)
 var ChQSHP = make(chan queueing.QSHP)
 
-var JDB = postgres.NewJemisonDB()
+var JDB *postgres.JemisonDB
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -36,6 +35,8 @@ func main() {
 	// // If we don't actually fetch a page, we can end up re-queueing it. Because
 	// ttl := service.GetParamInt64("cache-ttl")
 	// expirable_cache = expirable.NewCache[string, int]().WithTTL(time.Duration(ttl) * time.Second)
+
+	JDB = postgres.NewJemisonDB()
 
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))

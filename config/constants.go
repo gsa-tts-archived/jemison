@@ -33,6 +33,12 @@ func GetScheme(scheme string) int {
 	return int(v)
 }
 
+func GetContentType(ct string) int {
+	primeConstants()
+	v := gjson.GetBytes(cachedConstants, "ContentTypeToConst."+ct).Int()
+	return int(v)
+}
+
 func GetTLD(tld string) int {
 	primeConstants()
 	v := gjson.GetBytes(cachedConstants, "TldToConst."+tld).Int()

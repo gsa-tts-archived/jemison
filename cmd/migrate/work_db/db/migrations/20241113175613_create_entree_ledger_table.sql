@@ -32,7 +32,7 @@ create table guestbook (
   content_type integer not null default 1,
   content_length integer not null default 0,
   path text not null,
-  unique (host, path)
+  unique (domain64, path)
 );
 
 

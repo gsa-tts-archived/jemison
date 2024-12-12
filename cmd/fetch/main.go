@@ -20,7 +20,7 @@ var ThisServiceName = "fetch"
 var RetryClient *http.Client
 var Gateway *HostGateway
 
-var JDB = postgres.NewJemisonDB()
+var JDB *postgres.JemisonDB
 
 var ChQSHP = make(chan queueing.QSHP)
 
@@ -29,6 +29,8 @@ var Workers *river.Workers
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
 	InitializeQueues()
+
+	JDB = postgres.NewJemisonDB()
 
 	engine := common.InitializeAPI()
 	ExtendApi(engine)

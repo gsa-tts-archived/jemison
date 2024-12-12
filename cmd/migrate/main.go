@@ -6,7 +6,6 @@ import (
 )
 
 var ThisServiceName = "migrate"
-var HostIdMap = make(map[string]int64)
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)

@@ -8,9 +8,8 @@ check:
 	staticcheck
 
 generate:
-	cd ../../sql/work_db ; sqlc generate || exit 1
-	cd ../../sql/search_db ; sqlc generate || exit 1
-
+	cd ../../internal/postgres ; make generate || exit 1
+	
 build: clean generate
 	go build -buildvcs=false -o service.exe
 

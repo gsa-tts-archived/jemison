@@ -13,12 +13,17 @@ x-minio-common: &minio-common
     timeout: 5s
     retries: 5
 
+# Error response from daemon: invalid restart policy: unknown policy 'never'; use one of 'no', 'always', 'on-failure', or 'unless-stopped'
+x-services-common: &services-common
+  restart: no
+
 services:
   # NEXT SERVICE PORT: 10008
   #-----------------------------------------------------
   # admin :10001
   #-----------------------------------------------------
   admin:
+    <<: *services-common
     image: jemison/dev
     # Simulate CF
     # https://stackoverflow.com/questions/42345235/how-to-specify-memory-cpu-limit-in-docker-compose-version-3
@@ -53,13 +58,13 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
-    restart: always
 
 
   #-----------------------------------------------------
   # entree :10007
   #-----------------------------------------------------
   entree:
+    <<: *services-common
     image: jemison/dev
     # Simulate CF
     # https://stackoverflow.com/questions/42345235/how-to-specify-memory-cpu-limit-in-docker-compose-version-3
@@ -97,12 +102,12 @@ services:
       DEBUG_LEVEL: debug
       GIN_MODE: debug
       SCHEDULE: ${SCHEDULE:-""}
-    restart: always
 
   #-----------------------------------------------------
   # extract :10002
   #-----------------------------------------------------
   extract:
+    <<: *services-common
     image: jemison/dev
     # Simulate CF
     # https://stackoverflow.com/questions/42345235/how-to-specify-memory-cpu-limit-in-docker-compose-version-3
@@ -137,12 +142,12 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
-    restart: always
 
   #-----------------------------------------------------
   # fetch :10003
   #-----------------------------------------------------
   fetch:
+    <<: *services-common
     image: jemison/dev
     deploy:
       resources:
@@ -177,7 +182,6 @@ services:
       DEBUG_LEVEL: debug
       GIN_MODE: release
       SCHEDULE: ${SCHEDULE:-""}
-    restart: always
 
   # #-----------------------------------------------------
   # # pack :10004
@@ -294,6 +298,7 @@ services:
   # walk :10006
   #-----------------------------------------------------
   walk:
+    <<: *services-common
     image: jemison/dev
     build: 
       context: .
@@ -322,7 +327,6 @@ services:
       PORT: 8888
       DEBUG_LEVEL: debug
       GIN_MODE: debug
-    restart: always
 
   #-----------------------------------------------------
   # river queue watcher :11111

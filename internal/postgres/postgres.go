@@ -24,7 +24,7 @@ type JemisonDB struct {
 
 func NewJemisonDB() *JemisonDB {
 
-	jdb := &JemisonDB{
+	jdb := JemisonDB{
 		Config: make(map[string]*pgxpool.Config),
 		Pool:   make(map[string]*pgxpool.Pool),
 	}
@@ -56,7 +56,7 @@ func NewJemisonDB() *JemisonDB {
 	jdb.WorkDBQueries = work_db.New(jdb.Pool[env.JemisonWorkDatabase])
 	jdb.SearchDBQueries = search_db.New(jdb.Pool[env.SearchDatabases[0]])
 
-	return jdb
+	return &jdb
 }
 
 func Config(db_string string) *pgxpool.Config {
@@ -89,27 +89,17 @@ func (jdb *JemisonDB) GetScheme(scheme string) int32 {
 	if val, ok := jdb.constCache.Load("scheme:" + scheme); ok {
 		return val.(int32)
 	} else {
-		scheme_int, err := jdb.WorkDBQueries.GetScheme(context.Background(), scheme)
-		if err != nil {
-			zap.L().Error("could not fetch scheme",
-				zap.String("scheme", scheme))
-			return 1
-		}
+		scheme_int := config.GetScheme(scheme)
 		jdb.constCache.Store("scheme:"+scheme, int32(scheme_int))
 		return int32(scheme_int)
 	}
 }
 
-func (jdb *JemisonDB) GetContentType(ct string) int32 {
+func (jdb *JemisonDB) GetContentType(ct string) int {
 	if val, ok := jdb.constCache.Load("contenttype:" + ct); ok {
-		return val.(int32)
+		return val.(int)
 	} else {
-		ct_int, err := jdb.WorkDBQueries.GetContentType(context.Background(), ct)
-		if err != nil {
-			zap.L().Error("could not fetch content_type",
-				zap.String("content_type", ct))
-			return 1
-		}
+		ct_int := config.GetContentType(ct)
 		jdb.constCache.Store("contenttype:"+ct, ct_int)
 		return ct_int
 	}
