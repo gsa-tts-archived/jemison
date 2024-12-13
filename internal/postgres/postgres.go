@@ -130,3 +130,7 @@ func (jdb *JemisonDB) GetNextFetch(fqdn string) time.Time {
 	next_fetch := time.Now().Add(delta)
 	return next_fetch
 }
+
+func (jdb *JemisonDB) InThePast(delta time.Duration) time.Time {
+	return time.Now().Add(delta * -1)
+}

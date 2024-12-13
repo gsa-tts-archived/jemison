@@ -53,7 +53,7 @@ func FinalizeTimer(in <-chan string) {
 			}
 
 			if next_to_pack != "NONE" {
-				backend := config.GetHostBackend(next_to_pack, env.Env.Schedule)
+				backend := config.GetHostBackend(next_to_pack, env.Env.AllowedHosts)
 				// limit <- Ping{}
 				// FIXME: This only applies if it is an SQLite DB...
 				sqlite_filename := sqlite.SqliteFilename(next_to_pack)

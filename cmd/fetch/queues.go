@@ -50,10 +50,12 @@ func InitializeQueues() {
 
 	MainQueue := make(map[string]river.QueueConfig)
 	MainQueue[ThisServiceName] = river.QueueConfig{MaxWorkers: int(workerCount)}
+
 	FetchQueues = make(map[string]river.QueueConfig)
-	for _, host := range config.GetListOfHosts(env.Env.Schedule) {
+	for _, host := range config.GetListOfHosts(env.Env.AllowedHosts) {
 		asciiHost := stripHostToAscii(host)
 		asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
+		zap.L().Debug("setting up queue", zap.String("queue_name", asciiQueueName))
 		FetchQueues[asciiQueueName] = river.QueueConfig{
 			MaxWorkers: 3,
 		}

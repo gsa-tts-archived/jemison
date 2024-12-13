@@ -12,11 +12,11 @@ local params(top, env, service, params) =
 
 local parameters = [
   [
-    'schedule',
+    'allowed_hosts',
     {
-      cf: 'schedules/schedule.json',
-      container: 'schedules/three.json',
-      localhost: 'schedules/three.json',
+      cf: 'all',
+      container: 'three',
+      localhost: 'three',
     },
   ],
 ];

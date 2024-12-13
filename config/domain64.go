@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/tidwall/gjson"
+	"go.uber.org/zap"
 )
 
 type Schedule int
@@ -62,6 +63,24 @@ func FQDNToDomain64(fqdn string) (int64, error) {
 		return 0, err
 	}
 	return int64(value), nil
+}
+
+func GetAllFQDNToDomain64() map[string]int64 {
+	primeCache()
+	tlds := gjson.GetBytes(cached_file, "TLDs").Array()
+	all := make(map[string]int64)
+	for _, tld := range tlds {
+		m := gjson.GetBytes(cached_file, tld.String()+".FQDNToDomain64").Map()
+		for fq, d64 := range m {
+			dec, err := HexToDec64(d64.String())
+			if err != nil {
+				zap.L().Error("could not get decimal value for Domain64",
+					zap.String("domain64", d64.String()), zap.String("fqdn", fq))
+			}
+			all[fq] = dec
+		}
+	}
+	return all
 }
 
 func HexToDec64(hex string) (int64, error) {

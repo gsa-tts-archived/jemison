@@ -1,5 +1,6 @@
 .PHONY: all
 all:
+	cd domain64 ; make all
 	cd services ; make all
 	mv services/*.yaml . 
 

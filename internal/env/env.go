@@ -81,7 +81,7 @@ type env struct {
 	User          string               `mapstructure:"USER"`
 	EightServices map[string][]Service `mapstructure:"EIGHT_SERVICES"`
 	Port          string               `mapstructure:"PORT"`
-	Schedule      string               `mapstructure:"SCHEDULE"`
+	AllowedHosts  string               `mapstructure:"SCHEDULE"`
 	VcapServices  map[string][]Service
 	UserServices  []Service
 	ObjectStores  []Bucket
@@ -186,8 +186,8 @@ func InitGlobalEnv(this_service string) {
 	if err != nil {
 		log.Println("could not get service for ", this_service)
 	}
-	Env.Schedule = s.GetParamString("schedule")
-	log.Println("Setting Schedule: ", Env.Schedule)
+	Env.AllowedHosts = s.GetParamString("allowed_hosts")
+	log.Println("Setting Schedule: ", Env.AllowedHosts)
 
 }
 

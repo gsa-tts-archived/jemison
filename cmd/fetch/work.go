@@ -219,6 +219,11 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 				InfinityModifier: 0,
 				Time:             lastModified,
 			},
+			LastFetched: pgtype.Timestamp{
+				Valid:            true,
+				InfinityModifier: 0,
+				Time:             JDB.InThePast(3 * time.Second),
+			},
 			NextFetch: pgtype.Timestamp{
 				Valid:            true,
 				InfinityModifier: 0,

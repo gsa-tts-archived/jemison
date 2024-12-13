@@ -38,3 +38,23 @@ func TestFQDN2Domain64(t *testing.T) {
 	assert.Equal(t, int64(i), v)
 
 }
+
+func TestIAmAChildlessDomain(t *testing.T) {
+	v, err := FQDNToDomain64("cloud.gov")
+	if err != nil {
+		t.Error(err)
+	}
+	// 0100002400000000
+	assert.Equal(t, int64(72057748656750592), v)
+
+}
+
+func TestGetAllFQDN(t *testing.T) {
+	all := GetAllFQDNToDomain64()
+	assert.Greater(t, len(all), 1000)
+}
+
+func TestEnoughHosts(t *testing.T) {
+	three := GetListOfHosts("three")
+	assert.Equal(t, 3, len(three))
+}

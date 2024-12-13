@@ -6,10 +6,12 @@
 -- https://stackoverflow.com/questions/1771543/adding-a-new-value-to-an-existing-enum-type
 
 
-create function public.max_bigint()
+create or replace function public.max_bigint()
   returns bigint
   language sql immutable parallel safe as
-'select 18446744073709551615'; -- (sub1 (expt 2 64))
+--'select 18446744073709551615'; -- (sub1 (expt 2 64))
+-- These are signed integers...
+'select 9223372036854775807';
 
 create table hosts (
   id bigint generated always as identity primary key,
@@ -26,7 +28,7 @@ create table guestbook (
   id bigint generated always as identity primary key,
   domain64 bigint not null,
   last_modified timestamp,
-  last_fetched timestamp not null,
+  last_fetched timestamp,
   next_fetch timestamp not null,
   scheme integer not null default 1,
   content_type integer not null default 1,

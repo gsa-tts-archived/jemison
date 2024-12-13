@@ -256,6 +256,7 @@ local domains = {
   },
   '000024': {
     children: {
+      '000000': '',
       '000001': 'app.fec-prod-proxy',
     },
     name: 'cloud',
@@ -1361,7 +1362,9 @@ local domains = {
     name: 'schoolsafety',
   },
   '0000B2': {
-    children: {},
+    children: {
+      '000000': '',
+    },
     name: 'search',
   },
   '0000B3': {

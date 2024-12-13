@@ -23,15 +23,6 @@ local parameters = [
   ],
 ] + B.parameters;
 
-  // [
-  //   'polite_cache_default_expiration',
-  //   { cf: B.hours(10), container: B.hours(10) },
-  // ],
-  // [
-  //   'polite_cache_cleanup_interval',
-  //   { cf: B.hours(3), container: B.minutes(30) },
-  // ],
-
 {
   creds:: [[service] + x for x in credentials],
   params:: [[service] + x for x in parameters],

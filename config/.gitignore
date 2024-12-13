@@ -1,1 +1,4 @@
 *.yaml
+services/*.json
+schedules/*.json
+domain64/*.json
