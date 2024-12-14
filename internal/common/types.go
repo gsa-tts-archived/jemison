@@ -34,9 +34,10 @@ func (EntreeArgs) Kind() string {
 }
 
 type ExtractArgs struct {
-	Scheme string `json:"scheme"`
-	Host   string `json:"host"`
-	Path   string `json:"path"`
+	Scheme      string `json:"scheme"`
+	Host        string `json:"host"`
+	Path        string `json:"path"`
+	GuestbookId int64  `json:"gb_id"`
 }
 
 func (ExtractArgs) Kind() string {
@@ -54,9 +55,10 @@ func (FetchArgs) Kind() string {
 }
 
 type PackArgs struct {
-	Scheme string `json:"scheme"`
-	Host   string `json:"host"`
-	Path   string `json:"path"`
+	Scheme      string `json:"scheme"`
+	Host        string `json:"host"`
+	Path        string `json:"path"`
+	GuestbookId int64  `json:"gb_id"`
 }
 
 func (PackArgs) Kind() string {

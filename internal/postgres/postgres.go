@@ -29,7 +29,7 @@ func NewJemisonDB() *JemisonDB {
 		Pool:   make(map[string]*pgxpool.Pool),
 	}
 
-	for _, db_name := range []string{env.QueueDatabase, env.JemisonWorkDatabase} {
+	for _, db_name := range []string{env.QueueDatabase, env.JemisonWorkDatabase, env.SearchDatabase} {
 		db_string, err := env.Env.GetDatabaseUrl(db_name)
 		if err != nil {
 			zap.L().Fatal("could not get db URL", zap.String("db_name", db_name))
@@ -54,7 +54,7 @@ func NewJemisonDB() *JemisonDB {
 	}
 
 	jdb.WorkDBQueries = work_db.New(jdb.Pool[env.JemisonWorkDatabase])
-	jdb.SearchDBQueries = search_db.New(jdb.Pool[env.SearchDatabases[0]])
+	jdb.SearchDBQueries = search_db.New(jdb.Pool[env.SearchDatabase])
 
 	return &jdb
 }

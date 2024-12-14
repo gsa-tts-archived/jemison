@@ -68,14 +68,14 @@ services:
       - jemison-work-db-vol:/var/lib/postgresql/data
 
   #-----------------------------------------------------
-  # search s0 :7654
+  # search jemison-search-db :7654
   #-----------------------------------------------------
-  s0:
+  jemison-search-db:
     <<: *pg-common
     ports:
       - 7654:5432
     volumes:
-      - jemison-s0:/var/lib/postgresql/data
+      - jemison-search-db-vol:/var/lib/postgresql/data
 
 
 
@@ -145,7 +145,7 @@ services:
 volumes:
   jemison-queues-db-vol:
   jemison-work-db-vol:
-  jemison-s0:
+  jemison-search-db-vol:
   data1-1:
   data1-2:
   data2-1:

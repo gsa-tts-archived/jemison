@@ -183,40 +183,41 @@ services:
       GIN_MODE: release
       SCHEDULE: ${SCHEDULE:-""}
 
-  # #-----------------------------------------------------
-  # # pack :10004
-  # #-----------------------------------------------------
-  # pack:
-  #   image: jemison/dev
-  #   #privileged: true
-  #   build: 
-  #     context: .
-  #     dockerfile: ./cmd/pack/Dockerfile
-  #   entrypoint: /home/vcap/app/cmd/pack/run.sh
-  #   volumes:
-  #     - type: bind
-  #       source: .
-  #       target: /home/vcap/app
-  #   ports:
-  #     - 10004:8888
-  #   # https://docs.docker.com/compose/how-tos/startup-order/
-  #   depends_on:
-  #     nginx:
-  #       condition: service_started
-  #     jemison-queues-db:
-  #       condition: service_healthy
-  #   healthcheck:
-  #     test: curl --fail http://pack:8888/heartbeat || exit 1
-  #     interval: 60s
-  #     timeout: 180s
-  #     retries: 3
-  #     start_period: 60s
-  #   environment:
-  #     ENV: "DOCKER"
-  #     DEBUG_LEVEL: "debug"
-  #     GIN_MODE: debug
-  #     PORT: 8888
-  #   restart: always
+  #-----------------------------------------------------
+  # pack :10004
+  #-----------------------------------------------------
+  pack:
+    <<: *services-common
+    image: jemison/dev
+    #privileged: true
+    build: 
+      context: .
+      dockerfile: ./cmd/pack/Dockerfile
+    entrypoint: /home/vcap/app/cmd/pack/run.sh
+    volumes:
+      - type: bind
+        source: .
+        target: /home/vcap/app
+    ports:
+      - 10004:8888
+    # https://docs.docker.com/compose/how-tos/startup-order/
+    depends_on:
+      nginx:
+        condition: service_started
+      jemison-queues-db:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://pack:8888/heartbeat || exit 1
+      interval: 60s
+      timeout: 180s
+      retries: 3
+      start_period: 60s
+    environment:
+      ENV: "DOCKER"
+      DEBUG_LEVEL: "debug"
+      GIN_MODE: debug
+      PORT: 8888
+      SCHEDULE: ${SCHEDULE:-""}
 
   # #-----------------------------------------------------
   # # serve :10000
@@ -349,9 +350,9 @@ services:
   x-pg-common: &pg-common
     image: postgres:16-alpine
     environment:
-          POSTGRES_USER: postgres
-          POSTGRES_DB: postgres
-          POSTGRES_HOST_AUTH_METHOD: "trust"
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_HOST_AUTH_METHOD: "trust"
     healthcheck:
       # test: ["CMD-SHELL", "pg_isready", "-d", "postgres", "-U", "postgres"]
       test: ["CMD-SHELL", "pg_isready -d postgres -U postgres"]
@@ -381,14 +382,14 @@ services:
       - jemison-work-db-vol:/var/lib/postgresql/data
 
   #-----------------------------------------------------
-  # search s0 :7654
+  # search jemison-search-db :7654
   #-----------------------------------------------------
-  s0:
+  jemison-search-db:
     <<: *pg-common
     ports:
       - 7654:5432
     volumes:
-      - jemison-s0:/var/lib/postgresql/data
+      - jemison-search-db-vol:/var/lib/postgresql/data
 
 
   #-----------------------------------------------------
@@ -482,7 +483,7 @@ services:
 volumes:
   jemison-queues-db-vol:
   jemison-work-db-vol:
-  jemison-s0:
+  jemison-search-db-vol:
   data1-1:
   data1-2:
   data2-1:

@@ -43,7 +43,7 @@ func extract(obj *kv.S3JSON) {
 
 func (w *ExtractWorker) Work(ctx context.Context, job *river.Job[common.ExtractArgs]) error {
 
-	zap.L().Debug("extracting",
+	zap.L().Info("extracting",
 		zap.String("host", job.Args.Host),
 		zap.String("path", job.Args.Path))
 
@@ -56,6 +56,6 @@ func (w *ExtractWorker) Work(ctx context.Context, job *river.Job[common.ExtractA
 	extract(s3json)
 
 	zap.L().Debug("extraction finished")
-	return nil
 
+	return nil
 }

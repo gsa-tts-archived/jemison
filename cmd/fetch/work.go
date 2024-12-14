@@ -136,40 +136,6 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		return err
 	}
 
-	// Save the metadata about this page to S3
-	cloudmap := kv.NewFromMap(
-		ThisServiceName,
-		util.ToScheme(job.Args.Scheme),
-		job.Args.Host,
-		job.Args.Path,
-		page_json,
-	)
-	err = cloudmap.Save()
-	// We get an error if we can't write to S3
-	// This is pretty catestrophic.
-	if err != nil {
-		zap.L().Error("could not Save() s3json k/v",
-			zap.String("key", cloudmap.Key.Render()),
-		)
-		return err
-	}
-
-	zap.L().Debug("stored", zap.String("key", cloudmap.Key.Render()))
-
-	ChQSHP <- queueing.QSHP{
-		Queue:  "extract",
-		Scheme: job.Args.Scheme,
-		Host:   job.Args.Host,
-		Path:   job.Args.Path,
-	}
-
-	ChQSHP <- queueing.QSHP{
-		Queue:  "walk",
-		Scheme: job.Args.Scheme,
-		Host:   job.Args.Host,
-		Path:   job.Args.Path,
-	}
-
 	// Update the guestbook
 	lastModified := time.Now()
 	if v, ok := page_json["last-modified"]; ok {
@@ -206,7 +172,7 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 
 	next_fetch := JDB.GetNextFetch(job.Args.Host)
 
-	JDB.WorkDBQueries.UpdateGuestbookFetch(
+	guestbook_id, err := JDB.WorkDBQueries.UpdateGuestbookFetch(
 		context.Background(),
 		work_db.UpdateGuestbookFetchParams{
 			Scheme:        scheme,
@@ -231,9 +197,50 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 			},
 		})
 
+	if err != nil {
+		zap.L().Error("could not store guestbook id",
+			zap.Int64("domain64", d64),
+			zap.String("path", job.Args.Path))
+	}
+
+	// Save the metadata about this page to S3
+	page_json["guestbook_id"] = fmt.Sprintf("%d", guestbook_id)
+	cloudmap := kv.NewFromMap(
+		ThisServiceName,
+		util.ToScheme(job.Args.Scheme),
+		job.Args.Host,
+		job.Args.Path,
+		page_json,
+	)
+	err = cloudmap.Save()
+	// We get an error if we can't write to S3
+	// This is pretty catestrophic.
+	if err != nil {
+		zap.L().Error("could not Save() s3json k/v",
+			zap.String("key", cloudmap.Key.Render()),
+		)
+		return err
+	}
+
+	zap.L().Debug("stored", zap.String("key", cloudmap.Key.Render()))
+
 	zap.L().Info("fetched", zap.String("host", job.Args.Host), zap.String("path", job.Args.Path))
 	// A cute counter for the logs.
 	fetchCount.Add(1)
+
+	ChQSHP <- queueing.QSHP{
+		Queue:  "extract",
+		Scheme: job.Args.Scheme,
+		Host:   job.Args.Host,
+		Path:   job.Args.Path,
+	}
+
+	ChQSHP <- queueing.QSHP{
+		Queue:  "walk",
+		Scheme: job.Args.Scheme,
+		Host:   job.Args.Host,
+		Path:   job.Args.Path,
+	}
 
 	return nil
 }

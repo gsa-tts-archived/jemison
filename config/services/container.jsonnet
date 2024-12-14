@@ -35,7 +35,7 @@ local VCAP = import 'vcap_services.libsonnet';
     [
       ['jemison-queues-db', 'jemison-queues-db', 5432],
       ['jemison-work-db', 'jemison-work-db', 5432],
-      ['s0', 's0', 5432],
+      ['jemison-search-db', 'jemison-search-db', 5432],
     ]
   ),
 }

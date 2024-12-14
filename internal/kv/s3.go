@@ -97,14 +97,14 @@ func (s3 *S3) S3PathToFile(path string, local_filename string) error {
 	return nil
 }
 
-func (s3 *S3) S3PathToS3JSON(key string) (*S3JSON, error) {
+func (s3 *S3) S3PathToS3JSON(key *util.Key) (*S3JSON, error) {
 
 	// The object has a channel interface that we have to empty.
 	ctx := context.Background()
 	object, err := s3.MinioClient.GetObject(
 		ctx,
 		s3.Bucket.CredentialString("bucket"),
-		key,
+		key.Render(),
 		minio.GetObjectOptions{})
 
 	// https://rezakhademix.medium.com/defer-functions-in-golang-common-mistakes-and-best-practices-96eacdb551f0
@@ -112,20 +112,20 @@ func (s3 *S3) S3PathToS3JSON(key string) (*S3JSON, error) {
 		err := obj.Close()
 		if err != nil {
 			zap.L().Error("deferred close on S3 object encountered error",
-				zap.String("key", key))
+				zap.String("key", key.Render()))
 		}
 	}(object)
 
 	if err != nil {
 		zap.L().Error("could not retrieve object",
 			zap.String("bucket_name", s3.Bucket.CredentialString("bucket")),
-			zap.String("key", key),
+			zap.String("key", key.Render()),
 			zap.String("error", err.Error()))
 		return nil, err
 	}
 
 	if DEBUG_S3 {
-		zap.L().Debug("retrieved S3 object", zap.String("key", key))
+		zap.L().Debug("retrieved S3 object", zap.String("key", key.Render()))
 	}
 
 	raw, err := io.ReadAll(object)
@@ -133,13 +133,14 @@ func (s3 *S3) S3PathToS3JSON(key string) (*S3JSON, error) {
 	if err != nil {
 		zap.L().Error("could not read object bytes",
 			zap.String("bucket_name", s3.Bucket.CredentialString("bucket")),
-			zap.String("key", key),
+			zap.String("key", key.Render()),
 			zap.String("error", err.Error()))
 		return nil, err
 	}
 
-	s3json := NewS3JSON("extract")
+	s3json := NewS3JSON(s3.Bucket.Name)
 	s3json.raw = raw
+	s3json.Key = key
 	current_mime_type := s3json.GetString("content-type")
 	updated, err := sjson.SetBytes(s3json.raw, "content-type", util.CleanMimeType(current_mime_type))
 	if err != nil {

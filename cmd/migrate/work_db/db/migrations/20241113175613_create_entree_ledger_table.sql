@@ -10,7 +10,8 @@ create or replace function public.max_bigint()
   returns bigint
   language sql immutable parallel safe as
 --'select 18446744073709551615'; -- (sub1 (expt 2 64))
--- These are signed integers...
+-- These are signed integers... the Postgres max is not
+-- the unsigned max.
 'select 9223372036854775807';
 
 create table hosts (
@@ -39,14 +40,14 @@ create table guestbook (
 
 
 
-CREATE TABLE raw_content (
-  id bigint generated always as identity primary key,
-  guestbook_id bigint references guestbook(id) NOT NULL,
-  tag integer default 1,
-  content TEXT NOT NULL
-)
+-- CREATE TABLE raw_content (
+--   id bigint generated always as identity primary key,
+--   guestbook_id bigint references guestbook(id) NOT NULL,
+--   tag integer default 1,
+--   content TEXT NOT NULL
+-- )
 
 -- migrate:down
 drop table if exists guestbook cascade;
-
+drop table if exists hosts cascade;
 

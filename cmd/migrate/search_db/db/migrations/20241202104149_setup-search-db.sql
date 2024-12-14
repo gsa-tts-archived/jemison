@@ -16,10 +16,10 @@ insert into metadata
 
 Create table raw_content (
   id bigint generated always as identity primary key,
-  domain64 bigint,
-  path text,
-  tag text default 'p',
-  content text
+  domain64 bigint not null,
+  path text not null,
+  tag text default 'p' not null,
+  content text not null
 )
 ;
 

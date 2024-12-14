@@ -20,8 +20,7 @@ var DEBUG_ENV = false
 // defined in the Terraform.
 const QueueDatabase = "jemison-queues-db"
 const JemisonWorkDatabase = "jemison-work-db"
-
-var SearchDatabases = []string{"s0"}
+const SearchDatabase = "jemison-search-db"
 
 var validBucketNames = []string{
 	"extract",

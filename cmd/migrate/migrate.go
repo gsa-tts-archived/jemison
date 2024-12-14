@@ -65,11 +65,9 @@ func MigrateJemisonDB() {
 		MigrationsDir: "work_db/db/migrations",
 	}
 
-	for _, db := range env.SearchDatabases {
-		dbs[db] = location{
-			FS:            searchFS,
-			MigrationsDir: "search_db/db/migrations",
-		}
+	dbs[env.SearchDatabase] = location{
+		FS:            searchFS,
+		MigrationsDir: "search_db/db/migrations",
 	}
 
 	for k, v := range dbs {

@@ -12,7 +12,6 @@ import (
 )
 
 func InitializeRiverQueues() {
-	RunRiverMigrator()
 
 	// Set up a pool
 	connection_string, err := env.Env.GetDatabaseUrl(env.QueueDatabase)

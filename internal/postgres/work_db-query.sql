@@ -67,7 +67,6 @@ insert into guestbook
   returning id
 ;
 
-
 -- --------------------------------------------------------------
 -- -- `host` table
 -- --------------------------------------------------------------
@@ -111,27 +110,3 @@ insert into hosts
     next_fetch = excluded.next_fetch
   returning id
 ;
-
---   -- (select
---   --   case 
---   --     when $1::text = 'weekly' then now()+make_interval(weeks => 1, days => -1)
---   --     when $1 = 'bi-weekly' then now()+make_interval(weeks => 2, days => -1)
---   --     when $1 = 'monthly' then now()+make_interval(months => 1, days => -1)
---   --     when $1 = 'bi-monthly' then now()+make_interval(months => 2, days => -1)
---   --     when $1 = 'quarterly' then now()+make_interval(months=> 3, days => -1)
---   --   end)
---   -- )
-
--- -- fixm: this is the same as upsert. reduce to one function.
--- -- name: UpdateHostNextFetch :one
--- insert into hosts
---   (host, next_fetch)
---   values ($1, $2)
---   on conflict (host)
---   where host = $1
---   do update
---     set 
---       host = excluded.host,
---       next_fetch = excluded.next_fetch
---   returning id
--- ;

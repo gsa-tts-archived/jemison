@@ -73,6 +73,7 @@ func Enqueue(ch_qshp <-chan QSHP) {
 			commonCommit(qshp, ctx, tx)
 
 		case "extract":
+
 			_, err := client.InsertTx(ctx, tx, common.ExtractArgs{
 				Scheme: qshp.Scheme,
 				Host:   qshp.Host,
