@@ -1,5 +1,6 @@
+# --tags fts5
 run:	
-	go run --tags fts5 *.go
+	go run *.go
 
 test:
 	go test
@@ -10,8 +11,9 @@ check:
 generate:
 	echo "nothing to generate"
 
+# --tags fts5 
 build: generate
-	go build --tags fts5 -buildvcs=false -o service.exe
+	go build -buildvcs=false -o service.exe
 	# cd hostsets ; make
 
 clean:

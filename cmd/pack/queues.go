@@ -6,7 +6,6 @@ import (
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
-	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
@@ -16,24 +15,15 @@ import (
 
 var packPool *pgxpool.Pool
 var packClient *river.Client[pgx.Tx]
-var extractPool *pgxpool.Pool
-var extractClient *river.Client[pgx.Tx]
-var servePool *pgxpool.Pool
-var serveClient *river.Client[pgx.Tx]
 
 type PackWorker struct {
 	river.WorkerDefaults[common.PackArgs]
 }
 
 func InitializeQueues() {
-	queueing.InitializeRiverQueues()
 
 	ctx, pP, workers := common.CommonQueueInit()
-	_, eP, _ := common.CommonQueueInit()
-	_, sP, _ := common.CommonQueueInit()
 	packPool = pP
-	extractPool = eP
-	servePool = sP
 
 	// Essentially adds a worker "type" to the work engine.
 	river.AddWorker(workers, &PackWorker{})
@@ -57,19 +47,6 @@ func InitializeQueues() {
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)
-		os.Exit(1)
-	}
-
-	// Insert-only client to `extract`
-	extractClient, err = river.NewClient(riverpgxv5.New(extractPool), &river.Config{})
-	if err != nil {
-		zap.L().Error("could not establish insert-only client")
-		os.Exit(1)
-	}
-
-	serveClient, err = river.NewClient(riverpgxv5.New(servePool), &river.Config{})
-	if err != nil {
-		zap.L().Error("could not establish insert-only client")
 		os.Exit(1)
 	}
 

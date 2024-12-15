@@ -1,5 +1,13 @@
 # generating partition tables
 
+python make_partition_tables.py \
+  ../../../config/domain64/domain64.json \
+  all_dot_gov \
+  --start 0x0100000000000000 \
+  --end 0x01FF000000000000
+
+# generating inheritance tables
+
 For all of the .gov domains:
 
 python make_inheritance_tables.py \

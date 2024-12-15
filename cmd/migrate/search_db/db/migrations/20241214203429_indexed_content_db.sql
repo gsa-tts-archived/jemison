@@ -4,8 +4,7 @@ create table searchable_content (
   domain64 bigint not null,
   path text not null,
   tag text default 'p' not null,
-  content text not null,
-  unique(domain64)
+  content text not null
 )
 ;
 

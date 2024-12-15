@@ -30,10 +30,17 @@ local parameters = [
     { cf: 'jemison.app.cloud.gov', container: 'localhost' },
   ],
   [
+    'template_files_path',
+    {
+      cf: '/home/vcap/app/templates',
+      container: '/home/vcap/app/cmd/serve/templates',
+    },
+  ],
+  [
     'static_files_path',
     {
       cf: '/home/vcap/app/static',
-      container: '/home/vcap/app/assets/static',
+      container: '/home/vcap/app/cmd/serve/static',
     },
   ],
   [

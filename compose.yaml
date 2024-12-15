@@ -219,47 +219,47 @@ services:
       PORT: 8888
       SCHEDULE: ${SCHEDULE:-""}
 
-  # #-----------------------------------------------------
-  # # serve :10000
-  # #-----------------------------------------------------
-  # serve:
-  #   image: jemison/dev
-  #   build: 
-  #     context: .
-  #     dockerfile: ./cmd/serve/Dockerfile
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 512M
-  #   ulimits:
-  #     nofile:
-  #         soft: 65536
-  #         hard: 65536
-  #   entrypoint: /home/vcap/app/cmd/serve/service.exe
-  #   volumes:
-  #     - type: bind
-  #       source: .
-  #       target: /home/vcap/app
-  #   ports:
-  #     - 10000:8888
-  #   # https://docs.docker.com/compose/how-tos/startup-order/
-  #   depends_on:
-  #     nginx:
-  #       condition: service_started
-  #     jemison-queues-db:
-  #       condition: service_healthy
-  #   healthcheck:
-  #     test: curl --fail http://serve:8888/api/heartbeat || exit 1
-  #     interval: 60s
-  #     timeout: 180s
-  #     retries: 3
-  #     start_period: 60s
-  #   environment:
-  #     ENV: "DOCKER"
-  #     DEBUG_LEVEL: "warn"
-  #     PORT: 8888
-  #     GIN_MODE: release
-  #   restart: always
+  #-----------------------------------------------------
+  # serve :10000
+  #-----------------------------------------------------
+  serve:
+    <<: *services-common
+    image: jemison/dev
+    build: 
+      context: .
+      dockerfile: ./cmd/serve/Dockerfile
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    ulimits:
+      nofile:
+          soft: 65536
+          hard: 65536
+    entrypoint: /home/vcap/app/cmd/serve/service.exe
+    volumes:
+      - type: bind
+        source: .
+        target: /home/vcap/app
+    ports:
+      - 10000:8888
+    # https://docs.docker.com/compose/how-tos/startup-order/
+    depends_on:
+      nginx:
+        condition: service_started
+      jemison-queues-db:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://serve:8888/api/heartbeat || exit 1
+      interval: 60s
+      timeout: 180s
+      retries: 3
+      start_period: 60s
+    environment:
+      ENV: "DOCKER"
+      DEBUG_LEVEL: "warn"
+      PORT: 8888
+      GIN_MODE: release
 
   # #-----------------------------------------------------
   # # validate :10005
