@@ -21,6 +21,10 @@ local parameters = [
     'polite_sleep',
     { cf: 2, container: 2 },
   ],
+  [
+    'max_filesize_mb',
+    { cf: 10, container: 10 },
+  ],
 ] + B.parameters;
 
 {

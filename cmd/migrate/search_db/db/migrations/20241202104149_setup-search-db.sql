@@ -14,7 +14,7 @@ insert into metadata
   ('date_created', now()::date)
 ;  
 
-Create table raw_content (
+create table raw_content (
   id bigint generated always as identity primary key,
   domain64 bigint not null,
   path text not null,

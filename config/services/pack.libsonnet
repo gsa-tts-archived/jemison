@@ -11,20 +11,11 @@ local credentials = [
 local parameters = [
   [
     'workers',
-    { cf: 10, container: 5 },
+    { cf: 10, container: 20 },
   ],
   [
     'debug_level',
     { cf: 'warn', container: 'debug' },
-  ],
-  [
-    # This used to be really critical, because the packer was 
-    # building a DB on the fly. Now, it pulls a list of objects
-    # from S3, and is more of a timeout. If we build a DB
-    # multiple times, it is OK. Also, we won't build more than once
-    # every "timeout seconds," so really it is more of a flush.
-    'packing_timeout_seconds',
-    { cf: B.minutes(3), container: 15 },
   ],
 ] + B.parameters;
 

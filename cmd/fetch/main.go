@@ -26,6 +26,8 @@ var ChQSHP = make(chan queueing.QSHP)
 
 var Workers *river.Workers
 
+var MaxFilesize int64
+
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
 	InitializeQueues()
@@ -46,6 +48,8 @@ func main() {
 
 	// Pre-compute/lookup the sleep duration for backoff
 	PoliteSleep = service.GetParamInt64("polite_sleep")
+	// 1024KB * 1024B => MB
+	MaxFilesize = service.GetParamInt64("max_filesize_mb") * 1024 * 1024
 
 	logger_level := service.GetParamString("debug_level")
 	if logger_level != "debug" {

@@ -95,8 +95,6 @@ func getUrlToFile(u url.URL) (string, int64, []byte, error) {
 	return temporaryFilename, bytesRead, theSHA, nil
 }
 
-const MAX_FILESIZE = 5000000
-
 func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, error) {
 	u := url.URL{
 		Scheme: job.Args.Scheme,
@@ -125,7 +123,7 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 		// Could not extract a size header...
 	} else {
 		// FIXME: Make this a constant
-		if size > MAX_FILESIZE {
+		if int64(size) > MaxFilesize {
 			return nil, fmt.Errorf(
 				common.FileTooLargeToFetch.String()+
 					" file too large to fetch: %s%s", job.Args.Host, job.Args.Path)
@@ -139,7 +137,7 @@ func fetch_page_content(job *river.Job[common.FetchArgs]) (map[string]string, er
 	}
 	key := util.CreateS3Key(util.ToScheme(job.Args.Scheme), job.Args.Host, job.Args.Path, util.Raw)
 
-	if bytesRead > MAX_FILESIZE {
+	if bytesRead > MaxFilesize {
 		zap.L().Warn("file too large",
 			zap.String("host", job.Args.Host), zap.String("path", job.Args.Path))
 		err := os.Remove(tempFilename)

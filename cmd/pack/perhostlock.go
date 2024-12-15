@@ -34,15 +34,6 @@ func (phl *PerHostLock) Lock(host string) {
 
 	// Lock this host
 	phl.hostlocks[host].Lock()
-	// This is a horrible idea. Find another way.
-	// Launch a gofunc to automatically unlock
-	// TIMEOUT_DURATION := time.Duration(s.GetParamInt64("packing_timeout_seconds")) * 2 * time.Second
-	// go func() {
-	// 	time.Sleep(TIME_DURATION)
-	// 	if MutexLocked(phl.hostlocks[host]) {
-	// 		phl.hostlocks[host].Unlock()
-	// 	}
-	// }()
 }
 
 func (phl *PerHostLock) Unlock(host string) {
