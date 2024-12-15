@@ -19,7 +19,7 @@ local parameters = [
   ],
   [
     'polite_sleep',
-    { cf: 2, container: 2 },
+    { cf: 1, container: 1 },
   ],
   [
     'max_filesize_mb',

@@ -40,9 +40,14 @@ local getTLD(tld) = std.get(tlds, tld, default=null);
 
 assert getTLD('gov') == '01';
 
+local fqdnTLD(s) = std.reverse(std.split(s, "."))[0];
+local fqdnDomain(s) = std.reverse(std.split(s, "."))[1];
+
 {
   getTLD:: getTLD,
   toHex:: toHex,
   debug:: debug,
   getDomain:: getDomain,
+  fqdnTLD::fqdnTLD,
+  fqdnDomain::fqdnDomain,
 }

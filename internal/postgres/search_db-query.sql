@@ -31,15 +31,42 @@ select
   to_hex(domain64), 
   path, 
   ts_rank_cd(contentsearch, query) AS Rank,
-  ts_headline('english', sc.content, query, 'MaxFragments=10, MaxWords=7, MinWords=3') as Snippet,
-  (select sc.content from searchable_content sc where sc.domain64 = @d64_start::bigint and sc.tag = 'title' limit 1) as Title
+  ts_headline('english', sc.content, query, 'MaxFragments=3, MaxWords=7, MinWords=3') as Snippet
 from searchable_content sc, 
 	to_tsquery('english', @query::text) query,
 	to_tsvector('english', sc.content) contentsearch
-where query @@ contentsearch
-and
-domain64 >= @d64_start::bigint 
-and domain64 < @d64_end::bigint
+where 
+  query @@ contentsearch
+  and
+  domain64 >= @d64_start::bigint 
+  and 
+  domain64 < @d64_end::bigint
 order by Rank desc
 limit 10
+;
+
+-- name: GetTitle :one
+select 
+  sc.content
+from searchable_content sc
+where
+  sc.domain64 = @domain64::bigint
+  and
+  sc.path = @path::text
+  and
+  sc.tag = 'title'
+limit 1
+;
+
+-- name: GetPath :one
+select 
+  sc.content
+from searchable_content sc
+where
+  sc.domain64 = @domain64::bigint
+  and
+  sc.path = @path::text
+  and
+  sc.tag = 'path'
+limit 1
 ;

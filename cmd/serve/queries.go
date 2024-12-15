@@ -1,5 +1,8 @@
 package main
 
+var _or = " | "
+var _and = " & "
+
 type Q interface {
 	String() string
 }
@@ -18,7 +21,7 @@ type OrQ struct {
 }
 
 func (orq OrQ) String() string {
-	return "(" + orq.Lhs.String() + " OR " + orq.Rhs.String() + ")"
+	return "(" + orq.Lhs.String() + _or + orq.Rhs.String() + ")"
 }
 
 func Or(a, b string) Q {
@@ -35,7 +38,7 @@ func And(a, b string) Q {
 }
 
 func (andq AndQ) String() string {
-	return andq.Lhs.String() + " AND " + andq.Rhs.String()
+	return andq.Lhs.String() + _and + andq.Rhs.String()
 }
 
 type Query struct {
@@ -58,7 +61,7 @@ func (q *Query) ToString() string {
 	for ndx, current := range q.Queries {
 		qs = qs + current.String()
 		if ndx != len(q.Queries)-1 {
-			qs += " AND "
+			qs += _and
 		}
 	}
 	return qs

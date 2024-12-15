@@ -2,6 +2,7 @@ package config
 
 import (
 	"embed"
+	"fmt"
 
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
@@ -43,4 +44,11 @@ func GetTLD(tld string) int {
 	primeConstants()
 	v := gjson.GetBytes(cachedConstants, "TldToConst."+tld).Int()
 	return int(v)
+}
+
+func IntToTld(i int) string {
+	primeConstants()
+	search_string := "ConstToTld." + fmt.Sprintf("%x", i)
+	v := gjson.GetBytes(cachedConstants, search_string).String()
+	return v
 }

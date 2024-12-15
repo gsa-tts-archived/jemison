@@ -65,6 +65,25 @@ func FQDNToDomain64(fqdn string) (int64, error) {
 	return int64(value), nil
 }
 
+func Domain64ToFQDN(domain64 int64) (string, error) {
+	primeCache()
+	h := fmt.Sprintf("%016X", domain64)
+	v, _ := strconv.ParseInt(h[0:2], 16, 32)
+	tld := IntToTld(int(v))
+	fqdn := gjson.GetBytes(cached_file, tld+".Domain64ToFQDN."+h).String()
+	// zap.L().Debug("d64tofqdn",
+	// 	zap.String("h", h), zap.Int64("v", v), zap.String("tld", tld), zap.String("fqdn", fqdn))
+	// log.Println("h", h, "v", v, "tld", tld, "fqdn", fqdn)
+	return fqdn, nil
+}
+
+func RDomainToDomain64(rdomain string) string {
+	primeCache()
+	tld := strings.Split(rdomain, ".")[0]
+	hex := gjson.GetBytes(cached_file, tld+".RDomainToDomain64."+strings.Replace(rdomain, ".", `\.`, -1)).String()
+	return hex
+}
+
 func GetAllFQDNToDomain64() map[string]int64 {
 	primeCache()
 	tlds := gjson.GetBytes(cached_file, "TLDs").Array()
@@ -91,8 +110,9 @@ func HexToDec64(hex string) (int64, error) {
 	return value, nil
 }
 
+// WARNING: This conevrsion makes some assumptions...
 func Dec64ToHex(dec int64) string {
-	return fmt.Sprintf("%16x", dec)
+	return fmt.Sprintf("%016X", dec)
 }
 
 func GetSchedule(fqdn string) Schedule {

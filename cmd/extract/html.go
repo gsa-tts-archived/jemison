@@ -63,6 +63,13 @@ func _getHeaders(doc *goquery.Document) map[string][]string {
 }
 
 func _getBodyContent(doc *goquery.Document) string {
+	// Remove some things.
+	// Get rid of headers and footers.
+	doc.Find("header").Remove()
+	doc.Find("footer").Remove()
+	doc.Find(".usa-banner").Remove()
+	doc.Find(".usa-footer").Remove()
+
 	content := ""
 	for _, elem := range []string{
 		"p",

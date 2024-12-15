@@ -23,7 +23,7 @@ func packPdf(s3json *kv.S3JSON) {
 		context.Background(),
 		search_db.InsertRawContentParams{
 			Domain64: d64,
-			Path:     s3json.Key.Path,
+			Path:     s3json.GetString("path"),
 			Tag:      "path",
 			Content:  s3json.GetString("path"),
 		})
@@ -42,7 +42,7 @@ func packPdf(s3json *kv.S3JSON) {
 		context.Background(),
 		search_db.InsertRawContentParams{
 			Domain64: d64,
-			Path:     s3json.Key.Path,
+			Path:     s3json.GetString("path"),
 			Tag:      "title",
 			Content:  s3json.GetString("title") + " (PDF page " + s3json.GetString("pdf_page_number") + ")",
 		})
@@ -61,9 +61,11 @@ func packPdf(s3json *kv.S3JSON) {
 		context.Background(),
 		search_db.InsertRawContentParams{
 			Domain64: d64,
-			Path:     s3json.Key.Path,
-			Tag:      "body",
-			Content:  s3json.GetString("content"),
+			// s3json.Key.Path yields the path to the PDF without a page number
+			// which does not help when we're searching/returning results.
+			Path:    s3json.GetString("path"),
+			Tag:     "body",
+			Content: s3json.GetString("content"),
 		})
 
 }

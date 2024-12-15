@@ -72,22 +72,20 @@ func EvaluateEntree(ec *EntreeCheck) {
 		it_shall_pass = false
 	}
 
+	// FIXME: We set the fetch to yesterday, then set it to now (below)?
+	// This feels wrong. Redundant. One of these is not needed?
+	// Or... is it necessary with multiple workers? Probably.
+
 	if it_shall_pass {
 		// We need to update the guestbook now, because we will end up re-walking
 		// the page if we don't. This is true in each case.
 		// Fetch will update a second time.
-
 		scheme := JDB.GetScheme(ec.Scheme)
-		d64, err := config.FQDNToDomain64(ec.Host)
-		if err != nil {
-			zap.L().Error("could not find Domain64 for FQDN",
-				zap.String("fqdn", ec.Host))
-		}
 		next_fetch := JDB.GetNextFetch(ec.Host)
 		JDB.WorkDBQueries.UpdateGuestbookNextFetch(context.Background(),
 			work_db.UpdateGuestbookNextFetchParams{
 				Scheme:   scheme,
-				Domain64: d64,
+				Domain64: ec.Domain64,
 				Path:     ec.Path,
 				NextFetch: pgtype.Timestamp{
 					Time:             next_fetch,

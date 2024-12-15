@@ -57,6 +57,21 @@ local fqdnToSchedule(tld, fqdns, schedules) = {
                ))
 };
 
+local setDomainsKeyF(pair) = pair[0];
+
+local domains(fqdns, d64s) =
+  {
+    [pair[0]]: pair[1]
+    for pair
+    in std.set(std.mapWithIndex(function(ndx, d64)
+      [
+        util.fqdnTLD(fqdns[ndx]) + '.' + util.fqdnDomain(fqdns[ndx]),
+        std.slice(d64, 0, 8, 1),
+      ], d64s), keyF=setDomainsKeyF)
+  };
+
+// std.set([std.slice(x, 0, 8, 1) for x in d64s]);
+
 local tld_arr = ['gov', 'mil', 'com', 'net', 'edu', 'org'];
 local domain_arr = [gov.domains, mil.domains, com.domains, net.domains, edu.domains, org.domains];
 
@@ -67,6 +82,7 @@ local domain_arr = [gov.domains, mil.domains, com.domains, net.domains, edu.doma
     Domain64s: allDomain64(pair[0], pair[1]),
     FQDNToDomain64: fqdnToDomain64(self.FQDNs, self.Domain64s),
     Domain64ToFQDN: domain64ToFqdn(self.FQDNs, self.Domain64s),
+    RDomainToDomain64: domains(self.FQDNs, self.Domain64s),
     Schedules: {
       [d64]: schedules[d64]
       for d64 in self.Domain64s

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"strings"
@@ -154,19 +155,38 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 		return "", errors.New("crawler: URL is too short to crawl")
 	}
 
-	// Is it a relative URL? Then it is OK.
-	if strings.HasPrefix(link, "/") || !strings.HasPrefix(link, "http") {
+	skippable_prefixes := []string{"#", "mailto"}
+	for _, sp := range skippable_prefixes {
+		// Skip anything that starts with a #
+		if strings.HasPrefix(link, sp) {
+			return "", fmt.Errorf("skipping %s: %s", sp, link)
+		}
+	}
+
+	// Does it reference the root? Resolve it.
+	if strings.HasPrefix(link, "/") {
 		u, _ := url.Parse(link)
-		u = base.ResolveReference(u)
-		zap.L().Debug("looks good to crawl",
+		resolved := base.ResolveReference(u)
+		zap.L().Debug("references the root",
+			zap.String("link", link),
 			zap.String("base", base.String()),
-			zap.String("resolved", u.String()))
-		return u.String(), nil
+			zap.String("resolved", resolved.String()))
+		return resolved.String(), nil
+	}
+
+	// Is it a relative URL?
+	if !strings.HasPrefix(link, "/") && !strings.HasPrefix(link, "http") {
+		base.Path = base.Path + "/" + link
+		zap.L().Debug("relative, being appended",
+			zap.String("link", link),
+			zap.String("base", base.String()),
+		)
+		return base.String(), nil
 	}
 
 	lu, err := url.Parse(link)
 	if err != nil {
-		return "", errors.New("crawler: link does not parse")
+		return "", fmt.Errorf("crawler: link does not parse: %s", link)
 	}
 
 	// Does it end in .gov?

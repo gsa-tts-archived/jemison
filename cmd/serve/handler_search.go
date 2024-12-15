@@ -2,19 +2,25 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GSA-TTS/jemison/config"
 	"github.com/GSA-TTS/jemison/internal/postgres/search_db"
 	"github.com/gin-gonic/gin"
+	"github.com/kljensen/snowball"
 	"go.uber.org/zap"
 )
 
 type SearchRequestInput struct {
-	Host  string `json:"host"`
-	Path  string `json:"path"`
-	Terms string `json:"terms"`
+	Host          string `json:"host"`
+	Path          string `json:"path"`
+	Terms         string `json:"terms"`
+	Domain64Start string `json:"d64_start"`
+	Domain64End   string `json:"d64_end"`
 }
 
 type SearchResult struct {
@@ -27,39 +33,91 @@ type SearchResult struct {
 	Text       string
 	PathString string
 	Snippet    string
+	FQDN       string
 }
+
+func to64(s string) int64 {
+	v, _ := strconv.Atoi(s)
+	return int64(v)
+}
+
+// Would just be * with SQLite.
+var _stemmed = ":*"
 
 func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
 	start := time.Now()
-	d64, err := config.FQDNToDomain64(sri.Host)
-	if err != nil {
-		zap.L().Error("could not get Domain64",
-			zap.String("host", sri.Host))
-		duration := time.Since(start)
-		return []SearchResult{}, duration, err
-	}
 
 	zap.L().Debug("searching for Domain64 range",
-		zap.Int64("start", d64),
-		zap.Int64("end", d64+1))
+		zap.Int64("start", to64(sri.Domain64Start)),
+		zap.Int64("end", to64(sri.Domain64End)))
+
+	// Don't only use the stemmed words
+	existing_terms := strings.Split(sri.Terms, " ")
+	zap.L().Debug("EXISTING TERMS", zap.Strings("terms", existing_terms))
+
+	query := NewQuery()
+
+	for _, et := range existing_terms {
+		et = strings.TrimSpace(et)
+		stemmed, err := snowball.Stem(et, "english", true)
+		zap.L().Debug("stemmed result", zap.String("et", et), zap.String("stemmed", stemmed))
+		if err != nil {
+			zap.L().Debug("stemming error", zap.String("err", err.Error()))
+		}
+		query.AddToQuery(Or(et, stemmed+_stemmed))
+	}
+
+	improved_terms_string := query.ToString()
+
+	zap.L().Debug("search string",
+		zap.String("original", sri.Terms),
+		zap.String("Q", fmt.Sprintln(query)),
+		zap.String("improved", improved_terms_string))
 
 	res, err := JDB.SearchDBQueries.SearchContent(context.Background(),
 		search_db.SearchContentParams{
-			Query:    sri.Terms,
-			D64Start: d64,
-			D64End:   d64 + 1,
+			Query:    improved_terms_string,
+			D64Start: to64(sri.Domain64Start),
+			D64End:   to64(sri.Domain64End),
 		})
 
 	duration := time.Since(start)
 
 	cleaned := make([]SearchResult, 0)
 	for _, r := range res {
+		// FIXME: the database structure is forcing us into an N+1 queries
+		// situation... Not good.
+		d64, _ := config.HexToDec64(r.ToHex)
+		fqdn, _ := config.Domain64ToFQDN(d64)
+
+		zap.L().Debug("results for domain",
+			zap.Int64("domain64", d64), zap.String("fqdn", fqdn))
+
+		title, err := JDB.SearchDBQueries.GetTitle(context.Background(),
+			search_db.GetTitleParams{
+				Domain64: d64,
+				Path:     r.Path,
+			})
+		if err != nil {
+			title = "<no title>"
+		}
+
+		path, err := JDB.SearchDBQueries.GetPath(context.Background(),
+			search_db.GetPathParams{
+				Domain64: d64,
+				Path:     r.Path,
+			})
+		if err != nil {
+			path = r.Path
+		}
+
 		cleaned = append(cleaned, SearchResult{
-			Terms:      sri.Terms,
-			PageTitle:  r.Title,
-			PathString: r.Path,
+			Terms:      improved_terms_string,
+			PageTitle:  title,
+			PathString: path,
 			Snippet:    string(r.Snippet),
 			Rank:       float64(r.Rank),
+			FQDN:       fqdn,
 		})
 	}
 	return cleaned, duration, err

@@ -58,3 +58,24 @@ func TestEnoughHosts(t *testing.T) {
 	three := GetListOfHosts("three")
 	assert.Equal(t, 3, len(three))
 }
+
+func TestDomain64ToFQDN(t *testing.T) {
+	v, err := Domain64ToFQDN(72057748656750592)
+	if err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t, "cloud.gov", v)
+
+	v, err = Domain64ToFQDN(216172790703718656)
+	if err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t, "my.goarmy.com", v)
+
+	v, err = Domain64ToFQDN(72057911865508096)
+	if err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t, "www.fac.gov", v)
+
+}

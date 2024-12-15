@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/GSA-TTS/jemison/internal/common"
-	"github.com/GSA-TTS/jemison/internal/util"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
@@ -33,7 +32,7 @@ func (w *EntreeWorker) Work(ctx context.Context, job *river.Job[common.EntreeArg
 	// In case we don't have clean URLs...
 	if len(job.Args.Path) > 0 {
 		path := strings.TrimSpace(job.Args.Path)
-		path = util.TrimSuffix(path, "/")
+		//path = util.TrimSuffix(path, "/")
 		if path == "" {
 			path = "/"
 		}

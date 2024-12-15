@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 
+	"github.com/GSA-TTS/jemison/config"
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/postgres"
@@ -62,18 +65,49 @@ func main() {
 		"search_port": "10000",
 	}
 
-	engine.GET("/:tld/:domain", func(c *gin.Context) {
+	engine.GET("/:tld", func(c *gin.Context) {
+		tld := config.GetTLD(c.Param("tld"))
+		d64_start, _ := strconv.ParseInt(fmt.Sprintf("%02x00000000000000", tld), 16, 64)
+		d64_end, _ := strconv.ParseInt(fmt.Sprintf("%02xFFFFFFFFFFFF00", tld), 16, 64)
 		base_params["tld"] = c.Param("tld")
-		base_params["domain"] = c.Param("domain")
-		base_params["fqdn"] = c.Param("domain") + "." + c.Param("tld")
+		base_params["fqdn"] = c.Param("tld")
+		base_params["d64_start"] = d64_start
+		base_params["d64_end"] = d64_end
+		c.HTML(http.StatusOK, "index.tmpl", base_params)
+	})
+
+	engine.GET("/:tld/:domain", func(c *gin.Context) {
+		tld := c.Param("tld")
+		domain := c.Param("domain")
+		start := config.RDomainToDomain64(fmt.Sprintf("%s.%s", tld, domain))
+		zap.L().Debug("rdomain", zap.String("start", start))
+
+		d64_start, _ := strconv.ParseInt(fmt.Sprintf("%s00000000", start), 16, 64)
+		d64_end, _ := strconv.ParseInt(fmt.Sprintf("%sFFFFFF00", start), 16, 64)
+
+		base_params["tld"] = tld
+		base_params["domain"] = domain
+		base_params["fqdn"] = fmt.Sprintf("%s.%s", domain, tld)
+		base_params["d64_start"] = d64_start
+		base_params["d64_end"] = d64_end
 		c.HTML(http.StatusOK, "index.tmpl", base_params)
 	})
 
 	engine.GET("/:tld/:domain/:subdomain", func(c *gin.Context) {
-		base_params["tld"] = c.Param("tld")
-		base_params["domain"] = c.Param("domain")
-		base_params["subdomain"] = c.Param("subdomain")
-		base_params["fqdn"] = c.Param("subdomain") + "." + c.Param("domain") + "." + c.Param("tld")
+		tld := c.Param("tld")
+		domain := c.Param("domain")
+		subdomain := c.Param("subdomain")
+		fqdn := fmt.Sprintf("%s.%s.%s", subdomain, domain, tld)
+		start, _ := config.FQDNToDomain64(fqdn)
+		d64_start := start
+		d64_end := start + 1
+
+		base_params["tld"] = tld
+		base_params["domain"] = domain
+		base_params["subdomain"] = subdomain
+		base_params["fqdn"] = fqdn
+		base_params["d64_start"] = d64_start
+		base_params["d64_end"] = d64_end
 		c.HTML(http.StatusOK, "index.tmpl", base_params)
 	})
 
