@@ -17,6 +17,15 @@ local getDomain(domain, domains) = std.filter(
 )[0];
 
 
+local toDec(hex) = 
+  std.foldl(function(v, prev) v + prev, 
+  std.mapWithIndex(function(ndx, cp) (if cp < 65 then cp-48 else cp-55)*std.pow(16, ndx), 
+  std.reverse(std.map(function(s) std.codepoint(s), std.stringChars(hex)))),
+  0);
+
+assert toDec("A000FF") == 10486015;
+assert toDec("0100008D00000100") == 72058199628316928;
+
 local tlds = {
   gov: '01',
   mil: '02',
@@ -48,6 +57,9 @@ local fqdnDomain(s) = std.reverse(std.split(s, "."))[1];
   toHex:: toHex,
   debug:: debug,
   getDomain:: getDomain,
-  fqdnTLD::fqdnTLD,
-  fqdnDomain::fqdnDomain,
+  fqdnTLD:: fqdnTLD,
+  fqdnDomain:: fqdnDomain,
+  toDec:: toDec,
+  a1: std.trace("toDec", toDec("A000FF")),
+
 }

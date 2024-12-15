@@ -2,6 +2,7 @@
 // This means this file wants to be built *after* the domain64 file.
 // domain64.jsonnet is expensive to execute.
 local d64 = import '../domain64/domain64.json';
+local util = import '../domain64/util.libsonnet';
 
 local fqdn_include = [
   'cloud.gov',
@@ -27,4 +28,8 @@ assert lookupD64('cloud.gov') == '0100002400000000';
   three: [[d64ToDec(lookupD64(fqdn)), d64ToDec(lookupD64(fqdn))] for fqdn in fqdn_include] +
          [[d64ToDec(p[0]), d64ToDec(p[1])] for p in ranges_to_include],
   all: [0, d64ToDec('FFFFFFFFFFFFFF00')],
+  nih: [
+    util.toDec('0100008D00000000'),
+    util.toDec('0100008DFFFFFF00'),
+  ],
 }
