@@ -110,3 +110,12 @@ insert into hosts
     next_fetch = excluded.next_fetch
   returning id
 ;
+
+-- name: PathsInDomain64Range :one
+select count(*)
+from guestbook
+where
+  domain64 >= @d64_start::bigint 
+  and 
+  domain64 < @d64_end::bigint
+;

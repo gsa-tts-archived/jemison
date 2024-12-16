@@ -23,7 +23,7 @@ local parameters = [
   ],
   [
     'max_filesize_mb',
-    { cf: 10, container: 10 },
+    { cf: 10, container: 20 },
   ],
 ] + B.parameters;
 

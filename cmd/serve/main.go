@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/postgres"
+	"github.com/GSA-TTS/jemison/internal/postgres/search_db"
+	"github.com/GSA-TTS/jemison/internal/postgres/work_db"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -20,6 +23,32 @@ var Databases sync.Map //map[string]*sql.DB
 var ChQSHP = make(chan queueing.QSHP)
 var ThisServiceName = "serve"
 var JDB *postgres.JemisonDB
+
+func addMetadata(m map[string]any) map[string]any {
+	pathCount, err := JDB.WorkDBQueries.PathsInDomain64Range(context.Background(),
+		work_db.PathsInDomain64RangeParams{
+			D64Start: m["d64_start"].(int64),
+			D64End:   m["d64_end"].(int64),
+		})
+	if err != nil {
+		zap.L().Error(err.Error())
+		pathCount = 0
+	}
+	m["pageCount"] = pathCount
+
+	bodyCount, err := JDB.SearchDBQueries.BodiesInDomain64Range(context.Background(),
+		search_db.BodiesInDomain64RangeParams{
+			D64Start: m["d64_start"].(int64),
+			D64End:   m["d64_end"].(int64),
+		})
+	if err != nil {
+		zap.L().Error(err.Error())
+		bodyCount = 0
+	}
+	m["bodyCount"] = bodyCount
+
+	return m
+}
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -70,9 +99,13 @@ func main() {
 		d64_start, _ := strconv.ParseInt(fmt.Sprintf("%02x00000000000000", tld), 16, 64)
 		d64_end, _ := strconv.ParseInt(fmt.Sprintf("%02xFFFFFFFFFFFF00", tld), 16, 64)
 		base_params["tld"] = c.Param("tld")
+		delete(base_params, "domain")
+		delete(base_params, "subdomain")
 		base_params["fqdn"] = c.Param("tld")
 		base_params["d64_start"] = d64_start
 		base_params["d64_end"] = d64_end
+		base_params = addMetadata(base_params)
+
 		c.HTML(http.StatusOK, "index.tmpl", base_params)
 	})
 
@@ -87,9 +120,12 @@ func main() {
 
 		base_params["tld"] = tld
 		base_params["domain"] = domain
+		delete(base_params, "subdomain")
 		base_params["fqdn"] = fmt.Sprintf("%s.%s", domain, tld)
 		base_params["d64_start"] = d64_start
 		base_params["d64_end"] = d64_end
+		base_params = addMetadata(base_params)
+
 		c.HTML(http.StatusOK, "index.tmpl", base_params)
 	})
 
@@ -108,6 +144,7 @@ func main() {
 		base_params["fqdn"] = fqdn
 		base_params["d64_start"] = d64_start
 		base_params["d64_end"] = d64_end
+		base_params = addMetadata(base_params)
 		c.HTML(http.StatusOK, "index.tmpl", base_params)
 	})
 

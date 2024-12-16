@@ -15,7 +15,7 @@ local parameters = [
   ],
   [
     'debug_level',
-    { cf: 'warn', container: 'debug' },
+    { cf: 'warn', container: 'info' },
   ],
 ] + B.parameters;
 

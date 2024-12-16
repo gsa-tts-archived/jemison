@@ -17,7 +17,10 @@
           <nav aria-label="Secondary navigation">
             <ul class="usa-sidenav" id="database-list">
               <li class="usa-sidenav__item">
-                <a href="javascript:void(0);">Parent link</a>
+               <div class="margin-top-1 margin-bottom-1"><b>Metadata</b></div>
+              </li>
+              <li>
+                <b>Pages</b>: {{.pageCount}} ({{.bodyCount}})
               </li>
             </ul>
 
@@ -27,7 +30,7 @@
         <main class="desktop:grid-col-9 usa-prose" id="main-content">
           <h1>Search {{.tld}}{{if .domain}}.{{.domain}}{{end}}{{if .subdomain}}.{{.subdomain}}{{end}}</h1>
           <p class="usa-intro">
-            This is a search engine in under 3000 lines of code.
+            Jemsion: a Search.gov MVP
           </p>
 
           <section aria-label="Big search component">

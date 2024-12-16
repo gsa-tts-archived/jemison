@@ -5,11 +5,19 @@ create table searchable_content (
   domain64 bigint not null,
   path text not null,
   tag text default 'p' not null,
-  content text not null
+  content text not null,
+  fts tsvector generated always as (to_tsvector('english', content)) STORED
   -- unique(domain64)
 )
 -- partition by range(domain64)
 ;
+
+-- ALTER TABLE searchable_content
+-- ADD COLUMN fts tsvector
+-- GENERATED ALWAYS
+-- as (to_tsvector('english', content)) STORED;
+
+
 
 -- https://www.postgresql.org/docs/current/pgtrgm.html#PGTRGM-TEXT-SEARCH
 -- NOTE: Since the words table has been generated as a separate, static table, 
@@ -35,6 +43,10 @@ create index if not exists idx_gin_bodies on searchable_content
 
 create index if not exists idx_gist_bodies on searchable_content 
   using gist (to_tsvector('english', content));
+
+-- This uses a new FTS vector column. Pre-compute for speed.
+create index sc_fts_idx on searchable_content using gin (fts);
+
 
 -- migrate:down
 

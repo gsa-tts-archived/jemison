@@ -27,9 +27,34 @@ assert lookupD64('cloud.gov') == '0100002400000000';
 {
   three: [[d64ToDec(lookupD64(fqdn)), d64ToDec(lookupD64(fqdn))] for fqdn in fqdn_include] +
          [[d64ToDec(p[0]), d64ToDec(p[1])] for p in ranges_to_include],
-  all: [0, d64ToDec('FFFFFFFFFFFFFF00')],
+  all: [[0, d64ToDec('FFFFFFFFFFFFFF00')]],
   nih: [
-    util.toDec('0100008D00000000'),
-    util.toDec('0100008DFFFFFF00'),
+    [
+      util.toDec('0100008D00000000'),
+      util.toDec('0100008DFFFFFF00'),
+    ],
+
+  ],
+  dec15: self.nih + self.three + [
+    [
+      // 18F
+      util.toDec('0100000100000100'),
+      util.toDec('010000010000FF00'),
+    ],
+    [
+      // digital.gov
+      util.toDec('0100003700000100'),
+      util.toDec('010000370000FF00'),
+    ],
+    [
+      // fedramp.gov
+      util.toDec('0100005000000000'),
+      util.toDec('010000500000FF00'),
+    ],
+    [
+      // nasa.gov (some)
+      util.toDec('0100008700000100'),
+      util.toDec('0100008700000500'),
+    ],
   ],
 }

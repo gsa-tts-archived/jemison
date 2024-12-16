@@ -26,21 +26,38 @@ insert into raw_content
   ($1, $2, $3, $4)
 ;
 
+-- select 
+--   to_hex(domain64), 
+--   path, 
+--   ts_rank_cd(contentsearch, query) AS Rank,
+--   ts_headline('english', sc.content, query, 'MaxFragments=3, MaxWords=7, MinWords=3') as Snippet
+-- from searchable_content sc, 
+-- 	to_tsquery('english', @query::text) query,
+-- 	to_tsvector('english', sc.content) contentsearch
+-- where 
+--   query @@ contentsearch
+--   and
+--   domain64 >= @d64_start::bigint 
+--   and 
+--   domain64 < @d64_end::bigint
+-- order by Rank desc
+-- limit 10
+-- ;
+
 -- name: SearchContent :many
 select 
   to_hex(domain64), 
   path, 
-  ts_rank_cd(contentsearch, query) AS Rank,
+  ts_rank_cd(fts, query) AS Rank,
   ts_headline('english', sc.content, query, 'MaxFragments=3, MaxWords=7, MinWords=3') as Snippet
 from searchable_content sc, 
-	to_tsquery('english', @query::text) query,
-	to_tsvector('english', sc.content) contentsearch
+	to_tsquery('english', @query::text) query
 where 
-  query @@ contentsearch
-  and
   domain64 >= @d64_start::bigint 
   and 
   domain64 < @d64_end::bigint
+  and 
+  fts @@ query
 order by Rank desc
 limit 10
 ;
@@ -69,4 +86,15 @@ where
   and
   sc.tag = 'path'
 limit 1
+;
+
+-- name: BodiesInDomain64Range :one
+select count(*)
+from searchable_content
+where
+  domain64 >= @d64_start::bigint 
+  and 
+  domain64 < @d64_end::bigint
+  and
+  tag = 'body'
 ;
