@@ -29,11 +29,11 @@ export const options = {
     },
     a_new_millenium: {
       executor: 'constant-arrival-rate',
-      rate: 1000, 
+      rate: 500, 
       timeUnit: '1s', 
-      duration: '60s',
+      duration: '30s',
       preAllocatedVUs: 100,
-      maxVUs: 1500, 
+      maxVUs: 1000, 
       startTime: "40s"
     },
     teeter_totter: {
@@ -42,36 +42,34 @@ export const options = {
       gracefulRampDown: "10s",
       stages: [
         { duration: "10s", target: 100 },
-        { duration: "20s", target: 500 },
-        { duration: "60s", target: 1200 },
-        { duration: "30s", target: 100 },
+        { duration: "15s", target: 250 },
+        { duration: "15s", target: 750 },
+        { duration: "10s", target: 100 },
       ],
-      startTime: "100s"
+      startTime: "70s"
     },
   },
   
 };
 
-const wordlists = JSON.parse(open('./wordlists.json')); 
+const wordlist = JSON.parse(open('./wordlist.json')); 
 
 // Simulated user behavior
 export default function () {
-  let hosts = Object.keys(wordlists);
   let terms = "";
-  let number_of_terms = Math.floor(Math.random() * 3) + 1;
-  let which_host_num =  Math.floor(Math.random() * hosts.length);
-  let which_host = hosts[which_host_num]
+  let number_of_terms = Math.floor(Math.random() * 4) + 1;
 
   for (let i = 0; i < number_of_terms ; i++) {
-    var low = wordlists[which_host]
-    if (low && low.length > 0) {
-      let choice = Math.floor(Math.random() * low.length)
-      let word = low[choice];
-      terms += " " + word;  
-    }
+    let choice = Math.floor(Math.random() * wordlist.length)
+    let word = wordlist[choice];
+    terms += word + " ";  
   }
 
-  let data = { host: which_host, terms: terms};
+  let data = { 
+    host: "gov", 
+    d64_start: "0", 
+    d64_end: Number("0x01FF000000000000").toString(), 
+    terms: terms.trim()};
 
   let res = http.post(
     "http://localhost:10000/api/search",
