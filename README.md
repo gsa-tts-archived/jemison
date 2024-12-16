@@ -11,24 +11,6 @@ It is based on a series of experiments in search and embedded database technolog
 
 `jemison` is named for the pioneering and innovating explorer of medicine and space, Dr. Mae Jemison, the first African-American woman in space. 
 
-
-> [!IMPORTANT]
-> 
-> `jemison` is:
-> 
-> 1. **MAINTAINABLE**: 15x fewer lines of code
-> 2. **AFFORDABLE** 10x less resource intenstive (read: hosting costs)
-> 3. **FAST**: 10x more performant (and scales horitzontally)
-
-Why `jemison` is an MVP candidate for search:
-
-1. `jemison` can already crawl and index HTML and PDFs, handling diacritics (e.g. Español).
-2. `jemison` can deploy a full crawl/index/serve solution in 1GB of RAM on [cloud.gov](https://cloud.gov/)<sup>1</sup>.
-3. `jemison` is 4000 lines of code: easy to maintain, with an extensible, distributed architecture.
-4. `jemison` can handle 55K requests per minute (10x the current search.gov load) with 256**M**B of RAM.
-
-<sup>1</sup> <em>This was true at one point. It needs a touch more now.</em>
-
 ## running the experiment
 
 In the top directory, first build the base/build container:
@@ -43,7 +25,7 @@ Then, run the stack.
 make up
 ```
 
-The `up` compiles all of the services, generates the database API, unpacks the USWDS assets into place, and launches the stack.
+The `up` compiles all of the services, generates the database API, unpacks the USWDS assets into place, and launches the stack. This kind of build is possible when working on an Intel-based platform.
 
 ## containerized build
 
@@ -57,7 +39,7 @@ to start, and
 make macup
 ```
 
-to build and run the applications within a containerized environment. This runs the build in a Linux context (against the image used by CF/cloud.gov).
+to build and run the applications within a containerized environment. This runs the build in a Linux context (against the image used by CF/cloud.gov). This style build is required when running on non-Intel platforms.
 
 ## interacting with components
 
@@ -68,8 +50,8 @@ To begin a crawl:
 ```
 http put http://localhost:10001/api/entree/full/pass \
   scheme=https \
-  host=digitalcorps.gsa.gov \
-  path="/" api-key=lego
+  path="/" api-key=lego \
+  host=digitalcorps.gsa.gov
 ```
 
 The URL parameters to the `admin` component determine if we are doing a full crawl and whether or not we have a hall pass. A "hall pass" lets us fetch a page even if the deadline for the next fetch has not passed. This is for emergency updating of pages/domains outside of a normal scheudle.
@@ -81,39 +63,47 @@ The URL parameters to the `admin` component determine if we are doing a full cra
 
 When resetting the schedule (`/full/pass`), we set a new deadline in keeping with the site's normal schedule. For example, if a site is scheduled to run weekly, then we will, as we fetch, set the deadline on a new fetch to one week in the future. In this regard, a weekly schedule is not fixed---it is not necessarily "every Monday." Instead, it is one week from the last time it was fetched. (This may turn out to be confusing behavior...)
 
-The file `container.yaml` is a configuration file with a *few* end-user tunables. The FAC website is small in HTML, but is *large* because it contains 4 PDFs at ~2000 pages each. If you only want to index the HTML, set `extract_pdf` to `false`. (This is good for demonstration purposes.)
+### configuration
 
-To fetch a single PDF and see it extracted:
+All configuration happens through JSonnet files in `config`. The YAML/JSON files are generated from these sources.
 
-```
-http put http://localhost:10001/api/entree/full/pass \
-  scheme=https \
-  host=app.fac.gov \
-  path="/dissemination/report/pdf/2023-09-GSAFAC-0000063050" \
-  api-key=lego
-```
+* Files in the `services` directory control the golang services (`entree`, `fetch`, etc.). 
+* Files in the `domain64` directory control the domains we work with.
+* The `allowed_hosts` file limits what can be crawled. 
 
-(approximately 100 pages)
-
-Note the `host` must be in the known hosts config (`schedule.jsonnet`).
+The `domain64` directory should be edited with caution; renumbering, once in production, would cause no end of confusion, and end up returning results from the wrong sites. These files are slow to generate, but we're willing to pay the price for the correctness that JSonnet helps guarantee.
 
 ## searching 
 
-After a site is walked and packed, an SQLite file with full-text capabilities is generated. The `serve` component watches for completed files, grabs them from S3, and serves queries from the resulting SQLite database.
+After a site is walked and packed, the data is stored in Postgres for searching. The `serve` component transforms the API into search queries, and also provides a rudimentary template simulating a search result landing page (SERP).
 
 ```
-http POST localhost:10004/serve  host=fac.gov terms="community grant"
+http post http://localhost:10000/api/search \
+  host=www.fac.gov \
+  d64_start="0" \
+  d64_end="143833713099145216" \
+  terms="audit compliance" 
 ```
 
-is how to search using the API; search terms are a single list, and SQLite pulls them apart.
+(At the time of writing, the `host` parameter may be redundant...)
 
-A [WWW-based search interface](http://localhost:10004/search/) can be found at [http://localhost:10004/search/](http://localhost:10004/search/). You will be redirected to a page that lists all of the sites currently indexed. Note that the final part of the URL
+The domain64 start and end values control what part of the domain space to search. See the docs on `domain64` for more information.
+
+A [WWW-based search interface](http://localhost:10000/gov) can be found at [http://localhost:10000/gov](http://localhost:10000/gov). Note that the URL
 
 ```
-http://localhost:10004/search/{HOST}
+http://localhost:10004/search/{TLD}/{DOMAIN}/{SUBDOMAIN}
 ```
 
-determines what indexed database will be searched. (E.g. if you have indexed `alice.gov` and `bob.gov`, selecting that database will navigate you to a URL like `http://localhost:10004/search/alice.gov`.)
+determines what indexed content will be searched. (E.g. if you have indexed `alice.gov` and `bob.gov`, selecting that database will navigate you to a URL like `http://localhost:10004/search/gov/alice`.)
+
+This lets you search
+
+* http://localhost:10000/gov
+* http://localhost:10000/gov/nasa
+* http://localhost:10000/gov/nasa/blogs
+
+if you have crawled blogs.nasa.gov. A search for the TLD only will run a search against all content in that TLD.
 
 ## browsing the backend
 
@@ -170,7 +160,11 @@ To run the stack without the services (just the backend of `minio`, `postgres`, 
 docker compose -f backend.yaml up
 ```
 
-To 
+or 
+
+```
+make backend
+```
 
 ## in case of emergency
 
@@ -208,7 +202,7 @@ The expansion of services (e.g. breaking out hit tracking into `entree`, the add
 *The system was always going to grow as we head to production.* However, it is also still much, much smaller than the previous system, and remains architecturally cleaner. :shrug:
 
 ```
-cloc --exclude-ext=yml,yaml,html,css,less,js,json,svg,scss --fullpath --not-match-d=terraform/\.terraform .
+cloc --exclude-ext=yml,yaml,html,css,less,js,json,svg,scss,csv,jsonnet,libsonnet --fullpath --not-match-d=terraform/\.terraform --not-match-d=config --not-match-d=venv .
 ```
 
 ```
@@ -233,11 +227,12 @@ SUM:                            148           1694            789           9235
 
 ### local load testing
 
-Using k6, I ran queries against random databases with random queries of length 1-4. This is with the script running locally against localhost, where network effects are minimal. Ramping up to 1000 simultaneous users, we see a throughput of 930 requests per second. 
 
-That means that the search server can handle 55K (fifty-five thousand) requests per minute. The server in question **only has 512M of memory**. Scaling is linear with RAM, meaning that to double the number of simultaneous connections, we double the RAM.
+With a connection pool limit of 100, and no particular optimizations on the API (running in `debug` mode), we see roughly 200 req/s. This comes out to around 12K req/minute, which is twice what Search.gov sees around peak (5K req/minute).
 
-search.gov sees approximately 5K requests per minute; with a tiny fraction of the resources of the current infrastructure, this design can handle 10x the load without breaking a sweat.
+These numbers are against a local stack, and therefore have no network overhead.
+
+More testing is needed to see if there are failure modes here. It seems, from the test, that we returned 200 to everything, but some requests pushed out to 4s. At 2x peak, a 4s query response is *ok*. We can also do more to load balance, have read replicas, etc. if we start seeing  traffic scale to this level. We might also consider something like [pgbouncer](https://www.pgbouncer.org/).
 
 
 ```
@@ -251,40 +246,33 @@ search.gov sees approximately 5K requests per minute; with a tiny fraction of th
         script: search-stressor.js
         output: -
 
-     scenarios: (100.00%) 4 scenarios, 1999 max VUs, 4m10s max duration (incl. graceful stop):
+     scenarios: (100.00%) 4 scenarios, 1249 max VUs, 3m10s max duration (incl. graceful stop):
               * one_is_such_a_lonely_number: 1.00 iterations/s for 10s (maxVUs: 10-100, gracefulStop: 30s)
               * the_marching_100: 100.00 iterations/s for 30s (maxVUs: 100-200, startTime: 10s, gracefulStop: 30s)
-              * a_new_millenium: 1000.00 iterations/s for 1m0s (maxVUs: 100-1500, startTime: 40s, gracefulStop: 30s)
-              * teeter_totter: Up to 1200 looping VUs for 2m0s over 4 stages (gracefulRampDown: 10s, startTime: 1m40s, gracefulStop: 30s)
-
-     ✗ status was 200
-      ↳  99% — ✓ 135719 / ✗ 395
-
-     checks.........................: 99.70% 135719 out of 136114
-     data_received..................: 118 MB 535 kB/s
-     data_sent......................: 21 MB  97 kB/s
-     dropped_iterations.............: 1170   5.294314/s
-     http_req_blocked...............: avg=12.52µs min=0s       med=3.38µs  max=15.48ms p(90)=10.73µs p(95)=13.61µs 
-     http_req_connecting............: avg=5.7µs   min=0s       med=0s      max=15.41ms p(90)=0s      p(95)=0s      
-   ✓ http_req_duration..............: avg=27.51ms min=0s       med=8.1ms   max=1.82s   p(90)=64.57ms p(95)=94.26ms 
-       { expected_response:true }...: avg=27.41ms min=273.16µs med=8.13ms  max=1.82s   p(90)=64.46ms p(95)=93.81ms 
-   ✓ http_req_failed................: 0.29%  395 out of 136114
-     http_req_receiving.............: avg=41.6µs  min=0s       med=25.51µs max=11.79ms p(90)=82.76µs p(95)=118.74µs
-     http_req_sending...............: avg=18.56µs min=0s       med=10.18µs max=15.44ms p(90)=37.8µs  p(95)=48.56µs 
-     http_req_tls_handshaking.......: avg=0s      min=0s       med=0s      max=0s      p(90)=0s      p(95)=0s      
-     http_req_waiting...............: avg=27.45ms min=0s       med=8.03ms  max=1.82s   p(90)=64.48ms p(95)=94.18ms 
-     http_reqs......................: 136114 615.923323/s
-     iteration_duration.............: avg=1.02s   min=1s       med=1s      max=2.83s   p(90)=1.06s   p(95)=1.09s   
-     iterations.....................: 136114 615.923323/s
-     vus............................: 4      min=1                max=1199
-     vus_max........................: 1999   min=1200             max=1999
+              * a_new_millenium: 500.00 iterations/s for 30s (maxVUs: 100-1000, startTime: 40s, gracefulStop: 30s)
+              * teeter_totter: Up to 750 looping VUs for 1m30s over 4 stages (gracefulRampDown: 10s, startTime: 1m10s, gracefulStop: 30s)
 
 
-running (3m41.0s), 0000/1999 VUs, 136114 complete and 0 interrupted iterations
-one_is_such_a_lonely_number ✓ [======================================] 000/010 VUs    10s   1.00 iters/s
-the_marching_100            ✓ [======================================] 000/104 VUs    30s   100.00 iters/s
-a_new_millenium             ✓ [======================================] 0000/1054 VUs  1m0s  1000.00 iters/s
-teeter_totter               ✓ [======================================] 0000/1200 VUs  2m0s 
+     ✓ status was 200
+
+     checks.........................: 100.00% 36643 out of 36643
+     data_received..................: 40 MB   246 kB/s
+     data_sent......................: 7.4 MB  45 kB/s
+     dropped_iterations.............: 1705    10.429829/s
+     http_req_blocked...............: avg=25.59µs  min=1.15µs med=4.67µs  max=24.11ms p(90)=6.49µs  p(95)=9.74µs  
+     http_req_connecting............: avg=17.73µs  min=0s     med=0s      max=24.06ms p(90)=0s      p(95)=0s      
+   ✗ http_req_duration..............: avg=611.99ms min=1.14ms med=91.17ms max=37.44s  p(90)=1.22s   p(95)=3.56s   
+       { expected_response:true }...: avg=611.99ms min=1.14ms med=91.17ms max=37.44s  p(90)=1.22s   p(95)=3.56s   
+   ✓ http_req_failed................: 0.00%   0 out of 36643
+     http_req_receiving.............: avg=68.12µs  min=7.37µs med=37.35µs max=22.92ms p(90)=74.34µs p(95)=158.44µs
+     http_req_sending...............: avg=24.27µs  min=3.38µs med=16.18µs max=22.84ms p(90)=23.65µs p(95)=31.11µs 
+     http_req_tls_handshaking.......: avg=0s       min=0s     med=0s      max=0s      p(90)=0s      p(95)=0s      
+     http_req_waiting...............: avg=611.89ms min=1.08ms med=91.12ms max=37.44s  p(90)=1.22s   p(95)=3.56s   
+     http_reqs......................: 36643   224.152622/s
+     iteration_duration.............: avg=1.61s    min=1s     med=1.09s   max=38.44s  p(90)=2.22s   p(95)=4.56s   
+     iterations.....................: 36642   224.146505/s
+     vus............................: 14      min=1              max=933 
+     vus_max........................: 1249    min=750            max=1249
 ```
 
 Points of comparison:

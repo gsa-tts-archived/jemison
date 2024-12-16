@@ -87,31 +87,6 @@ More testing is needed to see if there are failure modes here. It seems, from th
      vus_max........................: 1249    min=750            max=1249
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## Sqlite performance
 
 When we were backing things with SQlite, we saw numbers up to around 600 req/sec.
