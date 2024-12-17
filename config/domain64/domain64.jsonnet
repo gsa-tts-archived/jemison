@@ -25,7 +25,7 @@ local allRFQDN(tld, domains) = std.flattenArrays([
   for d in std.objectFields(domains)
 ]);
 
-local allDomain64(tld, domains) = std.flattenDeepArray([
+local allDomain64(tld, domains) = util.flattenDeepArray([
   [
     // gov
     util.getTLD(tld) + d + kid_key + '00'
