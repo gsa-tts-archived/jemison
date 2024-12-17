@@ -9,7 +9,7 @@ local schedules = import 'schedules.libsonnet';
 local assertion = import 'assertions.libsonnet';
 local util = import 'util.libsonnet';
 
-local allFQDN(tld, domains) = std.flattenDeepArray([
+local allFQDN(tld, domains) = util.flattenDeepArray([
   [
     (if kid_val != '' then kid_val + '.' else '') + std.get(domains, d).name + '.' + tld
     for kid_val in std.objectValues(std.get(domains, d).children)

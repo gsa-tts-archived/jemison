@@ -61,5 +61,9 @@ local fqdnDomain(s) = std.reverse(std.split(s, "."))[1];
   fqdnDomain:: fqdnDomain,
   toDec:: toDec,
   a1: std.trace("toDec", toDec("A000FF")),
-
+  flattenDeepArray(value)::
+    if std.isArray(value) then
+      [y for x in value for y in self.flattenDeepArray(x)]
+    else
+      [value],
 }
