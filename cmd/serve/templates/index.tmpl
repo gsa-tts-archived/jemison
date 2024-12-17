@@ -53,7 +53,9 @@
 
 
         function DoTheSearch() {
-          var post_url = "{{.scheme}}://{{.search_host}}:{{.search_port}}/api/search"
+          // :{{.search_port}}
+          var host = window.location.host; 
+          var post_url = "{{.scheme}}://" + host + "/api/search"
           console.log("post_url", post_url);
           var query = document.getElementById('six-search').value
           console.log(query);
