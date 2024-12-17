@@ -39,7 +39,20 @@ local util = import 'domain64/util.libsonnet';
    util.toDec("0100008700000000"),
    util.toDec("01000087FF000000")
   ],
+  eighteeneff: [
+   util.toDec("0100000100000000"),
+   util.toDec("01000001F0000000")
+  ],
+  digital: [
+   util.toDec("0100003700000000"),
+   util.toDec("01000037F0000000")
+  ],
+  fedramp: [
+   util.toDec("0100005000000000"),
+   util.toDec("0100005F00000000")
+  ],
   dec15: [
     self.nih + self.three + self.uscg + self.spaceforce, self.nasa
+    + self.eighteeneff + self.digital + self.fedramp
   ],
 }
