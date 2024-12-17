@@ -4,7 +4,6 @@ RUN apt-get update \
     && apt-get install -y \
     build-essential \
     curl \
-    jsonnet \
     libpoppler-dev \ 
     libpoppler-glib-dev \
     poppler-utils \
@@ -58,6 +57,9 @@ RUN wget https://s3.amazonaws.com/mountpoint-s3-release/latest/x86_64/mount-s3.d
 ENV PATH=$PATH:/usr/local/go/bin:/root/go/bin
 RUN go install golang.org/x/tools/cmd/goimports@latest    
 RUN go install golang.org/x/tools/cmd/stringer@latest
+RUN go install github.com/google/go-jsonnet/cmd/jsonnet@latest
+RUN go install github.com/google/go-jsonnet/cmd/jsonnet-lint@latest
+RUN go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest
 RUN cp /root/go/bin/stringer /usr/local/go/bin/stringer
 
 WORKDIR /golanglint
