@@ -98,7 +98,7 @@ func newS3FromBucketName(bucket_name string) S3 {
 			s3.Bucket.CredentialString("bucket"),
 			minio.MakeBucketOptions{Region: b.CredentialString("region")})
 
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "succeeded") {
 			log.Println(err)
 			log.Fatal("KV could not create bucket ", bucket_name)
 		}

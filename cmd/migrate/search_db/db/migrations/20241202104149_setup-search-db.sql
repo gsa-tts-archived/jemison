@@ -23,5 +23,36 @@ create table raw_content (
 )
 ;
 
+create table searchable_content (
+  domain64 bigint not null,
+  path text not null,
+  tag text default 'p' not null,
+  content text not null,
+  fts tsvector generated always as (to_tsvector('english', content)) STORED
+)
+;
+
+-- alter table searchable_content
+-- add column fts tsvector
+-- generated always
+-- as (to_tsvector('english', content)) stored;
+
+
+create or replace function fun_raw_content_after_insert()
+returns trigger as $$
+begin
+    insert into searchable_content 
+      (domain64, path, tag, content)
+    values 
+      (new.domain64, new.path, new.tag, new.content);
+    return new;
+end;
+$$ language plpgsql;
+
+create trigger trigger_raw_content_after_insert
+after insert on raw_content
+for each row
+execute function fun_raw_content_after_insert();
+
 -- migrate:down
 
