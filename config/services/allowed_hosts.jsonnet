@@ -33,28 +33,50 @@ assert lookupD64('cloud.gov') == '0100002400000000';
       util.toDec('0100008D00000000'),
       util.toDec('0100008DFFFFFF00'),
     ],
+  ],
 
+  uscg: [
+    [
+      util.toDec('0200002000000000'),
+      util.toDec('0200002FF0000000'),
+    ],
   ],
-  dec15: self.nih + self.three + [
+  spaceforce: [
     [
-      // 18F
-      util.toDec('0100000100000100'),
-      util.toDec('010000010000FF00'),
+      util.toDec('0200001E00000000'),
+      util.toDec('0200001EFF000000'),
     ],
+  ],
+  nasa: [
     [
-      // digital.gov
-      util.toDec('0100003700000100'),
-      util.toDec('010000370000FF00'),
+      util.toDec('0100008700000000'),
+      util.toDec('01000087FF000000'),
     ],
+  ],
+  eighteeneff: [
     [
-      // fedramp.gov
+      util.toDec('0100000100000000'),
+      util.toDec('01000001F0000000'),
+    ],
+  ],
+  digital: [
+    [
+      util.toDec('0100003700000000'),
+      util.toDec('01000037F0000000'),
+    ],
+  ],
+  fedramp: [
+    [
       util.toDec('0100005000000000'),
-      util.toDec('010000500000FF00'),
-    ],
-    [
-      // nasa.gov (some)
-      util.toDec('0100008700000100'),
-      util.toDec('0100008700000500'),
+      util.toDec('0100005F00000000'),
     ],
   ],
+  dec15: self.nih
+         + self.three
+         + self.nasa
+         + self.uscg
+         + self.spaceforce
+         + self.eighteeneff
+         + self.digital
+         + self.fedramp,
 }

@@ -52,10 +52,11 @@ func GetListOfHosts(allowed_hosts string) []string {
 	set := make(map[string]bool)
 
 	all := GetAllFQDNToDomain64()
-	for fqdn, d64 := range all {
-		for _, pair := range ranges {
-			low := (pair.Array())[0].Int()
-			high := (pair.Array())[1].Int()
+	for _, pair := range ranges {
+		low := (pair.Array())[0].Int()
+		high := (pair.Array())[1].Int()
+		zap.L().Info("checking range", zap.Int64("low", low), zap.Int64("high", high))
+		for fqdn, d64 := range all {
 			if (d64 >= low) && (d64 <= high) {
 				set[fqdn] = true
 			}

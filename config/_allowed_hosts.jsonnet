@@ -1,6 +1,6 @@
 local util = import 'domain64/util.libsonnet';
 
-{
+local lookup = {
   all: [
     0,
     18446744073709551616,
@@ -52,7 +52,27 @@ local util = import 'domain64/util.libsonnet';
    util.toDec("0100005F00000000")
   ],
   dec15: [
-    self.nih + self.three + self.uscg + self.spaceforce, self.nasa
-    + self.eighteeneff + self.digital + self.fedramp
+    self.nih 
+    + self.three 
+    + self.uscg 
+    + self.spaceforce 
+    + self.nasa
+    + self.eighteeneff 
+    + self.digital 
+    + self.fedramp
   ],
+};
+
+local toS(o) = if 
+  std.isArray(o) then "[" + std.foldl(function(prev_result, e) prev_result + " " + toS(e), o, "") + " ]"
+  else std.toString(o);
+
+assert std.isArray(std.objectFields(lookup));
+
+local debug(key, o) = std.trace(key + ": " + toS(o), o);
+
+{
+  [k]: { name: k, low: lookup[k][0], high: lookup[k][1] } 
+  for k
+  in debug("fields", std.objectFields(lookup))
 }
