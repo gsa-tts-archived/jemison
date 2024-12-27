@@ -7,11 +7,32 @@ import (
 	"strings"
 )
 
-// FIXME: Perhaps these should all return error.
-// It can either be "nil" or a message.
-// That way, the failures contain information
-// (as opposed to just being a bool.)
-// FIXME: These should take URLs, not strings.
+var skippable_prefixes = []string{"#", "mailto"}
+
+var skippable_extensions = []string{
+	"acc",
+	"bmp",
+	"doc",
+	"docx",
+	"epub",
+	"gif",
+	"jpeg",
+	"jpg",
+	"mov",
+	"mp3",
+	"ogg",
+	"png",
+	"psd",
+	"raw",
+	"stl",
+	"svg",
+	"tif",
+	"tiff",
+	"txt",
+	"webp",
+	"xls",
+	"xlsx",
+}
 
 func exceedsLength(length int) func(*url.URL) error {
 	return func(u *url.URL) error {
@@ -47,9 +68,6 @@ func isTooShort(length int) func(*url.URL) error {
 	}
 }
 
-// FIXME: move to a config file.
-var skippable_prefixes = []string{"#", "mailto"}
-
 func hasSkippablePrefixRelative(u *url.URL) error {
 	for _, sp := range skippable_prefixes {
 		if strings.HasPrefix(u.String(), sp) {
@@ -58,8 +76,6 @@ func hasSkippablePrefixRelative(u *url.URL) error {
 	}
 	return nil
 }
-
-var skippable_extensions = []string{"epub", "stl", "docx", "xlsx", "doc", "txt", "xls", "jpg", "jpeg", "png", "tiff", "tif", "gif", "svg", "raw", "psd", "mp3", "mov", "webp", "bmp", "acc", "ogg"}
 
 func hasSkippableExtension(u *url.URL) error {
 	for _, ext := range skippable_extensions {
@@ -98,6 +114,17 @@ func hasTooManyRepeats(repeatLength int, threshold int) func(*url.URL) error {
 	}
 }
 
+func endsWithWrongSlash(u *url.URL) error {
+	// log.Println("URL LOOKS LIKE", u.String())
+	for _, pat := range []string{`\$`, `%5C$`} {
+		m, _ := regexp.MatchString(pat, u.String())
+		if m {
+			return fmt.Errorf("ends with backslash: %s", u.String())
+		}
+	}
+	return nil
+}
+
 var all string = ".*"
 
 func GeneralRules() []Rule {
@@ -119,6 +146,12 @@ func GeneralRules() []Rule {
 		Match:  all,
 		Msg:    "exceedsLength 200",
 		Reject: exceedsLength(200),
+	})
+
+	rules = append(rules, Rule{
+		Match:  all,
+		Msg:    "endsWithWrongSlash",
+		Reject: endsWithWrongSlash,
 	})
 
 	rules = append(rules, Rule{

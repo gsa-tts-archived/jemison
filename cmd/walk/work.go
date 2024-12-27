@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -163,39 +162,6 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 		return "", err
 	}
 
-	// // Is the URL at least length 1?
-	// if len(link) < 1 {
-	// 	return "", errors.New("crawler: URL is too short to crawl")
-	// }
-
-	// skippable_prefixes := []string{"#", "mailto"}
-	// for _, sp := range skippable_prefixes {
-	// 	// Skip anything that starts with a #
-	// 	if strings.HasPrefix(link, sp) {
-	// 		return "", fmt.Errorf("skipping %s: %s", sp, link)
-	// 	}
-	// }
-
-	// // FIXME: Also needs a config
-	// if len(link) > 200 {
-	// 	return "", fmt.Errorf("too long: %s", link)
-	// }
-
-	// if util.TooManyRepeats(link, 8, 50) {
-	// 	return "", fmt.Errorf("too many repeats: %s", link)
-	// }
-
-	// for _, ext := range []string{"epub", "stl", "docx", "xlsx", "doc", "txt", "xls", "jpg", "jpeg", "png", "tiff", "tif", "gif", "svg", "raw", "psd", "mp3", "mov", "webp", "bmp", "acc", "ogg"} {
-	// 	if strings.HasSuffix(link, ext) {
-	// 		return "", fmt.Errorf("ignoring extension: %s", ext)
-	// 	}
-	// }
-
-	// // Does it have a mailto: ? Skip it.
-	// if strings.Contains(link, "mailto:") {
-	// 	return "", fmt.Errorf("looks like a mailto link: %s", link)
-	// }
-
 	// Does it reference the root? Resolve it.
 	if strings.HasPrefix(link, "/") {
 		u, _ := url.Parse(link)
@@ -229,18 +195,7 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 		}
 	}
 
-	// FIXME: There seem to be whitespace URLs coming through. I don't know why.
-	// This could be revisited, as it is expensive.
-	// Do we still have garbage?
-	if !bytes.HasPrefix([]byte(lu.String()), []byte("https")) ||
-		!bytes.HasPrefix([]byte(lu.String()), []byte("http")) {
-		return "", errors.New("crawler: link does not start with http(s)")
-	}
-	// Is it pure whitespace?
-	if len(strings.Replace(lu.String(), " ", "", -1)) < 5 {
-		return "", errors.New("crawler: link too short")
-	}
-	return lu.String(), nil
+	return "", fmt.Errorf("could not decide: %s", link)
 }
 
 func trimSuffix(s, suffix string) string {

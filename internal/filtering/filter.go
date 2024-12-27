@@ -32,6 +32,7 @@ func IsRejectRuleset(u *url.URL, rules []Rule) error {
 			return fmt.Errorf("should not get here: %s", err.Error())
 		}
 		if apply {
+			// log.Println("applying", r.Msg)
 			err := r.Reject(u)
 			if err != nil {
 				zap.L().Debug("reject based on rule",
@@ -47,6 +48,7 @@ func IsRejectRuleset(u *url.URL, rules []Rule) error {
 	if failed {
 		return fmt.Errorf("%s: %s", failedMsg, e.Error())
 	}
+
 	return nil
 }
 
