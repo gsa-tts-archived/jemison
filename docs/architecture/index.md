@@ -31,4 +31,3 @@ Once we have the content in Postgres, we have another powerful language at our d
 At this point, further services clean, process, and prepare the text for search.
 
 Read more about the [data processing pipeline](processing.md).
-
