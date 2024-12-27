@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/GSA-TTS/jemison/config"
 	common "github.com/GSA-TTS/jemison/internal/common"
+	filter "github.com/GSA-TTS/jemison/internal/filtering"
 	kv "github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/postgres/work_db"
 	"github.com/GSA-TTS/jemison/internal/queueing"
@@ -68,6 +70,17 @@ func stripHostToAscii(host string) string {
 }
 
 func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]) error {
+
+	u := url.URL{
+		Scheme: job.Args.Scheme,
+		Host:   job.Args.Host,
+		Path:   job.Args.Path,
+	}
+
+	err := filter.IsReject(&u)
+	if err != nil {
+		return nil
+	}
 
 	// Have we seen them before?
 	if Gateway.HostExists(job.Args.Host) {

@@ -105,6 +105,41 @@ def migrate_up(tlds, jd64, start_int, end_int):
                     fqdn, rfqdn, rdomain, tld_nibbles, domain_nibbles, subdomain_nibbles
                 )
 
+def indexes(tlds, jd64, start_int, end_int):
+    fp = get_fp()
+    fp.close()
+    for tld in tlds:
+        d64tofqdn = jd64[tld]["Domain64ToFQDN"]
+        for d64, fqdn in d64tofqdn.items():
+            d64_int = int(d64, 16)
+            if d64_int >= start_int and d64_int <= end_int:
+                tld_nibbles = d64[0:2]
+                domain_nibbles = d64[2:8]
+                subdomain_nibbles = d64[8:14]
+                tld = list(reversed(fqdn.split(".")))[0]
+                rdomain = "_".join(list(reversed(fqdn.split(".")))[0:2])
+                rfqdn = "_".join(list(reversed(fqdn.split("."))))
+                clean_rfqdn = "".join(filter(safe, rfqdn.lower()))
+
+                fp = get_fp()
+                indexes = f"""
+-------------------------
+{clean_rfqdn} indexes
+-------------------------
+create index if not exists {clean_rfqdn}_domain64_idx on {clean_rfqdn} (domain64);
+create index if not exists {clean_rfqdn}_tag_idx on {clean_rfqdn} (tag);
+create index if not exists {clean_rfqdn}_gin_paths_idx on {clean_rfqdn} 
+using gin (to_tsvector('english', path));
+create index if not exists {clean_rfqdn}_gist_paths_idx on {clean_rfqdn} 
+using gist (to_tsvector('english', path));
+create index if not exists {clean_rfqdn}_gin_bodies_idx on {clean_rfqdn} 
+using gin (to_tsvector('english', content));
+-- This uses a new FTS vector column. Pre-compute for speed.
+create index if not exists {clean_rfqdn}_fts_idx on {clean_rfqdn} using gin (fts);
+        """
+                fp.write(indexes)
+                fp.write("\n")
+                fp.close()
 
 def migrate_down(tlds, jd64, start_int, end_int):
     fp = get_fp()
@@ -177,8 +212,9 @@ def trigger_function(tlds, jd64, start_int, end_int):
                 fp.write(
                     f"    {cond} (new.domain64 >= x'{d64}'::bigint and new.domain64 < x'{d64_plus_one}00'::bigint)\n"
                 )
-                fp.write(f"      then insert into {clean_rfqdn} values (new.*);\n")
-    fp.write(f"    else insert into {tld} values (new.*);\n")
+                fp.write(f"      then insert into {clean_rfqdn} (domain64, path, tag, content) values (new.domain64, new.path, new.tag, new.content);\n")
+    # fp.write(f"    else insert into {tld} values (new.*);\n")
+    fp.write(f"    else insert into {tld} (domain64, path, tag, content) values (new.domain64, new.path, new.tag, new.content);\n")
     fp.write("  end if;\n")
     fp.write("  return null;\n")
     fp.write("  end;\n")
@@ -213,6 +249,7 @@ def main(path, migration_name, start, end):
         pass
 
     migrate_up(tlds, jd64, start_int, end_int)
+    indexes(tlds, jd64, start_int, end_int)
     trigger_function(tlds, jd64, start_int, end_int)
     migrate_down(tlds, jd64, start_int, end_int)
 

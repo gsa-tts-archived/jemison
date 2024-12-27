@@ -13,12 +13,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/jackc/pgx/v5 v5.7.1
-	github.com/jedib0t/go-pretty/v6 v6.6.1
 	github.com/johbar/go-poppler v1.0.0
 	github.com/kljensen/snowball v0.10.0
-	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/minio/minio-go/v7 v7.0.80
-	github.com/nalgeon/redka v0.5.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pingcap/log v1.1.0
 	github.com/riverqueue/river v0.13.0
@@ -28,7 +25,6 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
-	github.com/tjarratt/babble v0.0.0-20210505082055-cbca2a4833c1
 	github.com/zeebo/assert v1.3.1
 	go.uber.org/zap v1.27.0
 )
@@ -63,19 +59,15 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/onsi/ginkgo v1.16.5 // indirect
-	github.com/onsi/gomega v1.35.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/riverqueue/river/riverdriver v0.13.0 // indirect
 	github.com/riverqueue/river/rivershared v0.13.0 // indirect
 	github.com/riverqueue/river/rivertype v0.13.0 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect

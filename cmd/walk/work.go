@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	common "github.com/GSA-TTS/jemison/internal/common"
+	filter "github.com/GSA-TTS/jemison/internal/filtering"
 	"github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/GSA-TTS/jemison/internal/util"
@@ -145,28 +145,6 @@ func walk_html(s3json *kv.S3JSON) {
 // A set of functions applied that, one at a time, decide if a link should
 // be crawled.
 
-func tooManyRepeats(s string, repeatLength int, threshold int) bool {
-	end := len(s) - repeatLength
-	chunks := make(map[string]bool)
-	repeats := make(map[string]int)
-	for ndx := 0; ndx < end; ndx++ {
-		piece := s[ndx : ndx+repeatLength]
-		if _, ok := chunks[piece]; ok {
-			repeats[piece] = repeats[piece] + 1
-		} else {
-			chunks[piece] = true
-			repeats[piece] = 0
-		}
-	}
-
-	total := 0
-	for _, v := range repeats {
-		total += v
-	}
-
-	return total >= threshold
-}
-
 func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 	base := url.URL{
 		Scheme: s3json.GetString("scheme"),
@@ -174,38 +152,14 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 		Path:   s3json.GetString("path"),
 	}
 
-	// zap.L().Debug("considering the url",
-	// 	zap.String("url", link))
-
-	// Is the URL at least length 1?
-	if len(link) < 1 {
-		return "", errors.New("crawler: URL is too short to crawl")
+	lu, err := url.Parse(link)
+	if err != nil {
+		return "", fmt.Errorf("crawler: link does not parse: %s", link)
 	}
 
-	skippable_prefixes := []string{"#", "mailto"}
-	for _, sp := range skippable_prefixes {
-		// Skip anything that starts with a #
-		if strings.HasPrefix(link, sp) {
-			return "", fmt.Errorf("skipping %s: %s", sp, link)
-		}
-	}
-
-	// FIXME: These need to become config parameters.
-	// Does it have a large number of repeats?
-	// If so, we might be in an infinite loop.
-	if tooManyRepeats(link, 8, 50) {
-		return "", fmt.Errorf("too many repeats: %s", link)
-	}
-
-	for _, ext := range []string{"jpg", "jpeg", "png", "tiff", "tif", "gif", "svg", "raw", "psd", "mp3", "mov", "webp", "bmp", "acc", "ogg"} {
-		if strings.HasSuffix(link, ext) {
-			return "", fmt.Errorf("ignoring extension: %s", ext)
-		}
-	}
-
-	// Does it have a mailto: ? Skip it.
-	if strings.Contains(link, "mailto:") {
-		return "", fmt.Errorf("looks like a mailto link: %s", link)
+	err = filter.IsReject(lu)
+	if err != nil {
+		return "", err
 	}
 
 	// Does it reference the root? Resolve it.
@@ -229,16 +183,6 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 		return base.String(), nil
 	}
 
-	lu, err := url.Parse(link)
-	if err != nil {
-		return "", fmt.Errorf("crawler: link does not parse: %s", link)
-	}
-
-	// Does it end in .gov?
-	// if bytes.HasSuffix([]byte(lu.Host), []byte("gov")) {
-	// 	return "", errors.New("crawler: URL does not end in .gov")
-	// }
-
 	pieces := strings.Split(base.Host, ".")
 	if len(pieces) < 2 {
 		return "", errors.New("crawler: link host has too few pieces")
@@ -251,18 +195,7 @@ func is_crawlable(s3json *kv.S3JSON, link string) (string, error) {
 		}
 	}
 
-	// FIXME: There seem to be whitespace URLs coming through. I don't know why.
-	// This could be revisited, as it is expensive.
-	// Do we still have garbage?
-	if !bytes.HasPrefix([]byte(lu.String()), []byte("https")) ||
-		!bytes.HasPrefix([]byte(lu.String()), []byte("http")) {
-		return "", errors.New("crawler: link does not start with http(s)")
-	}
-	// Is it pure whitespace?
-	if len(strings.Replace(lu.String(), " ", "", -1)) < 5 {
-		return "", errors.New("crawler: link too short")
-	}
-	return lu.String(), nil
+	return "", fmt.Errorf("could not decide: %s", link)
 }
 
 func trimSuffix(s, suffix string) string {
