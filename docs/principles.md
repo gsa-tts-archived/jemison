@@ -17,7 +17,8 @@ toc_md_description: toc-md-value
 
 ### mental locks
 
-Roger von Oech wrote the book A Whack on the Side of the Head. It’s a fun book. A light read.
+Roger von Oech wrote the book *A Whack on the Side of the Head*. It’s a fun book. A light read.
+
 At the core of this (small) book are ten mental locks that we tend to constrain ourselves with. "Is that the right answer?" "Are we following the rules?" "Can we be practical for a moment?"
 
 These are von Oech's mental locks. Be conscious of when you are using them to keep yourself from exploring ideas. They are pervasive in government.
@@ -32,9 +33,6 @@ These are von Oech's mental locks. Be conscious of when you are using them to ke
 8. Avoid ambiguity
 9. To err is wrong
 10. I'm not creative
-
-
-
 
 ## product principles
 
