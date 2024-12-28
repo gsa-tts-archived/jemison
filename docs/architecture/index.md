@@ -28,6 +28,19 @@ Read more about the [data capture pipeline](pipeline.md).
 
 Once we have the content in Postgres, we have another powerful language at our disposal: SQL.
 
+```mermaid
+flowchart LR     
+    classDef orange fill:#FFCCCC
+    PG@{ shape: db, label: "Postgres"}
+    subgraph pipeline
+    PG:::orange -.-> pack
+    end
+    subgraph nightly
+    pack --> commonwords
+    commonwords --> searchweights --> bags
+    end
+```
+
 At this point, further services clean, process, and prepare the text for search.
 
 Read more about the [data processing pipeline](processing.md).
