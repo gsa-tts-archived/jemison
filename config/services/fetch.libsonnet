@@ -9,6 +9,13 @@ local credentials = [
 ];
 
 local parameters = [
+  // With the 'simple' queueing model, 1000+ workers is appropriate.
+  // With 'round_robin', 10 is appropriate.
+  // With 'one_per_domain', 10 is appropriate... but largely immaterial.
+  [
+    'queue_model',
+    { cf: 'round_robin', container: 'round_robin' },
+  ],
   [
     'workers',
     { cf: 10, container: 10 },

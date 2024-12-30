@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/GSA-TTS/jemison/config"
@@ -26,27 +27,16 @@ var FetchPool *pgxpool.Pool
 var FetchClient *river.Client[pgx.Tx]
 var FetchQueues map[string]river.QueueConfig
 
+var RoundRobinWorkerPool atomic.Int64
+var RoundRobinSize int64
+
+var QueueingModel string
+
 type FetchWorker struct {
 	river.WorkerDefaults[common.FetchArgs]
 }
 
-func InitializeQueues() {
-	//var fetchClient *river.Client[pgx.Tx]
-	queueing.InitializeRiverQueues()
-
-	_, fP, workers := common.CommonQueueInit()
-	FetchPool = fP
-
-	river.AddWorker(workers, &FetchWorker{})
-
-	// Grab the number of workers from the config.
-	fetchService, err := env.Env.GetUserService(ThisServiceName)
-	if err != nil {
-		zap.L().Error("could not fetch service config")
-		log.Println(err)
-		os.Exit(1)
-	}
-	workerCount := fetchService.GetParamInt64("workers")
+func oneQueuePerHost(workers *river.Workers, workerCount int64) {
 
 	MainQueue := make(map[string]river.QueueConfig)
 	MainQueue[ThisServiceName] = river.QueueConfig{MaxWorkers: int(workerCount)}
@@ -94,5 +84,117 @@ func InitializeQueues() {
 	if err := hostsFetchClient.Start(ctx); err != nil {
 		zap.L().Error("could not launch hosts client", zap.String("err", err.Error()))
 		os.Exit(42)
+	}
+}
+
+func roundRobinQueues(workers *river.Workers, workerCount int64) {
+	// I'm going to create a round-robin pool of workers.
+	// That is, if workerCount is 10, I'm going to create
+	// 10x10 workers, in 10x queues. This way, I can round-robin
+	// jobs to the queues. This should improve throughput significantly.
+	// May have to have more configs, so this is better able to be controlled.
+	RoundRobinSize = workerCount
+
+	// Start the 'main' queue
+	fetchClient, err := river.NewClient(riverpgxv5.New(FetchPool), &river.Config{
+		Queues: map[string]river.QueueConfig{
+			ThisServiceName: {MaxWorkers: int(workerCount)},
+		},
+		Workers: workers,
+	})
+
+	if err != nil {
+		zap.L().Error("could not establish main worker pool")
+		log.Println(err)
+		os.Exit(1)
+	}
+	FetchClient = fetchClient
+
+	// Start the work clients
+	if err := fetchClient.Start(context.Background()); err != nil {
+		zap.L().Error("workers are not the means of production. exiting.")
+		os.Exit(42)
+	}
+
+	// start the round-robin queues
+	for n := range workerCount {
+		queueName := fmt.Sprintf("%s-%d", ThisServiceName, n)
+		fetchClient, err = river.NewClient(riverpgxv5.New(FetchPool), &river.Config{
+			Queues: map[string]river.QueueConfig{
+				queueName: {MaxWorkers: int(workerCount)},
+			},
+			// FetchCooldown: time.Duration(n*50) * time.Millisecond,
+			Workers: workers,
+		})
+		if err != nil {
+			zap.L().Error("could not establish worker pool", zap.Int64("pool number", n))
+			log.Println(err)
+			os.Exit(1)
+		}
+		// Start the work clients
+		if err := fetchClient.Start(context.Background()); err != nil {
+			zap.L().Error("workers are not the means of production. exiting.")
+			os.Exit(42)
+		}
+	}
+}
+
+func simpleQueue(workers *river.Workers, workerCount int64) {
+
+	MainQueue := make(map[string]river.QueueConfig)
+	MainQueue[ThisServiceName] = river.QueueConfig{MaxWorkers: int(workerCount)}
+
+	// Start the 'main' queue
+	mainFetchClient, err := river.NewClient(riverpgxv5.New(FetchPool), &river.Config{
+		Queues:  MainQueue,
+		Workers: workers,
+	})
+	if err != nil {
+		zap.L().Error("could not establish main fetch client")
+		log.Println(err)
+		os.Exit(1)
+	}
+
+	// Start the work clients
+	ctx := context.Background()
+	if err := mainFetchClient.Start(ctx); err != nil {
+		zap.L().Error("could not launch main fetch client.", zap.String("err", err.Error()))
+		os.Exit(42)
+	}
+}
+
+func InitializeQueues() {
+	//var fetchClient *river.Client[pgx.Tx]
+	queueing.InitializeRiverQueues()
+
+	_, fP, workers := common.CommonQueueInit()
+	FetchPool = fP
+
+	river.AddWorker(workers, &FetchWorker{})
+
+	// Grab the number of workers from the config.
+	fetchService, err := env.Env.GetUserService(ThisServiceName)
+	if err != nil {
+		zap.L().Error("could not fetch service config")
+		log.Println(err)
+		os.Exit(1)
+	}
+	workerCount := fetchService.GetParamInt64("workers")
+	queueModel := fetchService.GetParamString("queue_model")
+
+	switch queueModel {
+	case "round_robin":
+		QueueingModel = "round_robin"
+		roundRobinQueues(workers, workerCount)
+	case "one_per_domain":
+		QueueingModel = "one_per_domain"
+		oneQueuePerHost(workers, workerCount)
+	case "simple":
+		QueueingModel = "simple"
+		simpleQueue(workers, workerCount)
+	default:
+		zap.L().Warn("falling through to default simple queueing model")
+		QueueingModel = "simple"
+		simpleQueue(workers, workerCount)
 	}
 }

@@ -88,13 +88,27 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		zap.L().Debug("host exists")
 		if !Gateway.GoodToGo(job.Args.Host) {
 			zap.L().Debug("not good to go")
-			asciiHost := stripHostToAscii(job.Args.Host)
-			asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
-			ChQSHP <- queueing.QSHP{
-				Queue:  asciiQueueName,
-				Scheme: job.Args.Scheme,
-				Host:   job.Args.Host,
-				Path:   job.Args.Path,
+
+			// This is dependent on the queueing model
+			// If it is "simple" or "round_robin", we do nothing.
+			// If it is "one_per_domain", we need to do something fancy.
+
+			if QueueingModel == "one_per_domain" {
+				asciiHost := stripHostToAscii(job.Args.Host)
+				asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
+				ChQSHP <- queueing.QSHP{
+					Queue:  asciiQueueName,
+					Scheme: job.Args.Scheme,
+					Host:   job.Args.Host,
+					Path:   job.Args.Path,
+				}
+			} else {
+				ChQSHP <- queueing.QSHP{
+					Queue:  "fetch",
+					Scheme: job.Args.Scheme,
+					Host:   job.Args.Host,
+					Path:   job.Args.Path,
+				}
 			}
 			// We queued them elsewhere, so this job is done and done right.
 			return nil
@@ -107,13 +121,23 @@ func (w *FetchWorker) Work(ctx context.Context, job *river.Job[common.FetchArgs]
 		zap.L().Debug("host does not exist",
 			zap.String("host", job.Args.Host))
 		Gateway.GoodToGo(job.Args.Host)
-		asciiHost := stripHostToAscii(job.Args.Host)
-		asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
-		ChQSHP <- queueing.QSHP{
-			Queue:  asciiQueueName,
-			Scheme: job.Args.Scheme,
-			Host:   job.Args.Host,
-			Path:   job.Args.Path,
+
+		if QueueingModel == "one_per_domain" {
+			asciiHost := stripHostToAscii(job.Args.Host)
+			asciiQueueName := fmt.Sprintf("fetch-%s", asciiHost)
+			ChQSHP <- queueing.QSHP{
+				Queue:  asciiQueueName,
+				Scheme: job.Args.Scheme,
+				Host:   job.Args.Host,
+				Path:   job.Args.Path,
+			}
+		} else {
+			ChQSHP <- queueing.QSHP{
+				Queue:  "fetch",
+				Scheme: job.Args.Scheme,
+				Host:   job.Args.Host,
+				Path:   job.Args.Path,
+			}
 		}
 	}
 
