@@ -2081,11 +2081,18 @@ local domains = {
     },
     name: 'wwtg',
   },
+  '0000DD': {
+    children: {
+      '000001': 'www',
+    },
+    name: 'e2e',
+  },
 };
 
 assert util.getDomain('search', domains) == '0000B2';
 assert util.getDomain('cloud', domains) == '000024';
 assert util.getDomain('vote', domains) == '0000DA';
+assert util.getDomain('e2e', domains) == '0000DD';
 
 {
   domains: domains,

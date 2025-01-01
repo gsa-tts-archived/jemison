@@ -22,12 +22,23 @@ local lookupD64(fqdn) = d64[getTLD(fqdn)].FQDNToDomain64[fqdn];
 
 local d64ToDec(d) = std.parseHex(d);
 
+local fqdnToDec(fqdn) = d64ToDec(lookupD64(fqdn));
+
 assert lookupD64('cloud.gov') == '0100002400000000';
 
 {
+  e2e: [
+    [
+      util.toDec('010000DD00000000'),
+      util.toDec('010000DDFFFFFF00'),
+    ],
+  ],
+
   three: [[d64ToDec(lookupD64(fqdn)), d64ToDec(lookupD64(fqdn))] for fqdn in fqdn_include] +
          [[d64ToDec(p[0]), d64ToDec(p[1])] for p in ranges_to_include],
+  
   all: [[0, d64ToDec('FFFFFFFFFFFFFF00')]],
+  
   nih: [
     [
       util.toDec('0100008D00000000'),
@@ -79,4 +90,5 @@ assert lookupD64('cloud.gov') == '0100002400000000';
          + self.eighteeneff
          + self.digital
          + self.fedramp,
+         + self.e2e,
 }

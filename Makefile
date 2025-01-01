@@ -28,6 +28,8 @@ build: clean config generate
 	cd cmd/migrate ; make build
 	echo "build admin"
 	cd cmd/admin ; make build
+	echo "build e2e"
+	cd cmd/e2e ; make build
 	echo "build entree"
 	cd cmd/entree ; make build
 	echo "build extract"

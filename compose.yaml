@@ -18,7 +18,7 @@ x-services-common: &services-common
   restart: no
 
 services:
-  # NEXT SERVICE PORT: 10008
+  # NEXT SERVICE PORT: 10009
   #-----------------------------------------------------
   # admin :10001
   #-----------------------------------------------------
@@ -59,6 +59,53 @@ services:
       DEBUG_LEVEL: debug
       GIN_MODE: debug
 
+  #-----------------------------------------------------
+  # e2e :10008
+  #-----------------------------------------------------
+  e2e:
+    <<: *services-common
+    image: jemison/dev
+    # Simulate CF
+    # https://stackoverflow.com/questions/42345235/how-to-specify-memory-cpu-limit-in-docker-compose-version-3
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    hostname: e2e.gov
+    # networks:
+    #   some-network:
+    #     aliases:
+    #       - e2e.gov
+    build: 
+      context: .
+      dockerfile: ./cmd/entree/Dockerfile
+    entrypoint: /home/vcap/app/cmd/e2e/run.sh
+    volumes:
+      - type: bind
+        source: .
+        target: /home/vcap/app
+    ports:
+      - 10008:8888
+    # https://docs.docker.com/compose/how-tos/startup-order/
+    depends_on:
+      nginx:
+        condition: service_started
+      jemison-queues-db:
+        condition: service_healthy
+      jemison-work-db:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://e2e:8888/heartbeat || exit 1
+      interval: 60s
+      timeout: 180s
+      retries: 3
+      start_period: 60s
+    environment:
+      ENV: "DOCKER"
+      PORT: 8888
+      DEBUG_LEVEL: debug
+      GIN_MODE: debug
+      SCHEDULE: ${SCHEDULE:-""}
 
   #-----------------------------------------------------
   # entree :10007
