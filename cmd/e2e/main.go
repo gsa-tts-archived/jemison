@@ -7,6 +7,7 @@ import (
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/postgres"
 	"github.com/GSA-TTS/jemison/internal/queueing"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -17,6 +18,7 @@ var JDB *postgres.JemisonDB
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
+	s, _ := env.Env.GetUserService(ThisServiceName)
 
 	engine := common.InitializeAPI()
 
@@ -25,7 +27,8 @@ func main() {
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))
 
-	// Serve the static directory at /static
-	engine.Static("/static", "./static")
+	static_files_path := s.GetParamString("static_files_path")
+	engine.StaticFS("/static", gin.Dir(static_files_path, true))
+
 	http.ListenAndServe(":"+env.Env.Port, engine)
 }

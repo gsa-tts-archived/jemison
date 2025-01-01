@@ -1,4 +1,5 @@
 local A = import 'admin.libsonnet';
+local E2 = import 'e2e.libsonnet';
 local EN = import 'entree.libsonnet';
 local EX = import 'extract.libsonnet';
 local F = import 'fetch.libsonnet';
@@ -20,6 +21,7 @@ local VCAP = import 'vcap_services.libsonnet';
   EIGHT_SERVICES: {
     'user-provided': [
       A.container,
+      E2.container,
       EN.container,
       EX.container,
       F.container,
