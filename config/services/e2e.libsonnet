@@ -14,6 +14,13 @@ local parameters = [
     { cf: 10, container: 10 },
   ],
   [
+    'template_files_path',
+    {
+      cf: '/home/vcap/app/templates',
+      container: '/home/vcap/app/cmd/e2e/templates',
+    },
+  ],
+  [
     'debug_level',
     { cf: 'warn', container: 'debug' },
   ],

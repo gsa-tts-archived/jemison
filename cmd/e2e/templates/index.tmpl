@@ -1,0 +1,30 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="/static/assets/img/favicons/icon_logo.svg" />
+  <link rel="stylesheet" href="/static/assets/css/uswds.css" media="all" type="text/css">
+</head>
+
+<body>
+  <div class="usa-overlay"></div>
+    <div class="usa-section">
+      <div class="grid-container">
+        <div class="grid-row grid-gap">
+          <main class="desktop:grid-col-9 usa-prose" id="main-content">
+            <h1>E2E test pages</h1>
+            <p>This is some content.</p>
+            <ul>
+              {{range .filenames}}
+                <li><a href="/static/{{ . }}">{{ . }}</a></li>
+              {{end}}
+            </ul>
+          </main>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

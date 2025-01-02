@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/GSA-TTS/jemison/internal/env"
 )
 
 var skippable_prefixes = []string{"#", "mailto"}
@@ -52,6 +54,15 @@ func hasSlashHttp(u *url.URL) error {
 }
 
 func insecureGov(u *url.URL) error {
+	// If we are running against a fake domain, and in our local stack,
+	// we want this to pass. This will only work in the containerized env.
+	if env.IsContainerEnv() {
+		except, _ := regexp.MatchString(`^http://www.e2e.gov`, u.String())
+		if except {
+			return nil
+		}
+	}
+
 	m, _ := regexp.MatchString(`^http:`, u.String())
 	if m {
 		return fmt.Errorf("insecure URL: %s", u.String())
