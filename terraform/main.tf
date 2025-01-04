@@ -4,8 +4,8 @@ data "cloudfoundry_domain" "public" {
 }
 
 data "cloudfoundry_space" "app_space" {
-  org_name = "sandbox-gsa"
-  name     = "matthew.jadud"
+  org_name = var.cf_org
+  name     = var.cf_space
 }
 
 #################################################################
@@ -14,8 +14,8 @@ data "cloudfoundry_space" "app_space" {
 
 module "queues_database" {
   source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
-  cf_org_name      = "sandbox-gsa"
-  cf_space_name    = "matthew.jadud"
+  cf_org_name      = var.cf_org
+  cf_space_name    = var.cf_space
   name             = "jemison-queues-db"
   recursive_delete = false
   tags             = ["rds"]
@@ -24,9 +24,19 @@ module "queues_database" {
 
 module "work_database" {
   source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
-  cf_org_name      = "sandbox-gsa"
-  cf_space_name    = "matthew.jadud"
+  cf_org_name      = var.cf_org
+  cf_space_name    = var.cf_space
   name             = "jemison-work-db"
+  recursive_delete = false
+  tags             = ["rds"]
+  rds_plan_name    = "micro-psql"
+}
+
+module "search_database" {
+  source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
+  cf_org_name      = var.cf_org
+  cf_space_name    = var.cf_space
+  name             = "jemison-search-db"
   recursive_delete = false
   tags             = ["rds"]
   rds_plan_name    = "micro-psql"
@@ -37,8 +47,8 @@ module "work_database" {
 #################################################################
 module "s3-private-extract" {
   source = "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1"
-  cf_org_name      = "sandbox-gsa"
-  cf_space_name    = "matthew.jadud"
+  cf_org_name      = var.cf_org
+  cf_space_name    = var.cf_space
   name             = "extract"
   s3_plan_name     = "basic"
   recursive_delete = false
@@ -47,8 +57,8 @@ module "s3-private-extract" {
 
 module "s3-private-fetch" {
   source = "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1"
-  cf_org_name      = "sandbox-gsa"
-  cf_space_name    = "matthew.jadud"
+  cf_org_name      = var.cf_org
+  cf_space_name    = var.cf_space
   name             = "fetch"
   s3_plan_name     = "basic"
   recursive_delete = false
@@ -57,8 +67,8 @@ module "s3-private-fetch" {
 
 module "s3-private-serve" {
   source = "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1"
-  cf_org_name      = "sandbox-gsa"
-  cf_space_name    = "matthew.jadud"
+  cf_org_name      = var.cf_org
+  cf_space_name    = var.cf_space
   name             = "serve"
   s3_plan_name     = "basic"
   recursive_delete = false

@@ -37,7 +37,8 @@ local parameters = [
 {
   creds:: [[service] + x for x in credentials],
   params:: [[service] + x for x in parameters],
-  cf: B.params('credentials', 'cf', service, self.creds) +
+  cf: { name: service } +
+      B.params('credentials', 'cf', service, self.creds) +
       B.params('parameters', 'cf', service, self.params),
   container: { name: service } +
              B.params('credentials', 'container', service, self.creds) +

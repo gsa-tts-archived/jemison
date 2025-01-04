@@ -1,7 +1,7 @@
-variable "cf_password" {
+variable cf_password {
   sensitive = true
 }
-variable "cf_username" {
+variable cf_username {
   sensitive = true
 }
 
@@ -9,12 +9,12 @@ variable cf_api_url {
   default = "https://api.fr.cloud.gov"
 }
 
-variable cf_env {
-  default = "sandbox-gsa"
+variable cf_space {
+  default = "search-dev"
 }
 
-variable cf_org_name {
-  default = "matthew.jadud"
+variable cf_org {
+  default = "gsa-tts-usagov"
 }
 
 variable api_key {
