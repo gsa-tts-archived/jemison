@@ -1,18 +1,18 @@
-# resource "cloudfoundry_route" "admin_route" {
-#   space    = data.cloudfoundry_space.app_space.id
-#   domain   = data.cloudfoundry_domain.public.id
-#   hostname = "jemison-admin" #FIXME - ${spacename}
-# }
+resource "cloudfoundry_route" "admin_route" {
+  space    = var.app_space_id # data.cloudfoundry_space.app_space.id
+  domain   = var.domain_id # data.cloudfoundry_domain.public.id
+  hostname = "jemison-admin-${var.space_name}" #FIXME - ${spacename}
+}
 
 resource "cloudfoundry_app" "admin" {
   name                 = "admin"
   space                = var.app_space_id # data.cloudfoundry_space.app_space.id
   buildpacks            = ["https://github.com/cloudfoundry/apt-buildpack", "https://github.com/cloudfoundry/binary-buildpack.git"]
-  path                 = var.app_zip
-  source_code_hash     = filesha256(var.app_zip)
+  path                 = "${path.module}/../app.tar.gz"
+  source_code_hash     = filesha256("${path.module}/../app.tar.gz")
   disk_quota           = var.disk_quota
   memory               = var.memory
-  instances            = 1
+  instances            = var.instances
   strategy             = "rolling"
   timeout              = 200
   health_check_type    = "port"
@@ -32,7 +32,7 @@ resource "cloudfoundry_app" "admin" {
   }
 
   routes {
-    route = var.admin_route_id # cloudfoundry_route.admin_route.id
+    route = cloudfoundry_route.admin_route.id # cloudfoundry_route.admin_route.id
   }
   
   # environment = {

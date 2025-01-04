@@ -54,7 +54,9 @@ terraform.rc
 **/.terraform.lock.hcl
 
 # developer files 
-**/developers.tf
+dev/developers.tf
+staging/developers.tf
+production/developers.tf
 
 zips
 plans

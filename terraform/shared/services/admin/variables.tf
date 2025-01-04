@@ -1,7 +1,19 @@
 variable disk_quota {
   type        = number
   description = "app disk allocation (in MB)"
-  default     = 512
+  default     = 256
+}
+
+variable memory {
+  type        = number
+  description = "app ram allocation (in MB)"
+  default     = 128
+}
+
+variable instances {
+  type        = number
+  description = "number of app instances"
+  default     = 1
 }
 
 variable gin_debug_level {
@@ -16,17 +28,12 @@ variable gitref {
   # You can also specify a specific commit, eg "7487f882903b9e834a5133a883a88b16fb8b16c9"
 }
 
-variable memory {
-  type        = number
-  description = "app ram allocation (in MB)"
-  default     = 256
-}
 
-variable admin_route_id {
+variable app_space_id {
   type = string
 }
 
-variable app_space_id {
+variable domain_id {
   type = string
 }
 
@@ -42,6 +49,6 @@ variable db_search_id {
   type = string
 }
 
-variable app_zip {
+variable space_name {
   type = string
 }

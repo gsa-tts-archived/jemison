@@ -9,11 +9,6 @@ data "cloudfoundry_space" "app_space" {
   org  = var.cf_org_guid
 }
 
-resource "cloudfoundry_route" "admin_route" {
-  space    = data.cloudfoundry_space.app_space.id
-  domain   = data.cloudfoundry_domain.public.id
-  hostname = "jemison-admin"
-}
 
 ######################################
 # DATABASES
@@ -42,10 +37,14 @@ module "buckets" {
 ######################################
 module "admin" {
   source = "../shared/services/admin"
-  admin_route_id = cloudfoundry_route.admin_route.id
+  # disk_quota = 256
+  # memory = 128
+  # instances = 1
+  space_name = data.cloudfoundry_space.app_space.name
+  # admin_route_id = data.cloudfoundry_route.admin_route.id
   app_space_id = data.cloudfoundry_space.app_space.id
+  domain_id = data.cloudfoundry_domain.public.id
   db_queue_id = module.databases.db_queue_id
   db_search_id = module.databases.db_search_id
   db_work_id = module.databases.db_work_id
-  app_zip = "blargh"
-} 
+}

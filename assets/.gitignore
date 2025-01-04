@@ -1,7 +1,0 @@
-static/assets/*
-databases/*sqlite
-databases/*sqlite*
-databases/*gov*
-databases/*com*
-databases/*org*
-databases/**
