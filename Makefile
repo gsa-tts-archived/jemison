@@ -42,8 +42,6 @@ build: clean config generate
 	# cd cmd/validate ; make build
 	echo "build walk"
 	cd cmd/walk ; make build
-	echo "copy assets"
-	cd assets ; rm -rf static/assets ; unzip -qq static.zip
 
 .PHONY: up
 up: build

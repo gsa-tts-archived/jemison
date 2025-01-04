@@ -1,122 +1,55 @@
-
-data "cloudfoundry_domain" "public" {
-  name = "app.cloud.gov"
+# We must define the space in each subdirectory.
+# /dev maps to the `dev` space, etc.
+variable cf_space {
+  default = "search-dev"
 }
 
-data "cloudfoundry_space" "app_space" {
-  org_name = var.cf_org
-  name     = var.cf_space
-}
-
-#################################################################
-# POSTGRES
-#################################################################
-
-module "queues_database" {
-  source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
-  cf_org_name      = var.cf_org
-  cf_space_name    = var.cf_space
-  name             = "jemison-queues-db"
-  recursive_delete = false
-  tags             = ["rds"]
-  rds_plan_name    = "micro-psql"
-}
-
-module "work_database" {
-  source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
-  cf_org_name      = var.cf_org
-  cf_space_name    = var.cf_space
-  name             = "jemison-work-db"
-  recursive_delete = false
-  tags             = ["rds"]
-  rds_plan_name    = "micro-psql"
-}
-
-module "search_database" {
-  source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
-  cf_org_name      = var.cf_org
-  cf_space_name    = var.cf_space
-  name             = "jemison-search-db"
-  recursive_delete = false
-  tags             = ["rds"]
-  rds_plan_name    = "micro-psql"
-}
-
-#################################################################
-# S3 BUCKETS
-#################################################################
-module "s3-private-extract" {
-  source = "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1"
-  cf_org_name      = var.cf_org
-  cf_space_name    = var.cf_space
-  name             = "extract"
-  s3_plan_name     = "basic"
-  recursive_delete = false
-  tags             = ["s3"]
-}
-
-module "s3-private-fetch" {
-  source = "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1"
-  cf_org_name      = var.cf_org
-  cf_space_name    = var.cf_space
-  name             = "fetch"
-  s3_plan_name     = "basic"
-  recursive_delete = false
-  tags             = ["s3"]
-}
-
-module "s3-private-serve" {
-  source = "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1"
-  cf_org_name      = var.cf_org
-  cf_space_name    = var.cf_space
-  name             = "serve"
-  s3_plan_name     = "basic"
-  recursive_delete = false
-  tags             = ["s3"]
-}
-
-
-#################################################################
-# ADMIN
-#################################################################
-resource "cloudfoundry_route" "admin_route" {
-  space    = data.cloudfoundry_space.app_space.id
-  domain   = data.cloudfoundry_domain.public.id
-  hostname = "jemison-admin"
-}
-
-resource "cloudfoundry_app" "admin" {
-  name                 = "admin"
-  space                = data.cloudfoundry_space.app_space.id
-  buildpacks            = ["https://github.com/cloudfoundry/apt-buildpack", "https://github.com/cloudfoundry/binary-buildpack.git"]
-  path                 = "zips/admin.zip"
-  source_code_hash     = filesha256("zips/admin.zip")
-  disk_quota           = var.disk_quota_l
-  memory               = var.service_admin_ram
-  instances            = 1
-  strategy             = "rolling"
-  timeout              = 200
-  health_check_type    = "port"
-  health_check_timeout = 180
-  health_check_http_endpoint = "/heartbeat"
-
-  service_binding {
-    service_instance = module.work_database.instance_id
+variable databases {
+  type = map(object({rds_plan_name = string}))
+  default = {
+    queuesdb = {
+      rds_plan_name = "micro-psql"
+    },
+    searchdb = {
+      rds_plan_name = "micro-psql"
+    },
+    workdb = {
+      rds_plan_name = "micro-psql"
+    },
   }
+}
 
-  service_binding {
-    service_instance = module.queues_database.instance_id
-  }
-
-  routes {
-    route = cloudfoundry_route.admin_route.id
-  }
-
-  environment = {
-    ENV = "SANDBOX"
-    API_KEY = "${var.api_key}"
-    DEBUG_LEVEL = "${var.zap_debug_level}"
-    GIN_MODE = "${var.gin_debug_level}"
+variable services {
+  type = map(object({disk = number, ram = number}))
+  default = {
+    admin = { 
+      disk = local.disk_quota["small"], 
+      ram = local.ram_quota["medium"] 
+      },
+    entree = { 
+      disk = local.disk_quota["small"], 
+      ram = local.ram_quota["medium"] 
+      },
+    extract = { 
+      disk = local.disk_quota["small"], 
+      ram = local.ram_quota["medium"] 
+      },
+    fetch = { 
+      disk = local.disk_quota["small"], 
+      ram = local.ram_quota["medium"] 
+      },
+    pack = { 
+      disk = local.disk_quota["small"], 
+      ram = local.ram_quota["medium"] 
+      },
+    serve = { 
+      disk = local.disk_quota["small"], 
+      ram = local.ram_quota["medium"] 
+      },
+    walk = { 
+      disk = local.disk_quota["small"], 
+      ram = local.ram_quota["medium"] 
+      },
   }
 }
 
@@ -131,28 +64,26 @@ resource "cloudfoundry_app" "entree" {
   buildpacks            = ["https://github.com/cloudfoundry/apt-buildpack", "https://github.com/cloudfoundry/binary-buildpack.git"]
   path                 = "zips/entree.zip"
   source_code_hash     = filesha256("zips/entree.zip")
-  disk_quota           = var.disk_quota_l
-  memory               = var.service_entree_ram
+  disk_quota           = var.services["entree"].disk
+  memory               = var.services["entree"].ram
   instances            = 1
   strategy             = "rolling"
   timeout              = 200
   health_check_type    = "port"
   health_check_timeout = 180
-  health_check_http_endpoint = "/heartbeat"
-
+  health_check_http_endpoint = "/api/heartbeat"
 
   service_binding {
-    service_instance = module.work_database.instance_id
+    service_instance = module.workdb.instance_id
   }
 
   service_binding {
-    service_instance = module.queues_database.instance_id
+    service_instance = module.queuesdb.instance_id
   }
 
   environment = {
     ENV = "SANDBOX"
     API_KEY = "${var.api_key}"
-    DEBUG_LEVEL = "${var.zap_debug_level}"
     GIN_MODE = "${var.gin_debug_level}"
   }
 }
@@ -168,27 +99,25 @@ resource "cloudfoundry_app" "fetch" {
   buildpacks            = ["https://github.com/cloudfoundry/apt-buildpack", "https://github.com/cloudfoundry/binary-buildpack.git"]
   path                 = "zips/fetch.zip"
   source_code_hash     = filesha256("zips/fetch.zip")
-  disk_quota           = var.disk_quota_l
-  memory               = var.service_fetch_ram
+  disk_quota           = var.services["fetch"].disk
+  memory               = var.services["fetch"].ram
   instances            = 1
   strategy             = "rolling"
   timeout              = 200
   health_check_type    = "port"
   health_check_timeout = 180
-  health_check_http_endpoint = "/heartbeat"
+  health_check_http_endpoint = "/api/heartbeat"
     service_binding {
     service_instance = module.s3-private-fetch.bucket_id
   }
 
   service_binding {
-    service_instance = module.queues_database.instance_id
+    service_instance = module.queuesdb.instance_id
   }
 
   environment = {
     ENV = "SANDBOX"
-    DEBUG_LEVEL = "${var.zap_debug_level}"
     GIN_MODE = "${var.gin_debug_level}"
-    # REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
   }
 }
 
@@ -201,14 +130,14 @@ resource "cloudfoundry_app" "extract" {
   buildpacks            = ["https://github.com/cloudfoundry/apt-buildpack", "https://github.com/cloudfoundry/binary-buildpack.git"]
   path                 = "zips/extract.zip"
   source_code_hash     = filesha256("zips/extract.zip")
-  disk_quota           = var.disk_quota_l
-  memory               = var.service_extract_ram
+  disk_quota           = var.services["extract"].disk
+  memory               = var.services["extract"].ram
   instances            = 1
   strategy             = "rolling"
   timeout              = 200
   health_check_type    = "port"
   health_check_timeout = 180
-  health_check_http_endpoint = "/heartbeat"
+  health_check_http_endpoint = "/api/heartbeat"
   service_binding {
     service_instance = module.s3-private-extract.bucket_id
   }
@@ -216,15 +145,13 @@ resource "cloudfoundry_app" "extract" {
     service_instance = module.s3-private-fetch.bucket_id
   }
   service_binding {
-    service_instance = module.queues_database.instance_id
+    service_instance = module.queuesdb.instance_id
   }
 
   environment = {
     ENV = "SANDBOX"
     API_KEY = "${var.api_key}"
-    DEBUG_LEVEL = "${var.zap_debug_level}"
     GIN_MODE = "${var.gin_debug_level}"
-    # REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
   }
 }
 
@@ -238,14 +165,14 @@ resource "cloudfoundry_app" "pack" {
   buildpacks            = ["https://github.com/cloudfoundry/apt-buildpack", "https://github.com/cloudfoundry/binary-buildpack.git"]
   path                 = "zips/pack.zip"
   source_code_hash     = filesha256("zips/pack.zip")
-  disk_quota           = var.disk_quota_l
-  memory               = var.service_pack_ram
+  disk_quota           = var.services["pack"].disk
+  memory               = var.services["pack"].ram
   instances            = 1
   strategy             = "rolling"
   timeout              = 200
   health_check_type    = "port"
   health_check_timeout = 180
-  health_check_http_endpoint = "/heartbeat"
+  health_check_http_endpoint = "/api/heartbeat"
   service_binding {
     service_instance = module.s3-private-extract.bucket_id
   }
@@ -254,15 +181,13 @@ resource "cloudfoundry_app" "pack" {
   }
 
   service_binding {
-    service_instance = module.queues_database.instance_id
+    service_instance = module.queuesdb.instance_id
   }
 
   environment = {
     ENV = "SANDBOX"
     API_KEY = "${var.api_key}"
-    DEBUG_LEVEL = "${var.zap_debug_level}"
     GIN_MODE = "${var.gin_debug_level}"
-    # REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
   }
 }
 
@@ -282,14 +207,14 @@ resource "cloudfoundry_app" "serve" {
   buildpacks            = ["https://github.com/cloudfoundry/apt-buildpack", "https://github.com/cloudfoundry/binary-buildpack.git"]
   path                 = "zips/serve.zip"
   source_code_hash     = filesha256("zips/serve.zip")
-  disk_quota           = var.disk_quota_l
-  memory               = var.service_serve_ram
+  disk_quota           = var.services["serve"].disk
+  memory               = var.services["serve"].ram
   instances            = 1
   strategy             = "rolling"
   timeout              = 200
   health_check_type    = "port"
   health_check_timeout = 180
-  health_check_http_endpoint = "/heartbeat"
+  health_check_http_endpoint = "/api/heartbeat"
     service_binding {
     service_instance = module.s3-private-fetch.bucket_id
   }
@@ -297,7 +222,7 @@ resource "cloudfoundry_app" "serve" {
     service_instance = module.s3-private-serve.bucket_id
   }
   service_binding {
-    service_instance = module.queues_database.instance_id
+    service_instance = module.queuesdb.instance_id
   }
 
   routes {
@@ -307,9 +232,7 @@ resource "cloudfoundry_app" "serve" {
   environment = {
     ENV = "SANDBOX"
     API_KEY = "${var.api_key}"
-    DEBUG_LEVEL = "${var.zap_debug_level}"
     GIN_MODE = "${var.gin_debug_level}"
-    # REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
   }
 }
 
@@ -323,27 +246,25 @@ resource "cloudfoundry_app" "walk" {
   buildpacks            = ["https://github.com/cloudfoundry/apt-buildpack", "https://github.com/cloudfoundry/binary-buildpack.git"]
   path                 = "zips/walk.zip"
   source_code_hash     = filesha256("zips/walk.zip")
-  disk_quota           = var.disk_quota_m
-  memory               = var.service_walk_ram
+  disk_quota           = var.services["walk"].disk
+  memory               = var.services["walk"].ram
   instances            = 1
   strategy             = "rolling"
   timeout              = 200
   health_check_type    = "port"
   health_check_timeout = 180
-  health_check_http_endpoint = "/heartbeat"
+  health_check_http_endpoint = "/api/heartbeat"
   service_binding {
     service_instance = module.s3-private-fetch.bucket_id
   }
 
   service_binding {
-    service_instance = module.queues_database.instance_id
+    service_instance = module.queuesdb.instance_id
   }
 
   environment = {
     ENV = "SANDBOX"
     API_KEY = "${var.api_key}"
-    DEBUG_LEVEL = "${var.zap_debug_level}"
     GIN_MODE = "${var.gin_debug_level}"
-    # REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt"
   }
 }

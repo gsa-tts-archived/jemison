@@ -1,9 +1,14 @@
 # Local .terraform directories
+.terraform
+**/.terraform
+.terraform/*
 **/.terraform/*
 
 # .tfstate files
 *.tfstate
 *.tfstate.*
+**/*.tfstate
+**/*.tfstate.*
 
 # Crash log files
 crash.log
@@ -15,6 +20,8 @@ crash.*.log
 # to change depending on the environment.
 *.tfvars
 *.tfvars.json
+**/*.tfvars
+**/*.tfvars.json
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in
@@ -22,9 +29,13 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+**/override.tf*
+**/*_override.tf*
+
 
 # Ignore transient lock info files created by terraform apply
 .terraform.tfstate.lock.info
+**/.terraform.tfstate.lock.info
 
 # Include override files you do wish to add to version control using negated pattern
 # !example_override.tf
@@ -35,10 +46,19 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+**/.terraformrc
+**/terraform.rc
 
 # Ignore the lock file; this is a demo, not about collab/CI/CD.
 .terraform.lock.hcl
+**/.terraform.lock.hcl
 
-zips/*
-plans/*
-app/*
+# developer files 
+**/developers.tf
+
+zips
+plans
+app
+**/zips
+**/plans
+**/app

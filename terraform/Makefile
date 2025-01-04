@@ -1,4 +1,9 @@
+ENV?=dev
+
 SHELL=/bin/bash
+
+.PHONY: apply
+all: apply
 
 .PHONY: init
 init:
@@ -6,6 +11,7 @@ init:
 
 .PHONY: clean
 clean:
+	@echo "------- CLEAN -------"
 	rm -rf .terraform
 	rm -f .terraform.lock.hcl
 	# Don't casually delete the tfstate...
@@ -20,11 +26,13 @@ clean_app:
 
 .PHONY: app
 app: clean_app
+	@echo "------- APP -------"
 	mkdir -p app
 	cd .. ; cp -r config terraform/app/
 
 .PHONY: config
 config:
+	echo "------- CONFIG -------"
 	pushd ../config ; make ; popd
 
 .PHONY: admin
@@ -44,6 +52,7 @@ admin: app
 
 .PHONY: services
 services: app config
+	echo "------- SERVICES -------"
 	for service in entree extract fetch pack serve walk ; \
 	do \
 		echo "----------------------" ; \
@@ -60,27 +69,25 @@ services: app config
 		pushd app ; zip -r -X ../zips/$${service}.zip . -x terraform/* ; popd ; \
 	done
 
-.PHONY:
-plan: init services
-	terraform plan -var-file="terraform.tfvars" -out plans/das.plan
-
 .PHONY: container_build
 container_build:
-	docker run -v ${PWD}:/app -t jemison/build
+	echo "------- CONTAINER_BUILD -------"
+	docker run -v ${PWD}/..:/app -t jemison/build
 
-.PHONY: plan_all
-plan_all: init admin services
+# add back container_build
+.PHONY: plan
+plan: clean init  admin services
+	echo "------- PLAN -------"
+	cp ${ENV}/variables.tf variables.tf
 	terraform plan -var-file="terraform.tfvars" -out plans/das.plan
-
-.PHONY: apply
-apply:
-	terraform apply plans/das.plan
 
 .PHONY: cfclean
 cfclean:
+	echo "------- CFCLEAN -------"
 	for app in admin entree extract fetch pack serve walk ; do cf delete -f -r $${app} ; done
 
-.PHONY: apply_all
-apply_all: clean cfclean  plan_all apply
-	echo "apply_all"
+.PHONY: apply
+apply: clean plan apply
+	echo "------- APPLY -------"
+	terraform apply plans/das.plan
 
