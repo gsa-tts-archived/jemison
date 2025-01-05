@@ -21,13 +21,17 @@ jobs:
         TF_VAR_cf_password: ${{ secrets.CF_PASSWORD }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      # Checkout the repository to the runner
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install Terraform
         run: |
           curl -k -O -L https://github.com/cloudfoundry/cli/releases/download/v8.8.0/cf8-cli-installer_8.8.0_x86-64.deb
           sudo apt-get install --assume-yes ./cf8-cli-installer_8.8.0_x86-64.deb
+      # This may want to become TF actions
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.3"
       - name: Authenticate against Cloud.gov
         run: |
           cf api api.fr.cloud.gov
