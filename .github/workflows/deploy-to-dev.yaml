@@ -1,0 +1,25 @@
+name: Deploy to space
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: apply ( ${{ inputs.environment }} )
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+        KEY: "terraform.tfstate.${{ inputs.environment }}"
+        TF_VAR_cf_user: ${{ secrets.CF_USERNAME }}
+        TF_VAR_cf_password: ${{ secrets.CF_PASSWORD }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      # Checkout the repository to the runner
+      - name: Checkout
+        uses: actions/checkout@v4
+      # `make dev`
+      - name: Terraform init ; plan ; apply
+        run: terraform/bin/deploy-dev.bash
