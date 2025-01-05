@@ -44,9 +44,7 @@ jobs:
         run: |
           cf api api.fr.cloud.gov
           cf auth ${{ secrets.CF_USERNAME }} ${{ secrets.CF_PASSWORD }}
-          cf target -o ${{ dev.CF_ORG }} -s ${{ dev.CF_SPACE }} \
-            --environment ${{ environment.CF_ORG }} \
-            --stacked ${{ environment.dev.CF_ORG }} \
+          cf target -o ${{ env.CF_ORG }} -s ${{ env.CF_SPACE }} \
             --bare $CF_ORG
       - name: Run `make dev` (terraform init -> plan -> apply)
         run: |
