@@ -20,7 +20,33 @@ We intend to have three spaces: `dev`, `staging`, and `production`.
 * Every morning we will push to `staging` and run E2E tests.
 * Pushes to `production` will be via release cuts, and be manual.
 
+## create the state bucket
 
+In each space, we need a bucket called `tf_state`. This currently is *not* be a TF managed resource. 
+
+```
+cf create-service s3 basic tf_state
+```
+
+Then, get the credentials. (Note the `source` in there.)
+
+https://cloud.gov/docs/services/s3/#:~:text=Using%20the%20S3%20credentials
+
+Set `SERVICE_KEY_NAME` to something (e.g. `<username>-s3-service-key`) in your env, and then run the script in `bin`.
+
+```
+export SERVICE_KEY_NAME="service-key-name-of-some-sort"
+source ./bin/get-s3-creds-from-cgov.bash
+```
+
+One you have run the script, those variables need to be loaded into GH for use in actions. They will be `environment` secrets---meaning, we will need a `tf_state` bucket in each env/space, and we will need a set of credentials for each space in GH.
+
+* TF_VAR_BUCKET_NAME
+* TF_VAR_AWS_DEFAULT_REGION
+* TF_VAR_SECRET_ACCESS_KEY
+* TF_VAR_ACCESS_KEY_ID
+
+By prefixing these with `TF_VAR_`, they are directly accessible in our Terraform scripts.
 
 
 ### obtaining local credentials (remove)

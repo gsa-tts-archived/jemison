@@ -1,46 +1,66 @@
 # This is a bodge until we add a different access control mechanism
-variable api_key {
-  type = string
+variable "api_key" {
+  type      = string
   sensitive = true
 }
 
-variable cf_api_url {
-  type = string
+variable "cf_api_url" {
+  type    = string
   default = "https://api.fr.cloud.gov"
 }
 
-variable cf_org {
-  type = string
+variable "cf_org" {
+  type        = string
   description = "cloud.gov organization name (e.g. `gsa-tts-usagov`)"
-  default = "gsa-tts-usagov"
+  default     = "gsa-tts-usagov"
 }
 
-variable cf_org_guid {
-  type = string
+variable "cf_org_guid" {
+  type      = string
   sensitive = true
 }
 
-variable cf_space_guid {
-  type = string
+# These need to be defined in the environment,
+# either when run locally or in GH Actions.
+variable "aws_default_region" {
+  type      = string
+  sensitive = true
+}
+variable "aws_secret_access_key" {
+  type      = string
+  sensitive = true
+}
+variable "aws_access_key_id" {
+  type      = string
+  sensitive = true
+}
+variable "bucket_name" {
+  type      = string
+  sensitive = true
+}
+
+
+variable "cf_space_guid" {
+  type      = string
   sensitive = true
 }
 
 # Provided in terraform.tfvars
 # This is a GH secret
-variable cf_password {
-  type = string
+variable "cf_password" {
+  type      = string
   sensitive = true
 }
 
 # Provided in terraform.tfvars
 # This is a GH secret
-variable cf_username {
-  type = string
+variable "cf_username" {
+  type      = string
   sensitive = true
 }
 
-variable gin_debug_level {
-  type = string
+variable "gin_debug_level" {
+  type    = string
   default = "release"
 }
 
