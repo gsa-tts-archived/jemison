@@ -51,6 +51,16 @@ jobs:
           cf auth ${{ secrets.CF_USERNAME }} ${{ secrets.CF_PASSWORD }}
           cf target -o ${{ vars.CF_ORG }} -s ${{ vars.CF_SPACE }}
 
+      # https://stackoverflow.com/questions/14268097/do-i-need-cat-to-write-a-heredoc-to-a-file
+      # https://stackoverflow.com/questions/63048738/how-to-declare-variables-for-s3-backend-in-terraform
+      - name: Setup TF creds for state bucket
+        run: |
+          tee ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}/backend_${{ inputs.environment }}.tfvars <<EOF
+          bucket="${{ secrets.TF_VAR_BUCKET_NAME }}"
+          region="${{ secrets.TF_VAR_AWS_REGION}}"
+          endpoint="https://s3-${{ secrets.TF_VAR_BUCKET_NAME }}.amazonaws.com/${{ secrets.TF_VAR_BUCKET_NAME }}/"
+          EOF
+
       # This fails because it relies on the `tfvars` file, which does
       # not exist in CGov. We need to use the S3 backend.
       - name: Run `make dev` (terraform init -> plan -> apply)
