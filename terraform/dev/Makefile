@@ -19,10 +19,3 @@ clean:
 	rm -rf .terraform
 	rm -f .terraform.lock.hcl
 	rm -rf plans
-
-.PHONY: cfclean
-cfclean:
-	echo "------- CFCLEAN -------"
-	for app in admin entree extract fetch pack serve walk ; do cf delete -f -r $${app} ; done
-	for service in extract fetch jemison-qeueues-db jemison-search-db jemison-work-db queuesdb searchdb workdb serve ; do cf delete-service -f -w $${service} ; done
-	
