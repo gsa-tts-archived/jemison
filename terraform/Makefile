@@ -1,6 +1,6 @@
 .PHONY: default
 default:
-	echo "make (dev|staging|production)"
+	@echo "make (dev|staging|production)"
 
 .PHONY: dev
 dev:
