@@ -44,7 +44,7 @@ jobs:
         run: |
           cf api api.fr.cloud.gov
           cf auth ${{ secrets.CF_USERNAME }} ${{ secrets.CF_PASSWORD }}
-          cf target -o $CF_ORG -s $CF_SPACE
+          cf target -o ${{ vars.CF_ORG }} -s ${{ vars.CF_SPACE }}
       - name: Run `make dev` (terraform init -> plan -> apply)
         run: |
           pushd ${GITHUB_WORKSPACE}/terraform
