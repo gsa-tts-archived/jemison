@@ -24,6 +24,16 @@ jobs:
       # Checkout the repository to the runner
       - name: Checkout
         uses: actions/checkout@v4
-      # `make dev`
-      - name: Terraform init ; plan ; apply
-        run: terraform/bin/deploy-dev.bash
+      - name: Install Terraform
+        run: |
+          curl -k -O -L https://github.com/cloudfoundry/cli/releases/download/v8.8.0/cf8-cli-installer_8.8.0_x86-64.deb
+          sudo apt-get install --assume-yes ./cf8-cli-installer_8.8.0_x86-64.deb
+      - name: Authenticate against Cloud.gov
+        run: |
+          cf api api.fr.cloud.gov
+          cf auth ${{ secrets.CF_USERNAME }} ${{ secrets.CF_PASSWORD }}
+      - name: Run `make dev` (terraform init -> plan -> apply)
+        run: |
+          pushd ${GITHUB_WORKSPACE}/terraform
+          make dev
+          popd
