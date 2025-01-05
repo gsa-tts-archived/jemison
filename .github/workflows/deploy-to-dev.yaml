@@ -55,16 +55,18 @@ jobs:
       # https://stackoverflow.com/questions/63048738/how-to-declare-variables-for-s3-backend-in-terraform
       - name: Setup TF creds for state bucket
         run: |
-          tee ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}/backend_${{ inputs.environment }}.tfvars <<EOF
+          tee ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}/backend_${{ inputs.environment }}.config <<EOF
           bucket="${{ secrets.TF_VAR_BUCKET_NAME }}"
-          region="${{ secrets.TF_VAR_AWS_REGION}}"
-          endpoint="https://s3-${{ secrets.TF_VAR_BUCKET_NAME }}.amazonaws.com/${{ secrets.TF_VAR_BUCKET_NAME }}/"
+          region="${{ secrets.TF_VAR_AWS_DEFAULT_REGION}}"
+          endpoint="https://s3-${{ secrets.TF_VAR_AWS_DEFAULT_REGION }}.amazonaws.com/${{ secrets.TF_VAR_BUCKET_NAME }}/"
           EOF
 
       # This fails because it relies on the `tfvars` file, which does
       # not exist in CGov. We need to use the S3 backend.
       - name: Run `make dev` (terraform init -> plan -> apply)
         run: |
-          pushd ${GITHUB_WORKSPACE}/terraform
-          make dev
+          pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
+          terraform init -backend-config="./backend_${{ inputs.environment }}.config"
+          make plan
+          make apply
           popd

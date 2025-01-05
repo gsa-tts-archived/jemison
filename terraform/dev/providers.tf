@@ -8,11 +8,8 @@ terraform {
   }
 
   backend "s3" {
-    bucket  = var.bucket_name
     key     = "state/terraform.tfstate"
-    region  = var.aws_default_region
     encrypt = true
-
   }
 }
 

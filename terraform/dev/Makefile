@@ -2,7 +2,7 @@ all: clean init plan apply
 
 init:
 	cp ../developers.tf . 
-	terraform init
+	terraform init 
 
 plan:
 	mkdir -p plans/
