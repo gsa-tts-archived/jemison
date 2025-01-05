@@ -1,3 +1,7 @@
+#
+# To manually trigger:
+# gh workflow run --ref jadudm/tf-0103 --field environment=dev deploy-to-dev.yaml
+# 
 name: Deploy to space
 on:
   # push:
@@ -27,7 +31,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install Terraform
+      - name: Install CloudFoundry CLI v8
         run: |
           curl -k -O -L https://github.com/cloudfoundry/cli/releases/download/v8.8.0/cf8-cli-installer_8.8.0_x86-64.deb
           sudo apt-get install --assume-yes ./cf8-cli-installer_8.8.0_x86-64.deb
@@ -40,6 +44,7 @@ jobs:
         run: |
           cf api api.fr.cloud.gov
           cf auth ${{ secrets.CF_USERNAME }} ${{ secrets.CF_PASSWORD }}
+          cf target -o ${{ env.CF_ORG }} -s ${{ env.CF_SPACE }}
       - name: Run `make dev` (terraform init -> plan -> apply)
         run: |
           pushd ${GITHUB_WORKSPACE}/terraform
