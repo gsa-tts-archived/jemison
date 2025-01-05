@@ -1,14 +1,14 @@
 name: Deploy to space
 on:
-  push:
-    branches:
-      - jadudm/tf-0103
+  # push:
+  #   branches:
+  #     - jadudm/tf-0103
   workflow_dispatch:
-  # workflow_call:
-  #   inputs:
-  #     environment:
-  #       required: true
-  #       type: string
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
 
 jobs:
   deploy:
