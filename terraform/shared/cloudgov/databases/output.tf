@@ -1,12 +1,7 @@
-
-output db_queue_id {
-  value = module.db_queues.instance_id
-}
-
-output db_search_id {
-  value = module.db_search.instance_id
-}
-
-output db_work_id {
-  value = module.db_work.instance_id
+output ids {
+  value = {
+    queues = module.db_queues.instance_id
+    search = module.db_search.instance_id
+    work = module.db_work.instance_id
+  }
 }

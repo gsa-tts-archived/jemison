@@ -41,10 +41,67 @@ module "admin" {
   # memory = 128
   # instances = 1
   space_name = data.cloudfoundry_space.app_space.name
-  # admin_route_id = data.cloudfoundry_route.admin_route.id
   app_space_id = data.cloudfoundry_space.app_space.id
   domain_id = data.cloudfoundry_domain.public.id
-  db_queue_id = module.databases.db_queue_id
-  db_search_id = module.databases.db_search_id
-  db_work_id = module.databases.db_work_id
+  databases = module.databases.ids
+  buckets = module.buckets.ids
+}
+
+module "entree" {
+  source = "../shared/services/entree"
+  # disk_quota = 256
+  # memory = 128
+  # instances = 1
+  space_name = data.cloudfoundry_space.app_space.name
+  app_space_id = data.cloudfoundry_space.app_space.id
+  domain_id = data.cloudfoundry_domain.public.id
+  databases = module.databases.ids
+}
+
+module "extract" {
+  source = "../shared/services/extract"
+  # disk_quota = 256
+  # memory = 128
+  # instances = 1
+  space_name = data.cloudfoundry_space.app_space.name
+  app_space_id = data.cloudfoundry_space.app_space.id
+  domain_id = data.cloudfoundry_domain.public.id
+  databases = module.databases.ids
+  buckets = module.buckets.ids
+}
+
+module "fetch" {
+  source = "../shared/services/fetch"
+  # disk_quota = 256
+  # memory = 128
+  # instances = 1
+  space_name = data.cloudfoundry_space.app_space.name
+  app_space_id = data.cloudfoundry_space.app_space.id
+  domain_id = data.cloudfoundry_domain.public.id
+  databases = module.databases.ids
+  buckets = module.buckets.ids
+}
+
+module "pack" {
+  source = "../shared/services/pack"
+  # disk_quota = 256
+  # memory = 128
+  # instances = 1
+  space_name = data.cloudfoundry_space.app_space.name
+  app_space_id = data.cloudfoundry_space.app_space.id
+  domain_id = data.cloudfoundry_domain.public.id
+  databases = module.databases.ids
+  buckets = module.buckets.ids
+}
+
+module "walk" {
+  source = "../shared/services/walk"
+  # disk_quota = 256
+  # memory = 128
+  # instances = 1
+  space_name = data.cloudfoundry_space.app_space.name
+  app_space_id = data.cloudfoundry_space.app_space.id
+  domain_id = data.cloudfoundry_domain.public.id
+  databases = module.databases.ids
+  buckets = module.buckets.ids
 }

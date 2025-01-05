@@ -20,28 +20,26 @@ resource "cloudfoundry_app" "admin" {
   health_check_http_endpoint = "/api/heartbeat"
 
   service_binding {
-    service_instance = var.db_queue_id
+    service_instance = var.databases.queues
   }
 
   service_binding {
-    service_instance = var.db_search_id
+    service_instance = var.databases.search
   }
 
   service_binding {
-    service_instance = var.db_work_id
+    service_instance = var.databases.work
+  }
+
+  service_binding {
+    service_instance = var.buckets.fetch
+  }
+
+  service_binding {
+    service_instance = var.buckets.extract
   }
 
   routes {
     route = cloudfoundry_route.admin_route.id # cloudfoundry_route.admin_route.id
   }
-  
-  # environment = {
-  #   ENV = var.cf_space
-  # }
-
-  # environment = {
-  #   ENV = "SANDBOX"
-  #   API_KEY = "${var.api_key}"
-  #   GIN_MODE = "${var.gin_debug_level}"
-  # }
 }

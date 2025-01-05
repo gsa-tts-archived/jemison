@@ -16,18 +16,12 @@ variable instances {
   default     = 1
 }
 
-variable gin_debug_level {
-  type = string
-  default = "release"
-}
-
 variable gitref {
   type        = string
   description = "gitref for the specific version of app that you want to use"
   default     = "refs/heads/main"
   # You can also specify a specific commit, eg "7487f882903b9e834a5133a883a88b16fb8b16c9"
 }
-
 
 variable app_space_id {
   type = string
