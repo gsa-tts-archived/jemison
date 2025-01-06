@@ -91,18 +91,17 @@ jobs:
       - name: TF init
         run: |
           pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
-            terraform init -reconfigure -backend-config="./backend_${{ inputs.environment }}.config" || echo "Failed" && exit
+            terraform init -backend-config="./backend_${{ inputs.environment }}.config" || echo "Failed" && exit
           popd
 
       - name: TF plan
-        run: |
-          pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
-            make plan
-          popd
+        uses:  dflook/terraform-plan@v1
+        with:
+          path: ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
+          backend_config_file: "${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}/backend_${{ inputs.environment}}.config"
 
-      - name: TF apply
-        run: |
-          pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
-            make apply
-          popd
-  
+      # - name: TF apply
+      # run: |
+      #   pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
+      #     make apply
+      #   popd
