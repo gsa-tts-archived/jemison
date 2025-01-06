@@ -75,18 +75,18 @@ jobs:
           cf_org_guid = "${{ secrets.CF_ORG_GUID }}"
           EOF
 
-      - name: Setup AWS
-        run: |
-          tee "${GITHUB_WORKSPACE}/aws-credentials" <<EOF
-          [default]
-          aws_access_key_id="${{ secrets.TF_VAR_AWS_ACCESS_KEY_ID }}"
-          aws_secret_access_key="${{ secrets.TF_VAR_SECRET_ACCESS_KEY }}"
-          EOF
-          chmod 600 "${GITHUB_WORKSPACE}/aws-credentials"
-          tee "${GITHUB_WORKSPACE}/aws-config" <<EOF
-          [default]
-          region="${{ secrets.TF_VAR_AWS_DEFAULT_REGION }}"
-          EOF
+      # - name: Setup AWS
+      #   run: |
+      #     tee "${GITHUB_WORKSPACE}/aws-credentials" <<EOF
+      #     [default]
+      #     aws_access_key_id="${{ secrets.TF_VAR_AWS_ACCESS_KEY_ID }}"
+      #     aws_secret_access_key="${{ secrets.TF_VAR_SECRET_ACCESS_KEY }}"
+      #     EOF
+      #     chmod 600 "${GITHUB_WORKSPACE}/aws-credentials"
+      #     tee "${GITHUB_WORKSPACE}/aws-config" <<EOF
+      #     [default]
+      #     region="${{ secrets.TF_VAR_AWS_DEFAULT_REGION }}"
+      #     EOF
 
       - name: TF init
         run: |
