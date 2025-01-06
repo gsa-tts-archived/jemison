@@ -105,7 +105,7 @@ jobs:
       - name: TF plan
         uses:  dflook/terraform-plan@v1
         with:
-          path: ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}/main.tf
+          path: "${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}/main.tf"
           backend_config_file: "${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}/backend_${{ inputs.environment}}.config"
 
       # - name: TF apply
