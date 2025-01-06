@@ -77,11 +77,16 @@ jobs:
         run: |
           mkdir -p ~/.aws
           tee ~/.aws/credentials <<EOF
+          [default]
           aws_access_key_id="${{ secrets.TF_VAR_AWS_ACCESS_KEY_ID }}"
           aws_secret_access_key="${{ secrets.TF_VAR_SECRET_ACCESS_KEY }}"
           EOF
           chmod 600 ~/.aws/credentials
-
+          tee ~/.aws/config <<EOF
+          [default]
+          region="${{ secrets.TF_VAR_AWS_DEFAULT_REGION }}"
+          EOF
+          
       - name: TF init
         run: |
           pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
