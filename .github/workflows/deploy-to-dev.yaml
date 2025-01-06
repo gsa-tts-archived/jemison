@@ -30,11 +30,16 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         AWS_CONFIG_FILE: "${GITHUB_WORKSPACE}/aws-config"
         AWS_SHARED_CREDENTIALS_FILE: "${GITHUB_WORKSPACE}/aws-credentials"
-        REPO: "${GITHUB_WORKSPACE}/jemison"
+        REPO: "${GITHUB_WORKSPACE}"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
+      - name: what is there
+        run: |
+          ls -alh "${REPO}"
+          ls -alh "${REPO}/terraform"
+          
       - name: Install CloudFoundry CLI v8
         run: |
           curl -k -O -L https://github.com/cloudfoundry/cli/releases/download/v8.8.0/cf8-cli-installer_8.8.0_x86-64.deb
