@@ -75,10 +75,23 @@ jobs:
 
       # This fails because it relies on the `tfvars` file, which does
       # not exist in CGov. We need to use the S3 backend.
-      - name: Run `make dev` (terraform init -> plan -> apply)
+      - name: TF init
         run: |
           pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
             terraform init -backend-config="./backend_${{ inputs.environment }}.config" || echo "Failed" && exit
             make plan
             make apply
           popd
+
+      - name: TF plan
+        run: |
+          pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
+            make plan
+          popd
+
+      - name: TF apply
+        run: |
+          pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
+            make plan
+          popd
+  
