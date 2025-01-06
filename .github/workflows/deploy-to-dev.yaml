@@ -60,7 +60,7 @@ jobs:
           region="${{ secrets.TF_VAR_AWS_DEFAULT_REGION}}"
           access_key="${{ secrets.TF_VAR_AWS_ACCESS_KEY_ID }}"
           secret_key="${{ secrets.TF_VAR_AWS_SECRET_ACCESS_KEY }}"
-          endpoint="https://s3-${{ secrets.TF_VAR_AWS_DEFAULT_REGION }}.amazonaws.com/${{ secrets.TF_VAR_BUCKET_NAME }}/"
+          endpoints={ s3 = "https://s3-${{ secrets.TF_VAR_AWS_DEFAULT_REGION }}.amazonaws.com/${{ secrets.TF_VAR_BUCKET_NAME }}/" }
           EOF
 
       # This fails because it relies on the `tfvars` file, which does
