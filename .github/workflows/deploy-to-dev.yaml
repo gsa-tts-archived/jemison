@@ -59,7 +59,7 @@ jobs:
           bucket="${{ secrets.TF_VAR_BUCKET_NAME }}"
           region="${{ secrets.TF_VAR_AWS_DEFAULT_REGION}}"
           access_key="${{ secrets.TF_VAR_AWS_ACCESS_KEY_ID }}"
-          secret_key="${{ secrets.TF_VAR_AWS_SECRET_ACCESS_KEY }}"
+          secret_key="${{ secrets.TF_VAR_SECRET_ACCESS_KEY }}"
           endpoints={ s3 = "https://s3-${{ secrets.TF_VAR_AWS_DEFAULT_REGION }}.amazonaws.com/${{ secrets.TF_VAR_BUCKET_NAME }}/" }
           EOF
 
