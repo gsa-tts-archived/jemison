@@ -73,6 +73,13 @@ jobs:
           cf_org_guid = "${{ secrets.CF_ORG_GUID }}"
           EOF
 
+      - name: Setup AWS
+        run: |
+          tee ~/.aws/credentials <<EOF
+          aws_access_key_id="${{ secrets.TF_VAR_AWS_ACCESS_KEY_ID }}"
+          aws_secret_access_key="${{ secrets.TF_VAR_SECRET_ACCESS_KEY }}"
+          EOF
+
       - name: TF init
         run: |
           pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
