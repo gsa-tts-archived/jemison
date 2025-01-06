@@ -62,13 +62,23 @@ jobs:
           secret_key="${{ secrets.TF_VAR_SECRET_ACCESS_KEY }}"
           endpoints={ s3 = "https://s3-${{ secrets.TF_VAR_AWS_DEFAULT_REGION }}.amazonaws.com/" }
           EOF
+      
+      - name: Setup TF vars for execution
+        run: |
+          tee ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}/terraform.tfvars <<EOF
+          cf_username = "${{ secrets.CF_USERNAME }}"
+          cf_password = "${{ secrets.CF_PASSWORD }}"
+          api_key     = "FIXME"
+          cf_space_guid = "${{ secrets.CF_SPACE_GUID }}"
+          cf_org_guid = "${{ secrets.CF_ORG_GUID }}"
+          EOF
 
       # This fails because it relies on the `tfvars` file, which does
       # not exist in CGov. We need to use the S3 backend.
       - name: Run `make dev` (terraform init -> plan -> apply)
         run: |
           pushd ${GITHUB_WORKSPACE}/terraform/${{ inputs.environment }}
-          terraform init -backend-config="./backend_${{ inputs.environment }}.config"
-          make plan
-          make apply
+            terraform init -backend-config="./backend_${{ inputs.environment }}.config" || echo "Failed" && exit
+            make plan
+            make apply
           popd
