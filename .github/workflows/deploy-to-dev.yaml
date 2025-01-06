@@ -75,10 +75,12 @@ jobs:
 
       - name: Setup AWS
         run: |
+          mkdir -p ~/.aws
           tee ~/.aws/credentials <<EOF
           aws_access_key_id="${{ secrets.TF_VAR_AWS_ACCESS_KEY_ID }}"
           aws_secret_access_key="${{ secrets.TF_VAR_SECRET_ACCESS_KEY }}"
           EOF
+          chmod 600 ~/.aws/credentials
 
       - name: TF init
         run: |
