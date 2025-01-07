@@ -1,0 +1,6 @@
+# This file is sensitive since rules below may be used for restricting who can
+# make access control changes.
+/.github/CODEOWNERS @GSA-TTS/searchgov-admins
+
+# Changes to the following Terraform directory will impact access control in cloud.gov spaces. Any PR involving these files should get a review from someone in FAC-admins.
+/terraform/dev/developers.tf @GSA-TTS/searchgov-admins
