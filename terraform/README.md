@@ -48,6 +48,14 @@ One you have run the script, those variables need to be loaded into GH for use i
 
 By prefixing these with `TF_VAR_`, they are directly accessible in our Terraform scripts.
 
+### for reference...
+
+```
+git add ../.github/workflows/deploy-to-dev.yaml ; git commit -m "Iterating GH Action $(date)" ; git push
+
+gh workflow run --ref jadudm/tf-0103 --field environment=dev deploy-to-dev.yaml
+```
+
 
 ### obtaining local credentials (remove)
 

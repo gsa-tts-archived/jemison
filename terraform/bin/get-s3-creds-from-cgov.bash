@@ -15,4 +15,4 @@ export AWS_SECRET_ACCESS_KEY=$(echo "${S3_CREDENTIALS}" | jq -r '.credentials.se
 export BUCKET_NAME=$(echo "${S3_CREDENTIALS}" | jq -r '.credentials.bucket')
 export AWS_DEFAULT_REGION=$(echo "${S3_CREDENTIALS}" | jq -r '.credentials.region')
 
-cf delete-service-key -f -w "${SERVICE_INSTANCE_NAME}" "${SERVICE_KEY_NAME}"
+# cf delete-service-key -f -w "${SERVICE_INSTANCE_NAME}" "${SERVICE_KEY_NAME}"
