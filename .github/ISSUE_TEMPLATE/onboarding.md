@@ -9,6 +9,7 @@ assignees: ''
 **Instructions for the issue creator:** 
 1. Fill in the GitHub username of the new person (if known) and the name of the onboarding buddy. 
 2. Remove the horizontal line below and everything above it (these instructions).
+3. Remove sections that do not apply (based on role)
 
 ---
 
@@ -16,11 +17,28 @@ assignees: ''
 
 {ONBOARDING BUDDY'S GH USERNAME} will be your onboarding buddy and can help you if you get stuck on any of the steps in the checklist below. There's also a separate checklist that your onboarding buddy will tackle!
 
-## For you
+## For all team members
 
-- [ ] Review [the project README](https://github.com/GSA-TTS/jemison/docs/README.md)
+All team members will want to take the following steps:
+
+- [ ] Review [the project README](https://github.com/GSA-TTS/jemison/blob/main/docs/README.md)
+- [ ] Ask in `#search-general` for team members to reach out and setup an intro coffee
+- [ ] Complete OLU trainings
+- [ ] Review the TTS handbook
+  - [ ] https://handbook.tts.gsa.gov/getting-started/
+  - [ ] https://handbook.tts.gsa.gov/about-us/tts-history/
+  - [ ] Skim through: https://handbook.tts.gsa.gov/
+- [ ] Review our [agile processes](https://github.com/GSA-TTS/jemison/blob/main/docs/process/agile.md)
+  - [ ] If you are unfamiliar with agile, [this is a good overview](https://digital.gov/event/2019/11/04/foundations-agile-i/)
+- [ ] Familiarized yourself with the [Jemison architecture](https://github.com/GSA-TTS/jemison/blob/main/docs/architecture/index.md)
+
+### Systems access
+
 - [ ] Join/get added to the team Slack channels
-- [ ] Review our [process documentation](https://github.com/GSA-TTS/jemison/docs/process/)
+- [ ] Get added to the team shared drive
+- [ ] (Feds) get added to the Federal shared drive
+- [ ] Have the team calendar owner share the calendar invite link to our new team member
+- [ ] Get added to our ZD helpdesk instance
 - [ ] Get access to our GitHub repositories
   - [ ] If you're not already a member of BOTH the [GSA](https://github.com/orgs/GSA/people) and [GSA-TTS](https://github.com/orgs/GSA-TTS/people) GitHub organizations, [follow the process outlined here](https://github.com/GSA/GitHub-Administration#joining-the-gsa-enterprise-organization), requesting access to the appropriate org(s). When it's time to send the mail, look up the Product Lead (see [the staffing list](https://docs.google.com/document/d/1g8nYqYS_ifFlZB-DBgfeSoJRMB__EqWsmLnacyk-bDI/edit#heading=h.us8xylqg455c)) then start with this template, mailing from your GSA email address:
 
@@ -34,7 +52,7 @@ assignees: ''
     - https://github.com/GSA
     - https://github.com/GSA-TTS
     
-    I will be working on the FAC project:
+    I will be working on the Search.gov project:
     - https://github.com/GSA-TTS/jemison
     
     I have cc'd the search.gov lead for awareness.
@@ -42,16 +60,20 @@ assignees: ''
     Thank you!
     ```        
     - (Note this step could take a few days; humans handle these requests.)
-  - [ ] Once you are added to the GSA-TTS org, ask [the person(s) with the "Maintainer" role to add you to the `jemison-team` team](https://github.com/orgs/GSA-TTS/teams/jemison-team/members). This will grant you read/write access to our repositories.
-  - [ ] Have the team calendar owner share the calendar invite link to our new team member.
+  - [ ] Once you are added to the GSA-TTS org, ask [the person(s) with the "Maintainer" role to add you to the `searchgov-team` team](https://github.com/orgs/GSA-TTS/teams/searchgov-team/members). This will grant you read/write access to our repositories.
 
-**For designers, also...**
-- [ ] Review the [design onboarding document]()
+## For UX/design
+
+- [ ] Review the [design onboarding document](TBD)
 - [ ] Visit https://touchpoints.digital.gov/ and set up a touchpoints account
-- [ ] If you don't already have a Figma license, request one from your supervisor. 
-- [ ] If you don't already have a Mural ccount, follow the instructions to get one [here](https://handbook.tts.gsa.gov/tools/mural/).
+- [ ] If you don't already have a FigJam license, ping in the general channel that you need one. 
 
-**For engineers, also...**
+## For CX/content
+
+TBD
+
+## For Engineering
+
 - [ ] Familiarize yourself with Go, Jsonnet, and Cloud.gov—tools used in this project.
   - [ ] If it's not already set up on your machine & account, enable [commit signing](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits). Also see the pinned messages in the Slack development channel.
   - [ ] If you're not already, get [setup with Cloud.gov](https://cloud.gov/docs/getting-started/setup/)
@@ -63,6 +85,4 @@ assignees: ''
 
 ## For your onboarding buddy
 
-Note: If you're not able to do any of these yourself, you're still responsible for making sure that the right person makes them happen!
-
-... *tbd* ...
+Note: If you're not able to do any of these yourself, feel free to leverage your onboarding buddy (or any number of team members) to help make sure things happen.
