@@ -30,5 +30,8 @@ We serve the public through our work, and your work on Search.gov was most welco
   - [ ] searchgov-maintainers
   - [ ] searchgov-team
 - [ ] (Engineers) Remove yourself from Cloud.gov access, and create a PR. Add a comment below pointing to the PR below.
+- [ ] Jira
+- [ ] Confluence
+- [ ] Trello
 
 If you are leaving GSA employ, you will have other offboarding responsibilities beyond the scope of this ticket. This ticket tracks Search.gov accesses only.
