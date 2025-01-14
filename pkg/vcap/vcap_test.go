@@ -1,3 +1,4 @@
+//nolint:testpackage
 package vcap
 
 import (
@@ -7,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var test_vcap = `{
+var testVCAP = `{
     "s3": [
     {
             "label": "s3",
@@ -112,15 +113,18 @@ var test_vcap = `{
 }`
 
 func TestReadEnv(t *testing.T) {
-	os.Setenv("VCAP_SERVICES", test_vcap)
+	os.Setenv("VCAP_SERVICES", testVCAP)
+
 	vcs := VcapServicesFromEnv("VCAP_SERVICES")
+
 	// Expected, actual
 	assert.Equal(t, 1, len(vcs.Buckets))
 	assert.Equal(t, 2, len(vcs.Databases))
 }
 
 func TestDatbases(t *testing.T) {
-	os.Setenv("VCAP_SERVICES", test_vcap)
+	os.Setenv("VCAP_SERVICES", testVCAP)
+
 	vcs := VcapServicesFromEnv("VCAP_SERVICES")
 
 	assert.Equal(t, "fac-db", vcs.Databases[0].ServiceName)

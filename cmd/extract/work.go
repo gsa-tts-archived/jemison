@@ -1,3 +1,4 @@
+//nolint:godox
 package main
 
 import (
@@ -11,29 +12,30 @@ import (
 	"go.uber.org/zap"
 )
 
-const MAX_FILESIZE = 5000000
+// FIXME: THIS MUST BECOME A SERVICE PARAMETER.
+const MaxFilesize = 5000000
 
 // FIXME: This is checking the size of the JSON,
 // not the size of the .raw file.
 func isTooLarge(obj *kv.S3JSON) bool {
-	return obj.Size() > MAX_FILESIZE
+	return obj.Size() > MaxFilesize
 }
 
 func extract(obj *kv.S3JSON) {
-	mime_type := obj.GetString("content-type")
+	mimeType := obj.GetString("content-type")
 	s, _ := env.Env.GetUserService(ThisServiceName)
 
-	switch mime_type {
+	switch mimeType {
 	case "text/html":
 		if s.GetParamBool("extract_html") {
-			extractHtml(obj)
+			extractHTML(obj)
 		}
 	case "application/pdf":
 		if s.GetParamBool("extract_pdf") {
 			if !isTooLarge(obj) {
 				extractPdf(obj)
 			} else {
-				//FIXME DELETE THIS THING
+				// FIXME: This should be deleted at this point, if we get here.
 				zap.L().Error("s3json object too large",
 					zap.String("host", obj.Key.Host), zap.String("path", obj.Key.Path))
 			}
@@ -41,8 +43,7 @@ func extract(obj *kv.S3JSON) {
 	}
 }
 
-func (w *ExtractWorker) Work(ctx context.Context, job *river.Job[common.ExtractArgs]) error {
-
+func (w *ExtractWorker) Work(_ context.Context, job *river.Job[common.ExtractArgs]) error {
 	zap.L().Info("extracting",
 		zap.String("host", job.Args.Host),
 		zap.String("path", job.Args.Path))
@@ -51,7 +52,13 @@ func (w *ExtractWorker) Work(ctx context.Context, job *river.Job[common.ExtractA
 		util.ToScheme(job.Args.Scheme),
 		job.Args.Host,
 		job.Args.Path)
-	s3json.Load()
+
+	err := s3json.Load()
+	if err != nil {
+		zap.L().Error("could not load s3 JSON",
+			zap.String("host", job.Args.Host),
+			zap.String("path", job.Args.Path))
+	}
 
 	extract(s3json)
 

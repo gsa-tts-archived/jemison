@@ -9,13 +9,13 @@ import (
 	"go.uber.org/zap"
 )
 
-var FETCH_API_VERSION = "1.0.0"
+var FetchAPIVersion = "1.0.0"
 
 type FetchRequestInput struct {
 	Scheme string `json:"scheme" maxLength:"10" doc:"Resource scheme"`
 	Host   string `json:"host" maxLength:"500" doc:"Host of resource"`
 	Path   string `json:"path" maxLength:"1500" doc:"Path to resource"`
-	ApiKey string `json:"api-key"`
+	APIKey string `json:"api-key"`
 }
 
 // https://dev.to/kashifsoofi/rest-api-with-go-chi-and-inmemory-store-43ag
@@ -24,9 +24,8 @@ func FetchRequestHandler(c *gin.Context) {
 	if err := c.BindJSON(&fri); err != nil {
 		return
 	}
-	//zap.L().Debug("api checking key", zap.String("api-key", fri.ApiKey))
 
-	if fri.ApiKey == os.Getenv("API_KEY") {
+	if fri.APIKey == os.Getenv("API_KEY") {
 		zap.L().Debug("api enqueue", zap.String("host", fri.Host), zap.String("path", fri.Path))
 
 		// if fetchClient == nil {
@@ -53,11 +52,11 @@ func FetchRequestHandler(c *gin.Context) {
 	}
 }
 
-func SitemapRequestHandler(c *gin.Context) {
-
+func SitemapRequestHandler(_ *gin.Context) {
+	// pass
 }
 
-func ExtendApi(r *gin.Engine) {
+func ExtendAPI(r *gin.Engine) {
 	r.PUT("/fetch", FetchRequestHandler)
 	r.PUT("/sitemap", SitemapRequestHandler)
 }

@@ -11,6 +11,7 @@ import (
 )
 
 var ThisServiceName = "extract"
+
 var ChQSHP = make(chan queueing.QSHP)
 
 func main() {
@@ -19,11 +20,15 @@ func main() {
 	log.Println("environment initialized")
 
 	routers := common.InitializeAPI()
+
 	go queueing.Enqueue(ChQSHP)
 
 	zap.L().Info("listening to the music of the spheres",
 		zap.String("port", env.Env.Port))
 	// Local and Cloud should both get this from the environment.
-	http.ListenAndServe(":"+env.Env.Port, routers)
-
+	//nolint:gosec
+	err := http.ListenAndServe(":"+env.Env.Port, routers)
+	if err != nil {
+		zap.Error(err)
+	}
 }

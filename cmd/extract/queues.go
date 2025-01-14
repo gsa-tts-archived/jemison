@@ -18,29 +18,27 @@ import (
 // One pool of connections for River.
 // The work client, doing the work of `extract`
 
-var packClient *river.Client[pgx.Tx]
-var packPool *pgxpool.Pool
-
 type ExtractWorker struct {
 	river.WorkerDefaults[common.ExtractArgs]
 }
 
 func InitializeQueues() {
 	var extractClient *river.Client[pgx.Tx]
+
 	var extractPool *pgxpool.Pool
 
 	queueing.InitializeRiverQueues()
 
 	var err error
+
 	ctx, extractPool, workers := common.CommonQueueInit()
-	_, packPool, _ = common.CommonQueueInit()
 
 	zap.L().Debug("initialized common queues")
 
 	river.AddWorker(workers, &ExtractWorker{})
 
 	// Grab the number of workers from the config.
-	extract_service, err := env.Env.GetUserService("extract")
+	extractService, err := env.Env.GetUserService("extract")
 	if err != nil {
 		zap.L().Error("could not fetch service config")
 		log.Println(err)
@@ -50,11 +48,10 @@ func InitializeQueues() {
 	// Work client
 	extractClient, err = river.NewClient(riverpgxv5.New(extractPool), &river.Config{
 		Queues: map[string]river.QueueConfig{
-			"extract": {MaxWorkers: int(extract_service.GetParamInt64("workers"))},
+			"extract": {MaxWorkers: int(extractService.GetParamInt64("workers"))},
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)
@@ -64,6 +61,6 @@ func InitializeQueues() {
 	// Start the work clients
 	if err := extractClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.")
-		os.Exit(42)
+		os.Exit(1)
 	}
 }

@@ -9,12 +9,11 @@ clean:
 	rm -f cmd/*/service.exe
 
 .PHONY: generate
-generate:
+generate: config
 	cd internal/postgres ; make generate
-	# cd internal/postgres/search_db ; make generate
 
 .PHONY: config
-config:
+config: clean
 	cd config ; make all || exit 1
 
 docker: 
@@ -22,8 +21,7 @@ docker:
 	docker build -t jemison/build -f Dockerfile.build .
 
 .PHONY: build
-# lint
-build: clean config generate 
+build: generate 
 	echo "build migrate"
 	cd cmd/migrate ; make build
 	echo "build admin"
@@ -42,8 +40,14 @@ build: clean config generate
 	# cd cmd/validate ; make build
 	echo "build walk"
 	cd cmd/walk ; make build
-	echo "copy assets"
-	cd assets ; rm -rf static/assets ; unzip -qq static.zip
+
+.PHONY: lint
+lint: generate
+	golangci-lint run -v
+	
+.PHONY: containerlint
+containerlint:
+	docker run -v ${PWD}:/app -t jemison/build lint
 
 .PHONY: up
 up: build
@@ -111,7 +115,3 @@ terraform: delete_all
 docker_full_clean:
 	-docker stop $(docker ps -a -q)
 	-docker rm $(docker ps -a -q)
-
-.PHONY: lint
-lint:
-	-golangci-lint run -v

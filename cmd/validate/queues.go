@@ -15,25 +15,24 @@ import (
 	"go.uber.org/zap"
 )
 
-// GLOBAL TO THE APP
-var insertClient *river.Client[pgx.Tx]
-
 type FetchWorker struct {
 	river.WorkerDefaults[common.FetchArgs]
 }
 
-func initX[T river.Worker[U], U river.JobArgs](service_name string, queue_name string, workerStruct T) *river.Client[pgx.Tx] {
+//nolint:lll
+func initX[T river.Worker[U], U river.JobArgs](serviceName string, queueName string, workerStruct T) *river.Client[pgx.Tx] {
 	queueing.InitializeRiverQueues()
+
 	ctx, pool, workers := common.CommonQueueInit()
 
 	// Essentially adds a worker "type" to the work engine.
 	river.AddWorker(workers, workerStruct)
 
 	// Grab the number of workers from the config.
-	theService, err := env.Env.GetUserService(service_name)
+	theService, err := env.Env.GetUserService(serviceName)
 	if err != nil {
 		zap.L().Error("could not fetch service config",
-			zap.String("service_name", service_name))
+			zap.String("service_name", serviceName))
 		log.Println(err)
 		os.Exit(1)
 	}
@@ -41,15 +40,14 @@ func initX[T river.Worker[U], U river.JobArgs](service_name string, queue_name s
 	// Work client
 	theClient, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
 		Queues: map[string]river.QueueConfig{
-			queue_name: {MaxWorkers: int(theService.GetParamInt64("workers"))},
+			queueName: {MaxWorkers: int(theService.GetParamInt64("workers"))},
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool",
-			zap.String("service_name", service_name),
-			zap.String("queue_name", queue_name),
+			zap.String("service_name", serviceName),
+			zap.String("queue_name", queueName),
 			zap.String("error", fmt.Sprintln(err)))
 		log.Println(err)
 		os.Exit(1)
@@ -58,8 +56,8 @@ func initX[T river.Worker[U], U river.JobArgs](service_name string, queue_name s
 	// Start the work clients
 	if err := theClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.",
-			zap.String("queue_name", queue_name))
-		os.Exit(42)
+			zap.String("queue_name", queueName))
+		os.Exit(1)
 	}
 
 	return theClient
@@ -69,21 +67,14 @@ type ValidateFetchWorker struct {
 	river.WorkerDefaults[common.ValidateFetchArgs]
 }
 
-func (w ValidateFetchWorker) Work(ctx context.Context, job *river.Job[common.ValidateFetchArgs]) error {
+//nolint:revive
+func (w ValidateFetchWorker) Work(_ context.Context, job *river.Job[common.ValidateFetchArgs]) error {
 	zap.L().Info("VALIDATE IS RUNNING AND DOING NOTHING")
+
 	return nil
 }
 
 func InitializeQueues() {
 	queueing.InitializeRiverQueues()
 	initX(ThisServiceName, common.ValidateFetchQueue, ValidateFetchWorker{})
-
-	// Insert-only client
-	_, pool, _ := common.CommonQueueInit()
-	ic, err := river.NewClient(riverpgxv5.New(pool), &river.Config{})
-	if err != nil {
-		zap.L().Error("could not establish insert-only client")
-		os.Exit(1)
-	}
-	insertClient = ic
 }

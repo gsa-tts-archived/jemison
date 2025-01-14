@@ -14,6 +14,7 @@ import (
 )
 
 var packPool *pgxpool.Pool
+
 var packClient *river.Client[pgx.Tx]
 
 type PackWorker struct {
@@ -21,7 +22,6 @@ type PackWorker struct {
 }
 
 func InitializeQueues() {
-
 	ctx, pP, workers := common.CommonQueueInit()
 	packPool = pP
 
@@ -29,7 +29,7 @@ func InitializeQueues() {
 	river.AddWorker(workers, &PackWorker{})
 
 	// Grab the number of workers from the config.
-	fetch_service, err := env.Env.GetUserService("fetch")
+	fetchService, err := env.Env.GetUserService("fetch")
 	if err != nil {
 		zap.L().Error("could not fetch service config")
 		log.Println(err)
@@ -39,11 +39,10 @@ func InitializeQueues() {
 	// Work client
 	packClient, err = river.NewClient(riverpgxv5.New(packPool), &river.Config{
 		Queues: map[string]river.QueueConfig{
-			"pack": {MaxWorkers: int(fetch_service.GetParamInt64("workers"))},
+			"pack": {MaxWorkers: int(fetchService.GetParamInt64("workers"))},
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)
@@ -53,6 +52,6 @@ func InitializeQueues() {
 	// Start the work clients
 	if err := packClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.")
-		os.Exit(42)
+		os.Exit(1)
 	}
 }

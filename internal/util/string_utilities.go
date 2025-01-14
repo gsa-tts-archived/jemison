@@ -30,6 +30,7 @@ func (mt MimeType) EnumIndex() int {
 
 func AtoZOnly(s string) string {
 	var result strings.Builder
+
 	for i := 0; i < len(s); i++ {
 		b := s[i]
 		if ('a' <= b && b <= 'z') ||
@@ -38,10 +39,11 @@ func AtoZOnly(s string) string {
 			result.WriteByte(b)
 		}
 	}
+
 	return result.String()
 }
 
-var mime_types = []string{
+var mimeTypes = []string{
 	"text/html",
 	"text/plain",
 	"application/pdf",
@@ -49,11 +51,12 @@ var mime_types = []string{
 }
 
 func CleanMimeType(mime string) string {
-	for _, m := range mime_types {
+	for _, m := range mimeTypes {
 		if strings.Contains(mime, m) {
 			return m
 		}
 	}
+
 	// The unknown mime type
 	return "application/octet-stream"
 }
@@ -72,46 +75,54 @@ func GetMimeType(path string) string {
 		// https://www.iana.org/assignments/media-types/application/zstd
 		"zstd": "application/zstd",
 	}
-	for tag, mime_type := range m {
+	for tag, mimeType := range m {
 		if strings.HasSuffix(path, tag) {
-			return mime_type
+			return mimeType
 		}
 	}
+
 	return m["json"]
 }
 
 func IsSearchableMimeType(mime string) bool {
-	for _, m := range mime_types {
+	for _, m := range mimeTypes {
 		if strings.Contains(mime, m) {
 			return true
 		}
 	}
+
 	return false
 }
 
 func CollapseWhitespace(s string) string {
-	var re = regexp.MustCompile(`\s\s+`)
+	re := regexp.MustCompile(`\s\s+`)
+
 	s = strings.TrimSpace(s)
+
 	return re.ReplaceAllString(s, " ")
 }
 
 func TrimSuffix(s, suffix string) string {
 	if strings.HasSuffix(s, suffix) {
 		s = s[:len(s)-len(suffix)]
-		return s
-	} else {
+
 		return s
 	}
+
+	return s
 }
 
 func CanonicalizeURL(s string) (string, error) {
 	u, err := url.Parse(s)
 	if err != nil {
+		//nolint:wrapcheck
 		return "", err
 	}
+
 	u.Host = strings.ToLower(u.Host)
 	if len(u.Path) > 1 {
 		u.Path = strings.TrimSuffix(u.Path, "/")
 	}
+
 	return u.Host + u.Path, nil
 }

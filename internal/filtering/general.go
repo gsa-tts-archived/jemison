@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-var skippable_prefixes = []string{"#", "mailto"}
+var skippablePrefixes = []string{"#", "mailto"}
 
-var skippable_extensions = []string{
+var skippableExtensions = []string{
 	"acc",
 	"bmp",
 	"doc",
@@ -34,20 +34,30 @@ var skippable_extensions = []string{
 	"xlsx",
 }
 
+const IsTooShortMin = 5
+
+const ExceedsLengthMax = 200
+
+const TooManyRepeatsLen = 8
+
+const TooManyRepeatsCount = 50
+
 func exceedsLength(length int) func(*url.URL) error {
 	return func(u *url.URL) error {
 		if len(u.String()) > length {
 			return fmt.Errorf("exceeds length [%d]: %s", length, u.String())
 		}
+
 		return nil
 	}
 }
 
-func hasSlashHttp(u *url.URL) error {
+func hasSlashHTTP(u *url.URL) error {
 	m, _ := regexp.MatchString(`/http`, u.Path)
 	if m {
 		return fmt.Errorf("http in middle of url: %s", u.Path)
 	}
+
 	return nil
 }
 
@@ -56,6 +66,7 @@ func insecureGov(u *url.URL) error {
 	if m {
 		return fmt.Errorf("insecure URL: %s", u.String())
 	}
+
 	return nil
 }
 
@@ -64,34 +75,39 @@ func isTooShort(length int) func(*url.URL) error {
 		if len(u.String()) < length {
 			return fmt.Errorf("too short [%d]: %s", length, u.String())
 		}
+
 		return nil
 	}
 }
 
 func hasSkippablePrefixRelative(u *url.URL) error {
-	for _, sp := range skippable_prefixes {
+	for _, sp := range skippablePrefixes {
 		if strings.HasPrefix(u.String(), sp) {
 			return fmt.Errorf("skippable prefix [%s]: %s", sp, u.Path)
 		}
 	}
+
 	return nil
 }
 
 func hasSkippableExtension(u *url.URL) error {
-	for _, ext := range skippable_extensions {
+	for _, ext := range skippableExtensions {
 		if strings.HasSuffix(u.Path, ext) {
 			return fmt.Errorf("skippable extension [%s]: %s", ext, u.Path)
 		}
 	}
+
 	return nil
 }
 
 func hasTooManyRepeats(repeatLength int, threshold int) func(*url.URL) error {
 	return func(u *url.URL) error {
 		s := u.String()
+
 		end := len(s) - repeatLength
 		chunks := make(map[string]bool)
 		repeats := make(map[string]int)
+
 		for ndx := 0; ndx < end; ndx++ {
 			piece := s[ndx : ndx+repeatLength]
 			if _, ok := chunks[piece]; ok {
@@ -110,6 +126,7 @@ func hasTooManyRepeats(repeatLength int, threshold int) func(*url.URL) error {
 		if total >= threshold {
 			return fmt.Errorf("too many repeats [%d over %d]: %s", total, threshold, u.String())
 		}
+
 		return nil
 	}
 }
@@ -122,10 +139,11 @@ func endsWithWrongSlash(u *url.URL) error {
 			return fmt.Errorf("ends with backslash: %s", u.String())
 		}
 	}
+
 	return nil
 }
 
-var all string = ".*"
+var all = ".*"
 
 func GeneralRules() []Rule {
 	rules := make([]Rule, 0)
@@ -139,13 +157,13 @@ func GeneralRules() []Rule {
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "max isTooShort 5",
-		Reject: isTooShort(5),
+		Reject: isTooShort(IsTooShortMin),
 	})
 
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "exceedsLength 200",
-		Reject: exceedsLength(200),
+		Reject: exceedsLength(ExceedsLengthMax),
 	})
 
 	rules = append(rules, Rule{
@@ -157,7 +175,7 @@ func GeneralRules() []Rule {
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "hasSlashHttp",
-		Reject: hasSlashHttp,
+		Reject: hasSlashHTTP,
 	})
 
 	rules = append(rules, Rule{
@@ -181,7 +199,7 @@ func GeneralRules() []Rule {
 	rules = append(rules, Rule{
 		Match:  all,
 		Msg:    "hasTooManyRepeats",
-		Reject: hasTooManyRepeats(8, 50),
+		Reject: hasTooManyRepeats(TooManyRepeatsLen, TooManyRepeatsCount),
 	})
 
 	return rules

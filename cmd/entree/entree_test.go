@@ -1,3 +1,4 @@
+//nolint:all
 package main
 
 import (
@@ -167,9 +168,13 @@ func TestSetGuestbookFetchToYesterdayForHost2(t *testing.T) {
 	defer conn.Close(ctx)
 
 	// Delete everything from the guestbook for this test.
-	conn.Exec(ctx, "TRUNCATE guestbook")
+	_, err := conn.Exec(ctx, "TRUNCATE guestbook")
 
-	_, err := conn.Exec(ctx,
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = conn.Exec(ctx,
 		`INSERT INTO guestbook
 		(scheme, domain64, path, last_updated, last_fetched, next_fetch)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -216,11 +221,11 @@ func TestSetGuestbookFetchToYesterdayForHost2(t *testing.T) {
 
 func GetQueuesDb() (*work_db.Queries, context.Context, *pgx.Conn) {
 	ctx := context.Background()
-	db_string, err := env.Env.GetDatabaseUrl(env.QueueDatabase)
+	dbString, err := env.Env.GetDatabaseURL(env.QueueDatabase)
 	if err != nil {
 		zap.L().Fatal("could not get db URL for queues-db")
 	}
-	conn, err := pgx.Connect(ctx, db_string)
+	conn, err := pgx.Connect(ctx, dbString)
 	if err != nil {
 		zap.L().Fatal("could not connect to queues-db")
 	}
@@ -230,11 +235,11 @@ func GetQueuesDb() (*work_db.Queries, context.Context, *pgx.Conn) {
 
 func GetWorkDB() (*work_db.Queries, context.Context, *pgx.Conn) {
 	ctx := context.Background()
-	db_string, err := env.Env.GetDatabaseUrl(env.JemisonWorkDatabase)
+	dbString, err := env.Env.GetDatabaseURL(env.JemisonWorkDatabase)
 	if err != nil {
 		zap.L().Fatal("could not get db URL for work-db")
 	}
-	conn, err := pgx.Connect(ctx, db_string)
+	conn, err := pgx.Connect(ctx, dbString)
 	if err != nil {
 		zap.L().Fatal("could not connect to work-db")
 	}

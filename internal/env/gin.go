@@ -7,8 +7,9 @@ import (
 	"go.uber.org/zap"
 )
 
-func SetGinReleaseMode(this_service string) {
-	s, _ := Env.GetUserService(this_service)
+func SetGinReleaseMode(thisService string) {
+	s, _ := Env.GetUserService(thisService)
+
 	level := s.GetParamString("debug_level")
 	if level == "debug" {
 		zap.L().Info("setting gin debug level to debug")
