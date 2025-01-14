@@ -44,3 +44,6 @@ flowchart LR
 At this point, further services clean, process, and prepare the text for search.
 
 Read more about the [data processing pipeline](processing.md).
+
+## administration via API
+

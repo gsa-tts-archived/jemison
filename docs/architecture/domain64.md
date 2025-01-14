@@ -24,6 +24,14 @@ This lets us track
 * 16,777,215 (#FFFFFF) subdomains under each domain
 * 255 (#FF) reserved
 
+```mermaid
+packet-beta
+0-7: "TLD"
+8-31: "Domain"
+32-55: "Subdomain"
+56-63: "Reserved"
+```
+
 For example
 
 ```
@@ -125,6 +133,52 @@ Using those 32 bits for paths, we could:
     * 01 means we used two nibbles for the root (64 roots) and 6 nibbles for paths (16M)
     * 10 means we used three nibbles for the root (1024 roots) and 5 nibbles for paths (1M)
     * 11 is undefined 
+
+
+```mermaid
+packet-beta
+0-3: "TLD"
+4-19: "Domain"
+20-35: "Subdomain"
+36-37: "Path type"
+38-63: "Path"
+```
+
+where "Path" might be
+
+```mermaid
+packet-beta
+0-1: "00"
+2-31: "Path id"
+```
+
+or
+
+```mermaid
+packet-beta
+0-1: "01"
+2-9: "Root id"
+10-31: "Path id" 
+```
+
+or
+
+```mermaid
+packet-beta
+0-1: "10"
+2-13: "Root id"
+14-31: "Path id" 
+```
+
+and "11" is undefined
+
+```mermaid
+packet-beta
+0-1: "11"
+2-31: "Undefined"
+```
+
+
 
 This would make subpath searching optimal. We can filter, based on the domain64, down to the path
 
