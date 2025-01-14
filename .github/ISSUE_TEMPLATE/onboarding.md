@@ -60,7 +60,11 @@ All team members will want to take the following steps:
     Thank you!
     ```        
     - (Note this step could take a few days; humans handle these requests.)
-  - [ ] Once you are added to the GSA-TTS org, ask [the person(s) with the "Maintainer" role to add you to the `searchgov-team` team](https://github.com/orgs/GSA-TTS/teams/searchgov-team/members). This will grant you read/write access to our repositories.
+  - [ ] Once you are added to the GSA-TTS org, ask [the person(s) with the "Maintainer" role to add you to the `searchgov-team` team](https://github.com/orgs/GSA-TTS/teams/searchgov-team/members). Your buddy should check the teams you have access to.
+    - [ ] searchgov-team
+    - [ ] searchgov-maintainers
+    - [ ] searchgov-admins
+    - [ ] search-gov-content
 
 ## For UX/design
 
