@@ -61,6 +61,8 @@ func addMetadata(m map[string]any) map[string]any {
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
 
+	InitializeQueues()
+
 	go queueing.Enqueue(ChQSHP)
 
 	s, _ := env.Env.GetUserService(ThisServiceName)
@@ -157,6 +159,7 @@ func main() {
 	v1 := engine.Group("/api")
 	{
 		v1.GET("/heartbeat", common.Heartbeat)
+		v1.POST("/search", SearchHandler)
 	}
 
 	zap.L().Info("listening to the music of the spheres",
