@@ -40,6 +40,8 @@ build: generate
 	# cd cmd/validate ; make build
 	echo "build walk"
 	cd cmd/walk ; make build
+	echo "build resultsapi"
+	cd cmd/resultsapi ; make build
 
 .PHONY: lint
 lint: generate

@@ -4,6 +4,7 @@ local EX = import 'extract.libsonnet';
 local F = import 'fetch.libsonnet';
 local M = import 'migrate.libsonnet';
 local P = import 'pack.libsonnet';
+local Y = import 'resultsapi.libsonnet';
 local S = import 'serve.libsonnet';
 local V = import 'validate.libsonnet';
 local W = import 'walk.libsonnet';
@@ -28,6 +29,7 @@ local VCAP = import 'vcap_services.libsonnet';
       S.container,
       V.container,
       W.container,
+      Y.container,
     ],
   },
   VCAP_SERVICES: VCAP.VCAP_SERVICES(

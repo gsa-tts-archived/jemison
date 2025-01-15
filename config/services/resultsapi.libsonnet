@@ -1,5 +1,5 @@
 local B = import 'base.libsonnet';
-local service = 'serve';
+local service = 'resultsapi';
 
 local credentials = [
   [
@@ -19,7 +19,7 @@ local parameters = [
   ],
   [
     'external_port',
-    { cf: 443, container: 10000 },
+    { cf: 443, container: 10008 },
   ],
   [
     'external_scheme',
@@ -33,14 +33,14 @@ local parameters = [
     'template_files_path',
     {
       cf: '/home/vcap/app/templates',
-      container: '/home/vcap/app/cmd/serve/templates',
+      container: '/home/vcap/app/cmd/resultsapi/templates',
     },
   ],
   [
     'static_files_path',
     {
       cf: '/home/vcap/app/static',
-      container: '/home/vcap/app/cmd/serve/static',
+      container: '/home/vcap/app/cmd/resultsapi/static',
     },
   ],
   [
