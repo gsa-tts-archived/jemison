@@ -14,7 +14,7 @@ local parameters = [
   // With 'one_per_domain', 10 is appropriate... but largely immaterial.
   [
     'queue_model',
-    { cf: 'round_robin', container: 'round_robin' },
+    { cf: 'round_robin', container: 'simple' },
   ],
   [
     'workers',
