@@ -146,6 +146,22 @@ local parameters = [
 
 This is a good, basic config. It imports some common config, sets the debug level (which every service is expected to have), and that's it. This will automatically be slurped up by the build.
 
+You will also need to update `conatiner.jsonnet`. Import the new configuration and add it to the user-provided `EIGHT_SERVICES`. 
+
+```
+  local R = import 'searchapi.libsonnet';
+  ...
+  {
+    ...
+    EIGHT_SERVICES: {
+      'user-provided': [
+        ...,
+        R.container,
+      ],
+    },
+  }
+```
+
 ### add a healthcheck
 
 We need to now add some common infrastructure to the service.
