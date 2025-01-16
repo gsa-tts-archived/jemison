@@ -2,13 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"sync"
 
-	"github.com/GSA-TTS/jemison/config"
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/postgres"
@@ -26,6 +23,18 @@ var ChQSHP = make(chan queueing.QSHP)
 var ThisServiceName = "resultsapi"
 
 var JDB *postgres.JemisonDB
+
+type fakeResult struct {
+	URL             string `json:"url"`
+	Title           string `json:"title"`
+	Snippet         string `json:"snippet"`
+	PublicationDate string `json:"publication_date"`
+	ThumbnailUrl    string `json:"thumbnail_url"`
+}
+
+var fakeResults = []fakeResult{
+	{URL: "https://www.nasa.gov/news-release/nasa-releases-detailed-global-climate-change-projections", Title: "NASA Releases Detailed Global Climate Change Projections", Snippet: "NASA has released data showing how temperature and rainfall patterns worldwide may change through the year 2100 because of growing concentrations of greenhouse gases in Earth’s atmosphere.", PublicationDate: "Jun 09, 2015", ThumbnailUrl: "https://www.nasa.gov/wp-content/uploads/2015/06/15-115.jpg?resize=2000,935"},
+}
 
 func addMetadata(m map[string]any) map[string]any {
 	pathCount, err := JDB.WorkDBQueries.PathsInDomain64Range(context.Background(),
@@ -83,42 +92,46 @@ func main() {
 	)
 
 	/////////////////////
-	// Server/API
+	/// Results API ////
 	engine := gin.Default()
 
 	// will we need the two instructions below? I think not because there will be no ui
 	engine.StaticFS("/static", gin.Dir(staticFilesPath, true))
 	engine.LoadHTMLGlob(templateFilesPath + "/*")
 
-	baseParams := gin.H{
-		"scheme":      "http",
-		"search_host": "localhost",
-		"search_port": "10008",
-	}
+	// baseParams := gin.H{
+	// 	"scheme":      "http",
+	// 	"search_host": "localhost",
+	// 	"search_port": "10008",
+	// }
 
 	engine.GET("/:search", func(c *gin.Context) {
 		affiliate := c.Query("affiliate")
 		query := c.Query("query")
-
 		log.Println("affiliate: ", affiliate, " query: ", query)
-		tld := config.GetTLD(c.Param("search"))
-		d64Start, _ := strconv.ParseInt(fmt.Sprintf("%02x00000000000000", tld), 16, 64)
-		d64End, _ := strconv.ParseInt(fmt.Sprintf("%02xFFFFFFFFFFFF00", tld), 16, 64)
-		baseParams["tld"] = c.Param("tld")
-		delete(baseParams, "domain")
-		delete(baseParams, "subdomain")
-		baseParams["fqdn"] = c.Param("tld")
-		baseParams["d64_start"] = d64Start
-		baseParams["d64_end"] = d64End
-		baseParams = addMetadata(baseParams)
 
-		c.HTML(http.StatusOK, "index.tmpl", baseParams)
+		// why are we doing all of this and do we need it?
+		// tld := config.GetTLD(c.Param("search"))
+		// d64Start, _ := strconv.ParseInt(fmt.Sprintf("%02x00000000000000", tld), 16, 64)
+		// d64End, _ := strconv.ParseInt(fmt.Sprintf("%02xFFFFFFFFFFFF00", tld), 16, 64)
+		// baseParams["tld"] = c.Param("tld")
+		// delete(baseParams, "domain")
+		// delete(baseParams, "subdomain")
+		// baseParams["fqdn"] = c.Param("tld")
+		// baseParams["d64_start"] = d64Start
+		// baseParams["d64_end"] = d64End
+		// baseParams = addMetadata(baseParams)
+
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"affiliate": affiliate,
+			"query":     query,
+			"faker":     fakeResults,
+		})
 	})
 
 	v1 := engine.Group("/api")
 	{
 		v1.GET("/heartbeat", common.Heartbeat)
-		// v1.POST("/search", SearchHandler)
 	}
 
 	zap.L().Info("listening from resultsapi",
