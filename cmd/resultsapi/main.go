@@ -61,7 +61,7 @@ func addMetadata(m map[string]any) map[string]any {
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
 
-	// InitializeQueues()
+	InitializeQueues()
 
 	go queueing.Enqueue(ChQSHP)
 
@@ -74,7 +74,7 @@ func main() {
 
 	JDB = postgres.NewJemisonDB()
 
-	log.Println("environment initialized")
+	log.Println(ThisServiceName, " environment initialized")
 
 	zap.L().Info("resultsapi environment",
 		zap.String("template_files_path", templateFilesPath),
@@ -85,15 +85,9 @@ func main() {
 	/////////////////////
 	// Server/API
 	engine := gin.Default()
-	// engine.GET("/", func(c *gin.Context) {
-	// 	c.Redirect(http.StatusMovedPermanently, "/search/"+start)
-	// })
-	// engine.GET("/search", func(c *gin.Context) {
-	// 	c.Redirect(http.StatusMovedPermanently, "/search/"+start)
-	// })
-	engine.StaticFS("/static", gin.Dir(staticFilesPath, true))
-	// engine.GET("/search/:host", ServeHost)
 
+	// will we need the two instructions below? I think not because there will be no ui
+	engine.StaticFS("/static", gin.Dir(staticFilesPath, true))
 	engine.LoadHTMLGlob(templateFilesPath + "/*")
 
 	baseParams := gin.H{
@@ -102,8 +96,12 @@ func main() {
 		"search_port": "10008",
 	}
 
-	engine.GET("/:tld", func(c *gin.Context) {
-		tld := config.GetTLD(c.Param("tld"))
+	engine.GET("/:search", func(c *gin.Context) {
+		affiliate := c.Query("affiliate")
+		query := c.Query("query")
+
+		log.Println("affiliate: ", affiliate, " query: ", query)
+		tld := config.GetTLD(c.Param("search"))
 		d64Start, _ := strconv.ParseInt(fmt.Sprintf("%02x00000000000000", tld), 16, 64)
 		d64End, _ := strconv.ParseInt(fmt.Sprintf("%02xFFFFFFFFFFFF00", tld), 16, 64)
 		baseParams["tld"] = c.Param("tld")
@@ -117,52 +115,13 @@ func main() {
 		c.HTML(http.StatusOK, "index.tmpl", baseParams)
 	})
 
-	engine.GET("/:tld/:domain", func(c *gin.Context) {
-		tld := c.Param("tld")
-		domain := c.Param("domain")
-		start := config.RDomainToDomain64(fmt.Sprintf("%s.%s", tld, domain))
-		zap.L().Debug("rdomain", zap.String("start", start))
-
-		d64Start, _ := strconv.ParseInt(fmt.Sprintf("%s00000000", start), 16, 64)
-		d64End, _ := strconv.ParseInt(fmt.Sprintf("%sFFFFFF00", start), 16, 64)
-
-		baseParams["tld"] = tld
-		baseParams["domain"] = domain
-		delete(baseParams, "subdomain")
-		baseParams["fqdn"] = fmt.Sprintf("%s.%s", domain, tld)
-		baseParams["d64_start"] = d64Start
-		baseParams["d64_end"] = d64End
-		baseParams = addMetadata(baseParams)
-
-		c.HTML(http.StatusOK, "index.tmpl", baseParams)
-	})
-
-	engine.GET("/:tld/:domain/:subdomain", func(c *gin.Context) {
-		tld := c.Param("tld")
-		domain := c.Param("domain")
-		subdomain := c.Param("subdomain")
-		fqdn := fmt.Sprintf("%s.%s.%s", subdomain, domain, tld)
-		start, _ := config.FQDNToDomain64(fqdn)
-		d64Start := start
-		d64End := start + 1
-
-		baseParams["tld"] = tld
-		baseParams["domain"] = domain
-		baseParams["subdomain"] = subdomain
-		baseParams["fqdn"] = fqdn
-		baseParams["d64_start"] = d64Start
-		baseParams["d64_end"] = d64End
-		baseParams = addMetadata(baseParams)
-		c.HTML(http.StatusOK, "index.tmpl", baseParams)
-	})
-
 	v1 := engine.Group("/api")
 	{
 		v1.GET("/heartbeat", common.Heartbeat)
 		// v1.POST("/search", SearchHandler)
 	}
 
-	zap.L().Info("listening to the music of the spheres",
+	zap.L().Info("listening from resultsapi",
 		zap.String("port", env.Env.Port))
 	// Local and Cloud should both get this from the environment.
 	//nolint:gosec
