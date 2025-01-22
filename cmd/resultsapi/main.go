@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/GSA-TTS/jemison/internal/common"
@@ -13,6 +17,7 @@ import (
 	"github.com/GSA-TTS/jemison/internal/postgres/work_db"
 	"github.com/GSA-TTS/jemison/internal/queueing"
 	"github.com/gin-gonic/gin"
+	"github.com/kaptinlin/jsonschema"
 	"go.uber.org/zap"
 )
 
@@ -64,6 +69,118 @@ func addMetadata(m map[string]any) map[string]any {
 	m["bodyCount"] = bodyCount
 
 	return m
+}
+
+func makeSchema() string {
+	schemaJSON := `{
+		"type": "object",
+	  "properties": {
+	    "query": {
+	      "description": "The query passed in from the user",
+	      "type": "string"
+	    },
+	    "web": {
+	      "type": "object",
+	      "properties" : {
+	        "total": {
+	          "type": "integer"
+	        },
+	        "next_offset": {
+	          "type": ["object", "null"]
+	        },
+	        "spelling_correction": {
+	          "type": ["object", "null"]
+	        },
+	        "results": {
+	          "type": "array",
+	          "properties":{
+	            "title":{
+	              "type": "string"
+	            },
+	            "url":{
+	              "type": "string"
+	            },
+	            "snippet":{
+	              "type": "string"
+	            },
+	            "publication_date":{
+	              "type": "string"
+	            },
+	            "thumbnail_url":{
+	              "type": "string"
+	            }
+	          }
+	        }
+	      },
+	      "required":["total"]
+	    },
+	    "text_best_bets": {
+	      "description": "The unique identifier for a product",
+	      "type": "array"
+	    },
+	    "graphic_best_bets": {
+	      "description": "The unique identifier for a product",
+	      "type": "array"
+	    },
+	    "health_topics": {
+	      "description": "The unique identifier for a product",
+	      "type": "array"
+	    },
+	    "job_openings": {
+	      "description": "The unique identifier for a product",
+	      "type": "array"
+	    },
+	    "federal_register_documents": {
+	      "description": "The unique identifier for a product",
+	      "type": "array"
+	    },
+	    "related_search_terms": {
+	      "description": "The unique identifier for a product",
+	      "type": "array"
+	    }
+	  },
+	  "required": ["query", "web"]
+	}`
+
+	return schemaJSON
+}
+
+func compileSchema(schemaJSON string) *jsonschema.Schema {
+	compiler := jsonschema.NewCompiler()
+	schema, err := compiler.Compile([]byte(schemaJSON))
+	if err != nil {
+		log.Fatalf("Failed to compile schema: %v", err)
+	}
+	return schema
+}
+
+func getAlbums(c *gin.Context) {
+	c.IndentedJSON(http.StatusOK, albums)
+}
+
+func getMappedJSON() map[string]interface{} {
+	jsonFile, err := os.Open("nasa.json")
+	if err != nil {
+		fmt.Println(err)
+	}
+	// defer the closing of our jsonFile so that we can parse it later on
+	defer jsonFile.Close()
+
+	byteValue, _ := io.ReadAll(jsonFile)
+
+	var result map[string]interface{}
+	json.Unmarshal([]byte(byteValue), &result)
+	return result
+}
+
+func validateJSON(schema *jsonschema.Schema, mappedJSON map[string]interface{}) {
+	result := schema.Validate(mappedJSON)
+	if !result.IsValid() {
+		details, _ := json.MarshalIndent(result.ToList(), "", "  ")
+		fmt.Println(string(details))
+	} else {
+		fmt.Println("Schema is valid")
+	}
 }
 
 //nolint:funlen
@@ -121,6 +238,17 @@ func main() {
 		// baseParams["d64_start"] = d64Start
 		// baseParams["d64_end"] = d64End
 		// baseParams = addMetadata(baseParams)
+
+		// jsonSchema := makeSchema()
+		// schema := compileSchema(jsonSchema)
+		// mappedJSON := getMappedJSON()
+		request := c.Request
+		body, _ := io.ReadAll(request.Body)
+		defer request.Body.Close() //Need to close Body after reading it.
+
+		// return string(body)
+		fmt.Println(string(body))
+		// validateJSON(schema, mappedJSON)
 
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"affiliate": affiliate,
