@@ -1,3 +1,4 @@
+//nolint:testpackage,paralleltest
 package config
 
 import (

@@ -1,3 +1,4 @@
+//nolint:testpackage,lll
 package filter
 
 import (
@@ -20,8 +21,8 @@ var tests = []struct {
 	{"/", isTooShort(1), false},
 	{"https://tooLong.gov/", exceedsLength(5), true},
 	{"https://tooLong.gov/", exceedsLength(200), false},
-	{"https://nasa.gov/", hasSlashHttp, false},
-	{"https://nasa.gov/something/http://", hasSlashHttp, true},
+	{"https://nasa.gov/", hasSlashHTTP, false},
+	{"https://nasa.gov/something/http://", hasSlashHTTP, true},
 	// Spaces become %20 once encoded
 	{"https://blog1a.nasa.gov/right here", hasRightHere, true},
 	{"https://blog1b.nasa.gov/right here", IsReject, true},
@@ -52,6 +53,5 @@ func TestAll(t *testing.T) {
 		} else {
 			assert.Equal(t, nil, tt.fun(u))
 		}
-
 	}
 }

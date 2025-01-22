@@ -1,3 +1,4 @@
+//nolint:godox
 package main
 
 import (
@@ -38,12 +39,14 @@ type SearchResult struct {
 
 func to64(s string) int64 {
 	v, _ := strconv.Atoi(s)
+
 	return int64(v)
 }
 
 // Would just be * with SQLite.
 var _stemmed = ":*"
 
+//nolint:funlen
 func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
 	start := time.Now()
 
@@ -52,31 +55,33 @@ func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
 		zap.Int64("end", to64(sri.Domain64End)))
 
 	// Don't only use the stemmed words
-	existing_terms := strings.Split(sri.Terms, " ")
-	zap.L().Debug("EXISTING TERMS", zap.Strings("terms", existing_terms))
+	existingTerms := strings.Split(sri.Terms, " ")
+	zap.L().Debug("EXISTING TERMS", zap.Strings("terms", existingTerms))
 
 	query := NewQuery()
 
-	for _, et := range existing_terms {
+	for _, et := range existingTerms {
 		et = strings.TrimSpace(et)
 		stemmed, err := snowball.Stem(et, "english", true)
 		zap.L().Debug("stemmed result", zap.String("et", et), zap.String("stemmed", stemmed))
+
 		if err != nil {
 			zap.L().Debug("stemming error", zap.String("err", err.Error()))
 		}
+
 		query.AddToQuery(Or(et, stemmed+_stemmed))
 	}
 
-	improved_terms_string := query.ToString()
+	improvedTermsString := query.ToString()
 
 	zap.L().Debug("search string",
 		zap.String("original", sri.Terms),
 		zap.String("Q", fmt.Sprintln(query)),
-		zap.String("improved", improved_terms_string))
+		zap.String("improved", improvedTermsString))
 
 	res, err := JDB.SearchDBQueries.SearchContent(context.Background(),
 		search_db.SearchContentParams{
-			Query:    improved_terms_string,
+			Query:    improvedTermsString,
 			D64Start: to64(sri.Domain64Start),
 			D64End:   to64(sri.Domain64End),
 		})
@@ -84,6 +89,7 @@ func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
 	duration := time.Since(start)
 
 	cleaned := make([]SearchResult, 0)
+
 	for _, r := range res {
 		// FIXME: the database structure is forcing us into an N+1 queries
 		// situation... Not good.
@@ -112,7 +118,7 @@ func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
 		}
 
 		cleaned = append(cleaned, SearchResult{
-			Terms:      improved_terms_string,
+			Terms:      improvedTermsString,
 			PageTitle:  title,
 			PathString: path,
 			Snippet:    string(r.Snippet),
@@ -120,8 +126,9 @@ func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
 			FQDN:       fqdn,
 		})
 	}
-	return cleaned, duration, err
 
+	//nolint:wrapcheck
+	return cleaned, duration, err
 }
 
 func SearchHandler(c *gin.Context) {
@@ -132,7 +139,6 @@ func SearchHandler(c *gin.Context) {
 	}
 
 	rows, duration, err := runQuery(sri)
-
 	if err != nil {
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"result":  "err",
@@ -140,13 +146,13 @@ func SearchHandler(c *gin.Context) {
 			"elapsed": duration,
 			"results": nil,
 		})
-		return
-	} else {
-		c.IndentedJSON(http.StatusOK, gin.H{
-			"result":  "ok",
-			"elapsed": duration,
-			"results": rows,
-		})
+
 		return
 	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{
+		"result":  "ok",
+		"elapsed": duration,
+		"results": rows,
+	})
 }

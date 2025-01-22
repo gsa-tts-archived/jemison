@@ -1,3 +1,4 @@
+//nolint:godox
 package env
 
 import (
@@ -13,13 +14,17 @@ import (
 )
 
 var Env *env
-var DEBUG_ENV = false
+
+var DebugEnv = false
 
 // Constants for the attached services
 // These reach into the VCAP_SERVICES and are
 // defined in the Terraform.
+
 const QueueDatabase = "jemison-queues-db"
+
 const JemisonWorkDatabase = "jemison-work-db"
+
 const SearchDatabase = "jemison-search-db"
 
 var validBucketNames = []string{
@@ -34,12 +39,13 @@ func IsValidBucketName(name string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 type Credentials interface {
-	CredentialString(string) string
-	CredentialInt(string) int64
+	CredentialString(cred string) string
+	CredentialInt(cred string) int64
 }
 
 type Service struct {
@@ -48,29 +54,44 @@ type Service struct {
 	Parameters  map[string]interface{} `mapstructure:"parameters"`
 }
 
-// FIXME: This should be string, err
+// FIXME: This should be string, err.
 func (s *Service) CredentialString(key string) string {
+	//nolint:revive
 	if v, ok := s.Credentials[key]; ok {
-		return v.(string)
+		cast, ok := v.(string)
+		if !ok {
+			zap.L().Error("could not cast to string")
+		}
+
+		return cast
 	} else {
 		zap.L().Error("cannot find credential for key",
 			zap.String("key", key))
+
 		return fmt.Sprintf("NOVAL:%s", v)
 	}
 }
 
 func (s *Service) CredentialInt(key string) int64 {
 	if v, ok := s.Credentials[key]; ok {
-		return int64(v.(int))
-	} else {
-		zap.L().Error("cannot find credential for key",
-			zap.String("key", key))
-		return -1
+		cast, ok := v.(int)
+		if !ok {
+			zap.L().Error("could not cast to int")
+		}
+
+		return int64(cast)
 	}
+
+	zap.L().Error("cannot find credential for key",
+		zap.String("key", key))
+
+	return -1
 }
 
 type Database = Service
+
 type Bucket = Service
+
 type env struct {
 	AppEnv        string               `mapstructure:"APPENV"`
 	Home          string               `mapstructure:"HOME"`
@@ -87,15 +108,18 @@ type env struct {
 	Databases     []Database
 }
 
-type container_env struct {
+type containerEnv struct {
 	VcapServices map[string][]Service `mapstructure:"VCAP_SERVICES"`
 }
 
-var container_envs = []string{"DOCKER", "GH_ACTIONS"}
-var cf_envs = []string{"SANDBOX", "PREVIEW", "DEV", "STAGING", "PROD"}
-var test_envs = []string{"LOCALHOST"}
+var containerEnvs = []string{"DOCKER", "GH_ACTIONS"}
 
-func InitGlobalEnv(this_service string) {
+var cfEnvs = []string{"SANDBOX", "PREVIEW", "DEV", "STAGING", "PROD"}
+
+var testEnvs = []string{"LOCALHOST"}
+
+//nolint:cyclop,funlen
+func InitGlobalEnv(thisService string) {
 	Env = &env{}
 	configName := "NO_CONFIG_NAME_SET"
 
@@ -108,6 +132,7 @@ func InitGlobalEnv(this_service string) {
 	if IsContainerEnv() {
 		log.Println("IsContainerEnv")
 		viper.SetConfigName("container")
+
 		configName = "container"
 	}
 
@@ -116,12 +141,14 @@ func InitGlobalEnv(this_service string) {
 		viper.AddConfigPath("../../config")
 		viper.AddConfigPath("config")
 		viper.SetConfigName("localhost")
+
 		configName = "localhost"
 	}
 
 	if IsCloudEnv() {
 		log.Println("IsCloudEnv")
 		viper.SetConfigName("cf")
+
 		configName = "cf"
 		// https://github.com/spf13/viper/issues/1706
 		// https://github.com/spf13/viper/issues/1671
@@ -129,23 +156,19 @@ func InitGlobalEnv(this_service string) {
 	}
 
 	// Grab the PORT in the cloud and locally from os.Getenv()
-	viper.BindEnv("PORT")
+	err := viper.BindEnv("PORT")
+	if err != nil {
+		zap.L().Fatal("ENV could not bind env", zap.String("err", err.Error()))
+	}
 
-	//err := viper.ReadInConfig()
-	err := viper.ReadConfig(config.GetYamlFileReader(configName + ".yaml"))
-
+	err = viper.ReadConfig(config.GetYamlFileReader(configName + ".yaml"))
 	if err != nil {
 		log.Fatal("ENV cannot load in the config file ", viper.ConfigFileUsed())
 	}
 
 	err = viper.Unmarshal(&Env)
-
 	if err != nil {
 		log.Fatal("ENV can't find config files: ", err)
-	}
-
-	if err != nil {
-		log.Fatal("ENV environment can't be loaded: ", err)
 	}
 
 	// CF puts VCAP_* in a string containing JSON.
@@ -153,19 +176,27 @@ func InitGlobalEnv(this_service string) {
 	// if we unpack things right, we end up with one struct
 	// with everything in the rgiht places.
 	if IsContainerEnv() || IsLocalTestEnv() {
-		ContainerEnv := container_env{}
-		viper.Unmarshal(&ContainerEnv)
-		Env.VcapServices = ContainerEnv.VcapServices
-	}
+		ContainerEnv := containerEnv{}
 
-	if IsCloudEnv() {
-		new_vcs := make(map[string][]Service, 0)
-		err := json.Unmarshal([]byte(os.Getenv("VCAP_SERVICES")), &new_vcs)
+		err := viper.Unmarshal(&ContainerEnv)
 		if err != nil {
 			log.Println("ENV could not unmarshal VCAP_SERVICES to new")
 			log.Fatal(err)
 		}
-		Env.VcapServices = new_vcs
+
+		Env.VcapServices = ContainerEnv.VcapServices
+	}
+
+	if IsCloudEnv() {
+		newVCS := make(map[string][]Service, 0)
+
+		err := json.Unmarshal([]byte(os.Getenv("VCAP_SERVICES")), &newVCS)
+		if err != nil {
+			log.Println("ENV could not unmarshal VCAP_SERVICES to new")
+			log.Fatal(err)
+		}
+
+		Env.VcapServices = newVCS
 	}
 
 	// Configure the buckets and databases
@@ -177,27 +208,29 @@ func InitGlobalEnv(this_service string) {
 		log.Println(Env.Databases)
 	}
 
-	SetupLogging(this_service)
-	SetGinReleaseMode(this_service)
+	SetupLogging(thisService)
+	SetGinReleaseMode(thisService)
 
 	// Grab the schedule
-	s, err := Env.GetUserService(this_service)
+	s, err := Env.GetUserService(thisService)
 	if err != nil {
-		log.Println("could not get service for ", this_service)
+		log.Println("could not get service for ", thisService)
 	}
+
 	Env.AllowedHosts = s.GetParamString("allowed_hosts")
 	log.Println("Setting Schedule: ", Env.AllowedHosts)
-
 }
 
 // https://stackoverflow.com/questions/3582552/what-is-the-format-for-the-postgresql-connection-string-url
 // postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
-func (e *env) GetDatabaseUrl(name string) (string, error) {
+func (e *env) GetDatabaseURL(name string) (string, error) {
 	for _, db := range e.Databases {
 		if db.Name == name {
 			params := ""
 			if IsContainerEnv() || IsLocalTestEnv() {
 				params = "?sslmode=disable"
+
+				//nolint:nosprintfhostport
 				return fmt.Sprintf("postgresql://%s@%s:%d/%s%s",
 					db.CredentialString("username"),
 					db.CredentialString("host"),
@@ -206,18 +239,19 @@ func (e *env) GetDatabaseUrl(name string) (string, error) {
 					params,
 				), nil
 			}
+
 			if IsCloudEnv() {
 				return db.CredentialString("uri"), nil
 			}
-
 		}
 	}
+
 	return "", fmt.Errorf("ENV no db found with name %s", name)
 }
 
 func (e *env) GetObjectStore(name string) (Bucket, error) {
 	for _, b := range e.ObjectStores {
-		if DEBUG_ENV {
+		if DebugEnv {
 			zap.L().Debug("GetObjectStore",
 				zap.String("bucket_name", b.Name),
 				zap.String("search_key", name),
@@ -229,6 +263,7 @@ func (e *env) GetObjectStore(name string) (Bucket, error) {
 			return b, nil
 		}
 	}
+
 	return Bucket{}, fmt.Errorf("ENV no bucket with name %s", name)
 }
 
@@ -238,43 +273,54 @@ func (e *env) GetUserService(name string) (Service, error) {
 			return s, nil
 		}
 	}
+
 	return Service{}, fmt.Errorf("ENV no service with name %s", name)
 }
 
 func IsContainerEnv() bool {
-	return slices.Contains(container_envs, os.Getenv("ENV"))
+	return slices.Contains(containerEnvs, os.Getenv("ENV"))
 }
 
 func IsLocalTestEnv() bool {
-	return slices.Contains(test_envs, os.Getenv("ENV"))
+	return slices.Contains(testEnvs, os.Getenv("ENV"))
 }
 
 func IsCloudEnv() bool {
-	return slices.Contains(cf_envs, os.Getenv("ENV"))
+	return slices.Contains(cfEnvs, os.Getenv("ENV"))
 }
 
 func (s *Service) GetParamInt64(key string) int64 {
-	for _, global_s := range Env.UserServices {
-		if s.Name == global_s.Name {
-			if global_param_val, ok := global_s.Parameters[key]; ok {
-				return int64(global_param_val.(int))
-			} else {
-				log.Fatalf("ENV no int64 param found for %s", key)
+	for _, globalString := range Env.UserServices {
+		if s.Name == globalString.Name {
+			if globalParamVal, ok := globalString.Parameters[key]; ok {
+				cast, ok := globalParamVal.(int)
+				if !ok {
+					zap.L().Error("could not cast int")
+				}
+
+				return int64(cast)
 			}
+
+			log.Fatalf("ENV no int64 param found for %s", key)
 		}
 	}
+
 	return -1
 }
 
 func (s *Service) GetParamString(key string) string {
+	for _, globalString := range Env.UserServices {
+		if s.Name == globalString.Name {
+			if globalParamVal, ok := globalString.Parameters[key]; ok {
+				cast, ok := globalParamVal.(string)
+				if !ok {
+					zap.L().Error("could not cast string")
+				}
 
-	for _, global_s := range Env.UserServices {
-		if s.Name == global_s.Name {
-			if global_param_val, ok := global_s.Parameters[key]; ok {
-				return global_param_val.(string)
-			} else {
-				log.Fatalf("ENV no string param found for %s", key)
+				return cast
 			}
+
+			log.Fatalf("ENV no string param found for %s", key)
 		}
 	}
 
@@ -282,22 +328,29 @@ func (s *Service) GetParamString(key string) string {
 }
 
 func (s *Service) GetParamBool(key string) bool {
-	for _, global_s := range Env.UserServices {
-		if s.Name == global_s.Name {
-			if global_param_val, ok := global_s.Parameters[key]; ok {
-				return global_param_val.(bool)
-			} else {
-				log.Fatalf("ENV no bool param found for %s", key)
+	for _, globalString := range Env.UserServices {
+		if s.Name == globalString.Name {
+			if globalParamVal, ok := globalString.Parameters[key]; ok {
+				cast, ok := globalParamVal.(bool)
+				if !ok {
+					zap.L().Error("could not cast bool")
+				}
+
+				return cast
 			}
+
+			log.Fatalf("ENV no bool param found for %s", key)
 		}
 	}
+
 	return false
 }
 
-func (s *Service) AsJson() string {
+func (s *Service) AsJSON() string {
 	b, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	return string(b)
 }
