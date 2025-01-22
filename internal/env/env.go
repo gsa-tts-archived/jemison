@@ -125,6 +125,7 @@ func InitGlobalEnv(thisService string) {
 
 	viper.AddConfigPath("/home/vcap/app/config")
 	viper.SetConfigType("yaml")
+
 	log.Println("ENV is", os.Getenv("ENV"))
 	log.Println("ENV", "LOCAL", IsLocalTestEnv(), "CONT", IsContainerEnv(), "CLOUD", IsCloudEnv())
 
