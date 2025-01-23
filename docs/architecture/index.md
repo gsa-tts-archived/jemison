@@ -45,5 +45,14 @@ At this point, further services clean, process, and prepare the text for search.
 
 Read more about the [data processing pipeline](processing.md).
 
-## administration via API
+## a source of data
+
+We collect data about Jemison (to understand its performance) as well as how our users interact with Jemison (so we know what they're searching for, and we can deliver a better experience to the public). 
+
+We serve the public. It is in their interest to have their privacy protected when they use Jemison. Therefore:
+
+1. We do **not** collect individually identifiable information. 
+2. We do **not** collect information that would allow us to identify individuals through aggregate operations.
+
+**We hold the public's trust**, and part of maintaining that trust is that we will collect information that allows us to deliver a better service, but will preserve the publics privacy as they work to find what they need from Federal services.
 
