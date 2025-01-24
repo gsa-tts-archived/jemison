@@ -8,6 +8,6 @@ import (
 )
 
 //nolint:revive
-func (w *ResultsApiWorker) Work(ctx context.Context, job *river.Job[common.ResultsApiArgs]) error {
+func (w *ResultsAPIWorker) Work(ctx context.Context, job *river.Job[common.ResultsAPIArgs]) error {
 	return nil
 }

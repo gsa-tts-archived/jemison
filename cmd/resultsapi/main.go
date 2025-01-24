@@ -1,8 +1,13 @@
 package main
 
 import (
-	"log"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/GSA-TTS/jemison/internal/common"
@@ -21,21 +26,42 @@ var ThisServiceName = "resultsapi"
 
 var JDB *postgres.JemisonDB
 
-type fakeResult struct {
-	SearchedQuery      string `json:"searchedQuery"`
-	Title              string `json:"title"`
-	Snippet            string `json:"snippet"`
-	PublicationDate    string `json:"publication_date"`
-	ThumbnailUrl       string `json:"thumbnail_url"`
-	TextBestBets       string `json:"text_best_bets"`
-	GraphicBestBets    string `json:"graphic_best_bets"`
-	HealthTopics       string `json:"health_yopics"`
-	JobOpenings        string `json:"job_openings"`
-	RelatedSearchTerms string `json:"related_search_terms"`
+type requiredQueryParameters struct {
+	affiliate   string
+	searchQuery string
 }
 
-fakeResults := fakeResult{
-	{SearchedQuery: "https://www.nasa.gov/news-release/nasa-releases-detailed-global-climate-change-projections", Title: "NASA Releases Detailed Global Climate Change Projections", Snippet: "NASA has released data showing how temperature and rainfall patterns worldwide may change through the year 2100 because of growing concentrations of greenhouse gases in Earth’s atmosphere.", PublicationDate: "Jun 09, 2015", ThumbnailUrl: "https://www.nasa.gov/wp-content/uploads/2015/06/15-115.jpg?resize=2000,935", TextBestBets: " ", GraphicBestBets: " ", HealthTopics: " ", JobOpenings: " ", RelatedSearchTerms: " "},
+type optionalQueryParameters struct {
+	enableHighlighting bool
+	offset             int
+	sortBy             int
+	sitelimit          int
+}
+
+type QueryWebResultsData struct {
+	Title           string `json:"title"`
+	URL             string `json:"url"`
+	Snippet         string `json:"snippet"`
+	PublicationDate string `json:"publication_date"`
+	ThumbnailURL    string `json:"thumbnail_url"`
+}
+
+type QueryWebData struct {
+	Total              int                   `json:"total"`
+	NextOffset         int                   `json:"next_offset"`
+	SpellingCorrection string                `json:"spelling_correction"`
+	Results            []QueryWebResultsData `json:"results"`
+}
+
+type QueryData struct {
+	SearchedQuery            string       `json:"query"`
+	Web                      QueryWebData `json:"web"`
+	TextBestBets             []string     `json:"text_best_bets"`
+	GraphicBestBets          []string     `json:"graphic_best_bets"`
+	HealthTopics             []string     `json:"health_topics"`
+	JobOpenings              []string     `json:"job_openings"`
+	FederalRegisterDocuments []string     `json:"federal_register_documents"`
+	RelatedSearchTerms       []string     `json:"related_search_terms"`
 }
 
 func setupQueues() {
@@ -46,6 +72,109 @@ func setupQueues() {
 	go queueing.Enqueue(ChQSHP)
 }
 
+func getQueryParams(c *gin.Context) {
+	// required query parameters
+	var requiredQueryParas requiredQueryParameters
+	requiredQueryParas.affiliate = c.Query("affiliate")
+	requiredQueryParas.searchQuery = c.Query("query")
+	fmt.Println("affiliate: ", requiredQueryParas.affiliate, " query: ", requiredQueryParas.searchQuery)
+
+	// optional query parameters
+	var optionalQueryParams optionalQueryParameters
+
+	enableHighlighting, err := strconv.ParseBool(c.Query("enable_highlighting"))
+	if err == nil {
+		optionalQueryParams.enableHighlighting = enableHighlighting
+		fmt.Println("enableHighlighting: ", optionalQueryParams.enableHighlighting)
+	}
+
+	offset, err := strconv.Atoi(c.Query("offset"))
+	if err == nil {
+		optionalQueryParams.offset = offset
+		fmt.Println("offset: ", optionalQueryParams.offset)
+	}
+
+	sortBy, err := strconv.Atoi(c.Query("sort_by"))
+	if err == nil {
+		optionalQueryParams.sortBy = sortBy
+		fmt.Println("sortBy: ", optionalQueryParams.sortBy)
+	}
+
+	sitelimit, err := strconv.Atoi(c.Query("sitelimit"))
+	if err == nil {
+		optionalQueryParams.sitelimit = sitelimit
+		fmt.Println("sitelimit: ", optionalQueryParams.sitelimit)
+	}
+}
+
+// ///// Contained Functions are used to test and create data for JSON to present to Client ////
+func checkError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func readHttpContent() string {
+	//note this is already formatted correctly but we will still grab the data format it into the struct we need and rebound as a JSON to serve to our client
+	var url = os.Getenv("TMPURL")
+
+	client := http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	checkError(err)
+	req.Header.Set("User-Agent", "")
+	resp, err := client.Do(req)
+	checkError(err)
+	defer resp.Body.Close()
+
+	fmt.Printf("Response type:%T\n", resp)
+	bytes, err := io.ReadAll(resp.Body)
+	checkError(err)
+	content := string(bytes)
+	return content
+}
+
+func makeStructFromJSON(content string) []QueryData {
+	data := make([]QueryData, 0)
+	decoder := json.NewDecoder(strings.NewReader(content))
+	for {
+		var result QueryData
+		err := decoder.Decode(&result)
+		if err != nil {
+			if err == io.EOF {
+				break // Reached end of the stream
+			}
+			panic(err)
+		}
+		data = append(data, result)
+	}
+	return data
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+func getQueryResponse() []QueryData {
+	// TODO: get data from database
+	// using "dummy" site to get data from
+	content := readHttpContent()
+	data := makeStructFromJSON(content)
+	return data
+}
+
+func makeJSONFromStruct(data []QueryData) []byte {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+
+	return jsonData
+}
+
+func returnQueryResponse(data []QueryData) {
+	jsonData := makeJSONFromStruct(data)
+	fmt.Printf("%s", string(jsonData))
+	// TODO: return the JSON to client
+}
+
 func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 	engine := gin.Default()
 
@@ -54,23 +183,16 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 	engine.LoadHTMLGlob(templateFilesPath + "/*")
 
 	engine.GET("/:search", func(c *gin.Context) {
-		//required query parameters
-		affiliate := c.Query("affiliate")
-		searchQuery := c.Query("query")
-		log.Println("affiliate: ", affiliate, " query: ", searchQuery)
+		getQueryParams(c)
 
-		//optional query parameters
-		// enable_highlighting := c.Query("enable_highlighting")
-		// offset := c.Query("offset")
-		// sort_by := c.Query("sort_by")
-		// sitelimit := c.Query("sitelimit")
-
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"affiliate": affiliate,
-			"query":     searchQuery,
-			"faker":     fakeResults,
-		})
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{})
 	})
+
+	// simulate parsing data from database
+	data := getQueryResponse()
+
+	// return the data as a JSON object
+	returnQueryResponse(data)
 
 	v1 := engine.Group("/api")
 	{
@@ -93,7 +215,7 @@ func main() {
 
 	JDB = postgres.NewJemisonDB()
 
-	log.Println(ThisServiceName, " environment initialized")
+	fmt.Println(ThisServiceName, " environment initialized")
 
 	zap.L().Info("resultsapi environment",
 		zap.String("template_files_path", templateFilesPath),

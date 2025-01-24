@@ -96,12 +96,12 @@ func (ValidateFetchArgs) Kind() string {
 	return ValidateFetchQueue
 }
 
-type ResultsApiArgs struct {
+type ResultsAPIArgs struct {
 	Scheme string `json:"scheme"`
 	Host   string `json:"host"`
 	Path   string `json:"path"`
 }
 
-func (ResultsApiArgs) Kind() string {
+func (ResultsAPIArgs) Kind() string {
 	return "searchapi"
 }

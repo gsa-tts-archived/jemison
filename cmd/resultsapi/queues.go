@@ -14,25 +14,25 @@ import (
 	"go.uber.org/zap"
 )
 
-// The work client, doing the work of `ResultsApi`
-var ResultsApiPool *pgxpool.Pool
-var ResultsApiClient *river.Client[pgx.Tx]
+// The work client, doing the work of `ResultsApi`.
+var ResultsAPIPool *pgxpool.Pool
+var ResultsAPIClient *river.Client[pgx.Tx]
 
-type ResultsApiWorker struct {
-	river.WorkerDefaults[common.ResultsApiArgs]
+type ResultsAPIWorker struct {
+	river.WorkerDefaults[common.ResultsAPIArgs]
 }
 
 func InitializeQueues() {
 	queueing.InitializeRiverQueues()
 
 	ctx, fP, workers := common.CommonQueueInit()
-	ResultsApiPool = fP
+	ResultsAPIPool = fP
 
 	// Essentially adds a worker "type" to the work engine.
-	river.AddWorker(workers, &ResultsApiWorker{})
+	river.AddWorker(workers, &ResultsAPIWorker{})
 
 	// Grab the number of workers from the config.
-	ResultsApiService, err := env.Env.GetUserService(ThisServiceName)
+	ResultsAPIService, err := env.Env.GetUserService(ThisServiceName)
 	if err != nil {
 		zap.L().Error("could not ResultsApi service config")
 		log.Println(err)
@@ -40,9 +40,9 @@ func InitializeQueues() {
 	}
 
 	// Work client
-	ResultsApiClient, err = river.NewClient(riverpgxv5.New(ResultsApiPool), &river.Config{
+	ResultsAPIClient, err = river.NewClient(riverpgxv5.New(ResultsAPIPool), &river.Config{
 		Queues: map[string]river.QueueConfig{
-			ThisServiceName: {MaxWorkers: int(ResultsApiService.GetParamInt64("workers"))},
+			ThisServiceName: {MaxWorkers: int(ResultsAPIService.GetParamInt64("workers"))},
 		},
 		Workers: workers,
 	})
@@ -54,7 +54,7 @@ func InitializeQueues() {
 	}
 
 	// Start the work clients
-	if err := ResultsApiClient.Start(ctx); err != nil {
+	if err := ResultsAPIClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.")
 		os.Exit(42)
 	}

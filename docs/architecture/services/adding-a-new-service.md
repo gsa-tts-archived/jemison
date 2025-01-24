@@ -273,18 +273,18 @@ Now, in a file called `queues.go`, add that function. It probably looks like thi
 
 ```go
 // The work client, doing the work of `SearchApi`
-var SearchApiPool *pgxpool.Pool
-var SearchApiClient *river.Client[pgx.Tx]
+var SearchAPIPool *pgxpool.Pool
+var SearchAPIClient *river.Client[pgx.Tx]
 
 type SearchApiWorker struct {
-	river.WorkerDefaults[common.SearchApiArgs]
+	river.WorkerDefaults[common.SearchAPIArgs]
 }
 
 func InitializeQueues() {
 	queueing.InitializeRiverQueues()
 
 	ctx, fP, workers := common.CommonQueueInit()
-	SearchApiPool = fP
+	SearchAPIPool = fP
 
 	// Essentially adds a worker "type" to the work engine.
 	river.AddWorker(workers, &SearchApiWorker{})
@@ -298,7 +298,7 @@ func InitializeQueues() {
 	}
 
 	// Work client
-	SearchApiClient, err = river.NewClient(riverpgxv5.New(SearchApiPool), &river.Config{
+	SearchAPIClient, err = river.NewClient(riverpgxv5.New(SearchAPIPool), &river.Config{
 		Queues: map[string]river.QueueConfig{
 			ThisServiceName: {MaxWorkers: int(SearchApiService.GetParamInt64("workers"))},
 		},
@@ -312,7 +312,7 @@ func InitializeQueues() {
 	}
 
 	// Start the work clients
-	if err := SearchApiClient.Start(ctx); err != nil {
+	if err := SearchAPIClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.")
 		os.Exit(42)
 	}
@@ -334,13 +334,13 @@ This code...
 We have to add the job arguments structure to our common infrastructure:
 
 ```go
-type SearchApiArgs struct {
+type SearchAPIArgs struct {
 	Scheme    string `json:"scheme"`
 	Host      string `json:"host"`
 	Path      string `json:"path"`
 }
 
-func (SearchApiArgs) Kind() string {
+func (SearchAPIArgs) Kind() string {
 	return "searchapi"
 }
 ```
