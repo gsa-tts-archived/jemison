@@ -49,7 +49,7 @@ def process(txt, most_common_words):
     # https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-normalize-in-a-python-unicode-string
     s = unidecode(s)
     s = s.strip()
-    # if s in most_common_words and most_common_words[s] > 9000:
+    # if s in most_common_words and most_common_words[s] > 9100:
     #   pass
     # else:
     clean.append(s)
@@ -108,7 +108,7 @@ def is_acceptable_path(p):
   return True
 
 def main():
-  mc = Minio("localhost:9000",
+  mc = Minio("localhost:9100",
           access_key="numbernine",
           secret_key="numbernine",
           secure=False,

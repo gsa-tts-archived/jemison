@@ -11,7 +11,7 @@ pushd /home/vcap/app/cmd/${SERVICE}
     # rm -f s3/*
     # echo "mounting serve bucket as s3fs"
     # s3fs serve s3 \
-    #   -o url=http://localhost:9000/ \
+    #   -o url=http://localhost:9100/ \
     #   -o passwd_file=./.miniocreds \
     #   -o use_path_request_style \
     #   -o dbglevel=info
