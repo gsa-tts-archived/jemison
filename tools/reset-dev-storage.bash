@@ -20,7 +20,7 @@ done
 
 # Reset minio
 
-mc alias set localm http://localhost:9000 numbernine numbernine
+mc alias set localm http://localhost:9100 numbernine numbernine
 
 for i in $(seq 1 3);
 do

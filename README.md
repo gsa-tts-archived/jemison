@@ -115,7 +115,7 @@ The S3 filestore is simulated when running locally using a containerized version
 
 ![alt text](docs/images/minio.png)
 
-Point a browser at [localhost:9001](http://localhost:9001) with the credentials `numbernine/numbernine` to browse.
+Point a browser at [localhost:9101](http://localhost:9101) with the credentials `numbernine/numbernine` to browse.
 
 ### watching the queue
 
