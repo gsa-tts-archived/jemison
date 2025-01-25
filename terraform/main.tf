@@ -4,8 +4,8 @@ data "cloudfoundry_domain" "public" {
 }
 
 data "cloudfoundry_space" "app_space" {
-  org_name = "sandbox-gsa"
-  name     = "matthew.jadud"
+  org_name = "gsa-tts-usagov"
+  name     = "search-dev"
 }
 
 #################################################################
@@ -14,8 +14,8 @@ data "cloudfoundry_space" "app_space" {
 
 module "queues_database" {
   source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
-  cf_org_name      = "sandbox-gsa"
-  cf_space_name    = "matthew.jadud"
+  cf_org_name      = "gsa-tts-usagov"
+  cf_space_name    = "search-dev"
   name             = "jemison-queues-db"
   recursive_delete = false
   tags             = ["rds"]
@@ -24,9 +24,19 @@ module "queues_database" {
 
 module "work_database" {
   source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
-  cf_org_name      = "sandbox-gsa"
-  cf_space_name    = "matthew.jadud"
+  cf_org_name      = "gsa-tts-usagov"
+  cf_space_name    = "search-dev"
   name             = "jemison-work-db"
+  recursive_delete = false
+  tags             = ["rds"]
+  rds_plan_name    = "micro-psql"
+}
+
+module "search_database" {
+  source = "github.com/gsa-tts/terraform-cloudgov//database?ref=v0.9.1"
+  cf_org_name      = "gsa-tts-usagov"
+  cf_space_name    = "search-dev"
+  name             = "jemison-search-db"
   recursive_delete = false
   tags             = ["rds"]
   rds_plan_name    = "micro-psql"
@@ -37,8 +47,8 @@ module "work_database" {
 #################################################################
 module "s3-private-extract" {
   source = "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1"
-  cf_org_name      = "sandbox-gsa"
-  cf_space_name    = "matthew.jadud"
+  cf_org_name      = "gsa-tts-usagov"
+  cf_space_name    = "search-dev"
   name             = "extract"
   s3_plan_name     = "basic"
   recursive_delete = false
@@ -47,8 +57,8 @@ module "s3-private-extract" {
 
 module "s3-private-fetch" {
   source = "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1"
-  cf_org_name      = "sandbox-gsa"
-  cf_space_name    = "matthew.jadud"
+  cf_org_name      = "gsa-tts-usagov"
+  cf_space_name    = "search-dev"
   name             = "fetch"
   s3_plan_name     = "basic"
   recursive_delete = false
@@ -57,8 +67,8 @@ module "s3-private-fetch" {
 
 module "s3-private-serve" {
   source = "github.com/gsa-tts/terraform-cloudgov//s3?ref=v0.9.1"
-  cf_org_name      = "sandbox-gsa"
-  cf_space_name    = "matthew.jadud"
+  cf_org_name      = "gsa-tts-usagov"
+  cf_space_name    = "search-dev"
   name             = "serve"
   s3_plan_name     = "basic"
   recursive_delete = false
@@ -139,6 +149,11 @@ resource "cloudfoundry_app" "entree" {
     service_instance = module.queues_database.instance_id
   }
 
+  service_binding {
+    service_instance = module.search_database.instance_id
+  }
+
+
   environment = {
     ENV = "SANDBOX"
     API_KEY = "${var.api_key}"
@@ -172,6 +187,14 @@ resource "cloudfoundry_app" "fetch" {
 
   service_binding {
     service_instance = module.queues_database.instance_id
+  }
+
+  service_binding {
+    service_instance = module.work_database.instance_id
+  }
+
+  service_binding {
+    service_instance = module.search_database.instance_id
   }
 
   environment = {
@@ -247,6 +270,15 @@ resource "cloudfoundry_app" "pack" {
     service_instance = module.queues_database.instance_id
   }
 
+  service_binding {
+    service_instance = module.work_database.instance_id
+  }
+
+  service_binding {
+    service_instance = module.search_database.instance_id
+  }
+
+
   environment = {
     ENV = "SANDBOX"
     API_KEY = "${var.api_key}"
@@ -280,12 +312,15 @@ resource "cloudfoundry_app" "serve" {
   health_check_type    = "port"
   health_check_timeout = 180
   health_check_http_endpoint = "/heartbeat"
-    service_binding {
+
+  service_binding {
     service_instance = module.s3-private-fetch.bucket_id
   }
+
   service_binding {
     service_instance = module.s3-private-serve.bucket_id
   }
+
   service_binding {
     service_instance = module.queues_database.instance_id
   }
@@ -293,6 +328,15 @@ resource "cloudfoundry_app" "serve" {
   routes {
     route = cloudfoundry_route.serve_route.id
   }
+
+  service_binding {
+    service_instance = module.work_database.instance_id
+  }
+
+  service_binding {
+    service_instance = module.search_database.instance_id
+  }
+
 
   environment = {
     ENV = "SANDBOX"
