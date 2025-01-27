@@ -2,29 +2,52 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"sync"
+
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/postgres"
+	"github.com/GSA-TTS/jemison/internal/queueing"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"net/http"
 )
 
+var Databases sync.Map
+var ChQSHP = make(chan queueing.QSHP)
 var ThisServiceName = "collect"
+var JDB *postgres.JemisonDB
+
+func setupQueues() {
+	env.InitGlobalEnv(ThisServiceName)
+
+	InitializeQueues()
+
+	go queueing.Enqueue(ChQSHP)
+}
+
+func setUpEngine() *gin.Engine {
+	engine := gin.Default()
+
+	v1 := engine.Group("/api")
+	{
+		v1.GET("/heartbeat", common.Heartbeat)
+	}
+
+	return engine
+}
 
 func main() {
-	fmt.Println("Hello world from collect")
-	s, _ := env.Env.GetUserService(ThisServiceName)
-	engine := common.InitializeAPI()
+	env.InitGlobalEnv(ThisServiceName)
+	setupQueues()
 
-	externalHost := s.GetParamString("external_host")
-	externalPort := s.GetParamInt64("external_port")
+	fmt.Println("Hello world from collect")
+
+	JDB = postgres.NewJemisonDB()
 
 	fmt.Println(ThisServiceName, " environment initialized")
 
-	zap.L().Info("collect environment",
-		zap.String("external_host", externalHost),
-		zap.Int64("external_port", externalPort),
-	)
-
+	engine := setUpEngine()
 	zap.L().Info("listening from collect",
 		zap.String("port", env.Env.Port))
 

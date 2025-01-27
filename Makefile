@@ -32,6 +32,8 @@ build: generate
 	cd cmd/extract ; make build
 	echo "build fetch"
 	cd cmd/fetch ; make build
+	echo "build collect"
+	cd cmd/collect ; make build
 	echo "build pack"
 	cd cmd/pack ; make build
 	echo "build serve"
