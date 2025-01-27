@@ -296,12 +296,46 @@ services:
   #   restart: always
 
   #-----------------------------------------------------
+  # collect :10009
+  #-----------------------------------------------------
+  collect:
+    <<: *services-common
+    image: jemison/dev
+    build: 
+      context: .
+      dockerfile: ./cmd/walk/Dockerfile
+    entrypoint: /home/vcap/app/cmd/collect/service.exe
+    volumes:
+      - type: bind
+        source: .
+        target: /home/vcap/app
+    ports:
+      - 10009:8888
+    # https://docs.docker.com/compose/how-tos/startup-order/
+    depends_on:
+      nginx:
+        condition: service_started
+      jemison-queues-db:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://walk:8888/heartbeat || exit 1
+      interval: 60s
+      timeout: 180s
+      retries: 3
+      start_period: 60s
+    environment:
+      ENV: "DOCKER"
+      PORT: 8888
+      DEBUG_LEVEL: debug
+      GIN_MODE: debug
+
+  #-----------------------------------------------------
   # walk :10006
   #-----------------------------------------------------
   walk:
     <<: *services-common
     image: jemison/dev
-    build: 
+    build:
       context: .
       dockerfile: ./cmd/walk/Dockerfile
     entrypoint: /home/vcap/app/cmd/walk/service.exe
