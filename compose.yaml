@@ -428,9 +428,9 @@ services:
   # pgweb :22222
   #-----------------------------------------------------
   pgweb:
+    <<: *services-common
     image: sosedoff/pgweb
     container_name: pgweb 
-    restart: always
     ports: 
       - 22222:8081
     environment:
@@ -443,9 +443,9 @@ services:
   # pgweb:6543
   #-----------------------------------------------------
   pgweb2:
+    <<: *services-common
     image: sosedoff/pgweb
     container_name: pgweb2
-    restart: always
     ports: 
       - 22223:8081
     environment:
