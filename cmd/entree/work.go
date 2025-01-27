@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"strings"
 
 	"github.com/GSA-TTS/jemison/internal/common"
@@ -22,7 +21,6 @@ import (
 // !fullCrawl & pass: fetch the page now.
 */
 func (w *EntreeWorker) Work(_ context.Context, job *river.Job[common.EntreeArgs]) error {
-	log.Println("in entree work.go")
 	var kind string
 	if job.Args.FullCrawl {
 		kind = "full"
@@ -40,7 +38,6 @@ func (w *EntreeWorker) Work(_ context.Context, job *river.Job[common.EntreeArgs]
 
 		ec, err := NewEntreeCheck(kind, job.Args.Scheme, job.Args.Host, path, job.Args.HallPass)
 		if err != nil {
-			log.Println("got an err from new entree check")
 			// If we cannot create a new EC object, we probably couldn't find the host.
 			// A refined error message here would be good. But, what it means is we don't want to
 			// requeue the job, and we don't want to proceed.

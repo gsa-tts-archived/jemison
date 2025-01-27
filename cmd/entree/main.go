@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 
@@ -30,18 +29,13 @@ func main() {
 
 	JDB = postgres.NewJemisonDB()
 
-	log.Println("ENTREE environment initialized")
-
 	// We need to load hosts into the `hosts` table for the entree logic to work.
 	// Use the allowed hosts.
 	for _, fqdn := range config.GetListOfHosts(env.Env.AllowedHosts) {
-		// log.Println("found the allowed hosts")
 		d64, err := config.FQDNToDomain64(fqdn)
 		if err != nil {
-			log.Println("could not get Domain64 for FQDN")
 			zap.L().Error("could not get Domain64 for FQDN", zap.String("fqdn", fqdn))
 		} else {
-			log.Println("inserting fqdn/d64 to hosts")
 			zap.L().Debug("inserting fqdn/d64 to hosts", zap.String("fqdn", fqdn), zap.Int64("d64", d64))
 
 			_, err := JDB.WorkDBQueries.UpsertUniqueHost(context.Background(),
@@ -57,7 +51,6 @@ func main() {
 					},
 				})
 			if err != nil {
-				log.Println("error upserting domain64 value")
 				zap.L().Error("error upserting domain64 value", zap.Int64("domain64", d64))
 			}
 		}

@@ -3,7 +3,6 @@ package config
 import (
 	"embed"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -63,17 +62,14 @@ func FQDNToDomain64(fqdn string) (int64, error) {
 
 	tld, escaped, err := tldAndEscaped(fqdn)
 	if err != nil {
-		log.Println("error from tldAndEscaped")
 		return 0, err
 	}
 
 	var jsonKey = tld + ".FQDNToDomain64." + escaped
-	log.Println(jsonKey)
 	hex := gjson.GetBytes(cachedFile, jsonKey).String()
 
 	value, err := strconv.ParseInt(hex, 16, 64)
 	if err != nil {
-		log.Println("error from ParseInt", err)
 		//nolint:wrapcheck
 		return 0, err
 	}
