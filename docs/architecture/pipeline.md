@@ -21,4 +21,68 @@ flowchart LR
 5. [extract](extract.md) grabs the page from S3, pulls all of the text from the page, and stores that back into S3. (Any text processing we want to do should happen here.) A message is enqueued to `pack`.
 6. [pack](pack.md) takes the texts and packs it into our database. Any uniqueness constraints, etc. are handled at this point.
 
-Not shown (and to-be-written) is `validate`. This is a service that expects to handle messages from most/any/all other services. It validates the output from any given service. For example, `fetch` should leave a `.raw` file as well as a `.json` object in S3. The `validate` service should check that the JSON object exists, and the associated "raw" file (not to be confused with RAW files in the world of photography) is of the correct type, size, etc. Or, at the least, assert that we have not created a zero-length file in S3 (which would be an error condition). In short, `validate` makes sure the system is continuously operating within the set of constraints we define as "good."
+Not shown above is [collect](collect.md) or [validate](validate.md). These two services live "in-between" all the other services.
+
+## collect
+
+Consider: `fetch` places data into `S3`, which is then retrieved and operated on by `extract`.
+
+```mermaid
+flowchart LR     
+    fetch --> extract --> pack -.-> Postgres
+    fetch -.-> S3
+    S3 -.-> extract
+    extract -.-> S4["S3"]
+    S4["S3"] -.-> pack
+```
+
+In addition to doing this work, each process might report on aspects of its work so that we can then do analytics on that data. We might want to know how many documents are fetched every 5 minutes, for example. This data is reported to `collect`.
+
+
+```mermaid
+flowchart LR
+    subgraph data collection
+    collect -.-> S5["S3"]
+    end
+    subgraph jemison
+        fetch --> extract --> pack -.-> Postgres
+    end
+    fetch -.-> S3
+    S3 -.-> extract
+    extract -.-> S4["S3"]
+    S4["S3"] -.-> pack
+    fetch --> collect
+    extract --> collect
+    pack --> collect
+```
+
+Code (potentially run nightly, etc.) will process the S3 data into usable information.
+
+## validate
+
+`validate` plays a different role: it makes sure that the outputs of any given service are correct.
+
+```mermaid
+flowchart LR
+    fetch --> validate
+    extract --> validate
+    
+    subgraph jemison
+        fetch --> extract --> pack -.-> Postgres
+    end
+    fetch -.-> S3
+    S3 -.-> extract
+    extract -.-> S4["S3"]
+    S4["S3"] -.-> pack
+    subgraph process validation
+        S3 -.-> validate
+        S4 -.-> validate
+        validate --> logging
+    end
+```
+
+1. `fetch` processes data, and stores it in S3.
+2. `fetch` enqueues a message to `validate`
+3. `validate` retrieves the data from S3, checking assertions (e.g. the data exists, etc.)
+
+`validate` proceeds to say nothing if everything looks good; if `validate` finds something it doesn't like, it might `WARN` or `ERROR`, and in doing so, place a message in our logging service. We can then write alerts that trigger on this high signal-to-noise component. When `validate` finds something worthy of a warning or error, it becomes an immediate "bat signal" for us to improve the service that (perhaps) placed faulty or malformed data into Postgres or S3. In this regard, we have a tool that, even in production, helps guarantee the quality of Jemison's data pipeline.
