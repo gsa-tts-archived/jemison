@@ -6,6 +6,11 @@ terraform {
       version = "~>0.51.3"
     }
   }
+  backend "s3" {
+    bucket  = ""
+    key     = ""
+    region  = ""
+  }
 }
 
 provider "cloudfoundry" {
