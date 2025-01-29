@@ -95,3 +95,13 @@ type ValidateFetchArgs struct {
 func (ValidateFetchArgs) Kind() string {
 	return ValidateFetchQueue
 }
+
+type CollectArgs struct {
+	Scheme string `json:"scheme"`
+	Host   string `json:"host"`
+	Path   string `json:"path"`
+}
+
+func (CollectArgs) Kind() string {
+	return "collect"
+}
