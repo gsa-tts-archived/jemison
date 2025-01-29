@@ -105,3 +105,13 @@ type ResultsAPIArgs struct {
 func (ResultsAPIArgs) Kind() string {
 	return "searchapi"
 }
+
+type CollectArgs struct {
+	Scheme string `json:"scheme"`
+	Host   string `json:"host"`
+	Path   string `json:"path"`
+}
+
+func (CollectArgs) Kind() string {
+	return "collect"
+}
