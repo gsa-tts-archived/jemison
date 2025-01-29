@@ -1,14 +1,13 @@
 local A = import 'admin.libsonnet';
+local C = import 'collect.libsonnet';
 local EN = import 'entree.libsonnet';
 local EX = import 'extract.libsonnet';
-local C = import 'collect.libsonnet';
 local F = import 'fetch.libsonnet';
 local M = import 'migrate.libsonnet';
 local P = import 'pack.libsonnet';
 local S = import 'serve.libsonnet';
 local V = import 'validate.libsonnet';
 local W = import 'walk.libsonnet';
-
 
 {
   // :: means "not visible in the output"
