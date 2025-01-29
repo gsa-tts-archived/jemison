@@ -363,7 +363,7 @@ services:
       - 10009:8888
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
-      nginx:
+      minio:
         condition: service_started
       jemison-queues-db:
         condition: service_healthy
