@@ -14,8 +14,11 @@ import (
 )
 
 var Databases sync.Map
+
 var ChQSHP = make(chan queueing.QSHP)
+
 var ThisServiceName = "collect"
+
 var JDB *postgres.JemisonDB
 
 func setupQueues() {
@@ -48,10 +51,12 @@ func main() {
 	fmt.Println(ThisServiceName, " environment initialized")
 
 	engine := setUpEngine()
+
 	zap.L().Info("listening from collect",
 		zap.String("port", env.Env.Port))
 
 	// Local and Cloud should both get this from the environment.
+	//nolint:gosec
 	err := http.ListenAndServe(":"+env.Env.Port, engine)
 	if err != nil {
 		zap.Error(err)
