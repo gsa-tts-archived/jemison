@@ -1,4 +1,5 @@
 local A = import 'admin.libsonnet';
+local C = import 'collect.libsonnet';
 local EN = import 'entree.libsonnet';
 local EX = import 'extract.libsonnet';
 local F = import 'fetch.libsonnet';
@@ -28,6 +29,7 @@ local VCAP = import 'vcap_services.libsonnet';
       S.container,
       V.container,
       W.container,
+      C.container,
     ],
   },
   VCAP_SERVICES: VCAP.VCAP_SERVICES(

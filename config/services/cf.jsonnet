@@ -1,6 +1,7 @@
 local A = import 'admin.libsonnet';
 local EN = import 'entree.libsonnet';
 local EX = import 'extract.libsonnet';
+local C = import 'collect.libsonnet';
 local F = import 'fetch.libsonnet';
 local M = import 'migrate.libsonnet';
 local P = import 'pack.libsonnet';
@@ -22,6 +23,7 @@ local W = import 'walk.libsonnet';
       S.cf,
       V.cf,
       W.cf,
+      C.cf,
     ],
   },
 }
