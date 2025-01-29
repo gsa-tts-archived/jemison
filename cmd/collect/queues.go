@@ -16,6 +16,7 @@ import (
 
 // The work client, doing the work of `Collect`.
 var collectPool *pgxpool.Pool
+
 var collectClient *river.Client[pgx.Tx]
 
 type CollectWorker struct {
@@ -46,7 +47,6 @@ func InitializeQueues() {
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)
@@ -56,6 +56,6 @@ func InitializeQueues() {
 	// Start the work clients
 	if err := collectClient.Start(ctx); err != nil {
 		zap.L().Error("workers are not the means of production. exiting.")
-		os.Exit(42)
+		os.Exit(1)
 	}
 }
