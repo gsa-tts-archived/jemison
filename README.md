@@ -1,17 +1,11 @@
 # jemison
 
 
-`jemison` is a prototype for a small, scalable, maintainable search platform. 
-
-It is based on a series of experiments in search and embedded database technologies.
-
-* Experiment four explored the performance of SQLite databases for full-text retrieval via HTTP as well as comparisons between compressed and uncompressed databases.
-* Experiment [six](https://github.com/jadudm/six) explored the creation of an end-to-end web crawler/indexer/search server in 2000 lines of Go.
-* Experiment [eight](https://github.com/GSA-TTS/jemison) revisited this idea, focusing on the idea of search as an *observable data pipeline*. 
+`jemison` is a small, scalable, and maintainable search platform, the foundation for a new Search.gov.
 
 `jemison` is named for the pioneering and innovating explorer of medicine and space, Dr. Mae Jemison, the first African-American woman in space. 
 
-## running the experiment
+## running Jemison
 
 In the top directory, first build the base/build container:
 
@@ -189,17 +183,11 @@ If we rebuild *nothing*, `entree`* would enqueue all of the hosts in the dark of
 
 In the case that we lose *all* of our services (e.g. S3 is wiped), we would have to recrawl, and service would be interrupted until we could re-build the SQLite databases. This would probably take a month.
 
-### conclusion
-
-We should back up the SQLite databases periodically, as they are our disaster recovery path. Being able to restore the 3000 or so SQLite databases is what lets us serve results.
-
 ## by the numbers
 
 The original "experiment number eight" came in at 2500 lines of code.
 
 The expansion of services (e.g. breaking out hit tracking into `entree`, the addition of `validate`, etc.) has pushed the system from 2500 lines of Go to just over 4000. 
-
-*The system was always going to grow as we head to production.* However, it is also still much, much smaller than the previous system, and remains architecturally cleaner. :shrug:
 
 ```
 cloc --exclude-ext=yml,yaml,html,css,less,js,json,svg,scss,csv,jsonnet,libsonnet --fullpath --not-match-d=terraform/\.terraform --not-match-d=config --not-match-d=venv .
