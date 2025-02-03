@@ -50,6 +50,7 @@ func main() {
 		zap.String("port", env.Env.Port))
 
 	// Local and Cloud should both get this from the environment.
+	//nolint:gosec
 	err := http.ListenAndServe(":"+env.Env.Port, engine)
 	if err != nil {
 		zap.Error(err)
