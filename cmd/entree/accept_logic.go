@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/GSA-TTS/jemison/config"
@@ -35,11 +34,10 @@ type EntreeCheck struct {
 // and what can be accessed outside. Then, these become lowercase...
 
 func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) (*EntreeCheck, error) {
-	log.Println("in new entree check")
 	// host_id, err := JDB.WorkDBQueries.GetHostId(ctx, host)
 	d64, err := config.FQDNToDomain64(host)
 	if err != nil {
-		log.Println("got the error from config.FQDNToDomain64(host)")
+		zap.L().Debug("config.FQDNToDomain64(host)", zap.Error(err))
 		//nolint:wrapcheck
 		return nil, err
 	}
@@ -55,7 +53,6 @@ func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) (*EntreeChec
 }
 
 func EvaluateEntree(ec *EntreeCheck) {
-	log.Println("evaluate entree function")
 
 	itShallPass := false
 

@@ -53,6 +53,6 @@ func main() {
 	//nolint:gosec
 	err := http.ListenAndServe(":"+env.Env.Port, engine)
 	if err != nil {
-		zap.Error(err)
+		zap.L().Error("could not launch HTTP server", zap.Error(err))
 	}
 }

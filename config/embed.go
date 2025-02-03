@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"embed"
-	"log"
 	"time"
 
 	"github.com/google/go-jsonnet"
@@ -47,7 +46,6 @@ func GetYamlFileReader(yamlFilename string) *bytes.Reader {
 
 func GetListOfHosts(allowedHosts string) []string {
 	zap.L().Debug("reading in hosts", zap.String("allowed_hosts", allowedHosts))
-	log.Println("in embed reading in hosts")
 	cfg := ReadJSONConfig("allowed_hosts.yaml")
 
 	// The variable `allowed_hosts` will be the key into the doc that has
