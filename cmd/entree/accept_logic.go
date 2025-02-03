@@ -53,7 +53,6 @@ func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) (*EntreeChec
 }
 
 func EvaluateEntree(ec *EntreeCheck) {
-
 	itShallPass := false
 
 	if IsSingleWithPass(ec) {
