@@ -8,10 +8,6 @@ import (
 	"go.uber.org/zap"
 )
 
-//func (w *CollectWorker) Work(ctx context.Context, job *river.Job[common.CollectArgs]) error {
-//	return nil
-//}
-
 //nolint:revive
 func (w *CollectWorker) Work(ctx context.Context, job *river.Job[common.CollectArgs]) error {
 	zap.L().Info("Collect has access to crawl record",

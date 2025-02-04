@@ -29,7 +29,13 @@ func TestHandleBusinessLogic(t *testing.T) {
 	loggerConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 
 	logger, _ := loggerConfig.Build()
-	defer logger.Sync()
+
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			t.Logf("failed to sync logger: %v", err)
+		}
+	}()
+
 	zap.ReplaceGlobals(logger)
 
 	// Sample input
