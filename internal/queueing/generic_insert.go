@@ -99,6 +99,23 @@ func Enqueue(chQSHP <-chan QSHP) {
 
 			commonCommit(qshp, ctx, tx)
 
+		case "collect":
+
+			zap.L().Debug("----- I am in the collect enqueue -----")
+
+			_, err := client.InsertTx(ctx, tx, common.CollectArgs{
+				Scheme: qshp.Scheme,
+				Host:   qshp.Host,
+				Path:   qshp.Path,
+			}, &river.InsertOpts{Queue: qshp.Queue})
+			if err != nil {
+				zap.L().Error("cannot insert into queue collect",
+					zap.String("host", qshp.Host), zap.String("path", qshp.Path),
+					zap.String("error", err.Error()))
+			}
+
+			commonCommit(qshp, ctx, tx)
+
 		case "pack":
 			_, err = client.InsertTx(ctx, tx, common.PackArgs{
 				Scheme: qshp.Scheme,
