@@ -36,7 +36,7 @@ func commonCommit(qshp QSHP, ctx context.Context, tx pgx.Tx) {
 	}
 }
 
-//nolint:cyclop,funlen
+//nolint:cyclop,funlen,gocognit
 func Enqueue(chQSHP <-chan QSHP) {
 	// Can we leave one connection open for the entire life of a
 	// service? Maybe. Maybe not.
