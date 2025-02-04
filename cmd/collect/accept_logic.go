@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/GSA-TTS/jemison/internal/common"
 	"go.uber.org/zap"
@@ -10,7 +11,7 @@ import (
 func TransformArgumentsToJSON(args common.CollectArgs) (string, error) {
 	jsonData, err := json.Marshal(args)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to marshal CollectArgs to JSON: %w", err)
 	}
 
 	return string(jsonData), nil
