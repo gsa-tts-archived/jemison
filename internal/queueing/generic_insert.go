@@ -100,7 +100,6 @@ func Enqueue(chQSHP <-chan QSHP) {
 			commonCommit(qshp, ctx, tx)
 
 		case "collect":
-
 			zap.L().Debug("----- I am in the collect enqueue -----")
 
 			_, err := client.InsertTx(ctx, tx, common.CollectArgs{

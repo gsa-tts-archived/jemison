@@ -1,10 +1,11 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
-	"testing"
 )
 
 func TestTransformArgumentsToJSON(t *testing.T) {
@@ -26,6 +27,7 @@ func TestHandleBusinessLogic(t *testing.T) {
 	// Mock zap logger
 	loggerConfig := zap.NewDevelopmentConfig()
 	loggerConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+
 	logger, _ := loggerConfig.Build()
 	defer logger.Sync()
 	zap.ReplaceGlobals(logger)

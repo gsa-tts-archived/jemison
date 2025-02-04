@@ -47,7 +47,6 @@ func InitializeQueues() {
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)
