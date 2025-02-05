@@ -46,6 +46,7 @@ func GetYamlFileReader(yamlFilename string) *bytes.Reader {
 
 func GetListOfHosts(allowedHosts string) []string {
 	zap.L().Debug("reading in hosts", zap.String("allowed_hosts", allowedHosts))
+
 	cfg := ReadJSONConfig("allowed_hosts.yaml")
 
 	// The variable `allowed_hosts` will be the key into the doc that has

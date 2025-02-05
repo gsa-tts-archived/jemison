@@ -37,7 +37,6 @@ func NewEntreeCheck(kind, scheme, host, path string, hallPass bool) (*EntreeChec
 	// host_id, err := JDB.WorkDBQueries.GetHostId(ctx, host)
 	d64, err := config.FQDNToDomain64(host)
 	if err != nil {
-		zap.L().Debug("config.FQDNToDomain64(host)", zap.Error(err))
 		//nolint:wrapcheck
 		return nil, err
 	}

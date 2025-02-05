@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"time"
 
@@ -29,7 +30,8 @@ func main() {
 
 	JDB = postgres.NewJemisonDB()
 
-	zap.L().Debug("entree environment initialized")
+	log.Println("environment initialized")
+
 	// We need to load hosts into the `hosts` table for the entree logic to work.
 	// Use the allowed hosts.
 	for _, fqdn := range config.GetListOfHosts(env.Env.AllowedHosts) {
