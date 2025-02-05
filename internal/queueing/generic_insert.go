@@ -36,7 +36,7 @@ func commonCommit(qshp QSHP, ctx context.Context, tx pgx.Tx) {
 	}
 }
 
-//nolint:cyclop,funlen
+//nolint:cyclop,funlen,gocognit
 func Enqueue(chQSHP <-chan QSHP) {
 	// Can we leave one connection open for the entire life of a
 	// service? Maybe. Maybe not.
@@ -95,6 +95,20 @@ func Enqueue(chQSHP <-chan QSHP) {
 			}, &river.InsertOpts{Queue: qshp.Queue})
 			if err != nil {
 				zap.L().Error("cannot insert into queue fetch")
+			}
+
+			commonCommit(qshp, ctx, tx)
+
+		case "collect":
+			_, err := client.InsertTx(ctx, tx, common.CollectArgs{
+				Scheme: qshp.Scheme,
+				Host:   qshp.Host,
+				Path:   qshp.Path,
+			}, &river.InsertOpts{Queue: qshp.Queue})
+			if err != nil {
+				zap.L().Error("cannot insert into queue collect",
+					zap.String("host", qshp.Host), zap.String("path", qshp.Path),
+					zap.String("error", err.Error()))
 			}
 
 			commonCommit(qshp, ctx, tx)

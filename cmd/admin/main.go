@@ -36,6 +36,13 @@ func FetchRequestHandler(c *gin.Context) {
 			zap.String("path", fri.Path))
 
 		ChQSHP <- queueing.QSHP{
+			Queue:  "collect",
+			Scheme: fri.Scheme,
+			Host:   fri.Host,
+			Path:   fri.Path,
+		}
+
+		ChQSHP <- queueing.QSHP{
 			Queue:  "fetch",
 			Scheme: fri.Scheme,
 			Host:   fri.Host,
@@ -71,9 +78,14 @@ func EntreeRequestHandler(c *gin.Context) {
 
 		zap.L().Debug("entree enqueue",
 			zap.String("host", fri.Host),
-			zap.String("path", fri.Path),
-			zap.Bool("full", fullB),
-			zap.Bool("hallpass", hallPassB))
+			zap.String("path", fri.Path))
+
+		ChQSHP <- queueing.QSHP{
+			Queue:  "collect",
+			Scheme: fri.Scheme,
+			Host:   fri.Host,
+			Path:   fri.Path,
+		}
 
 		ChQSHP <- queueing.QSHP{
 			Queue:      "entree",
