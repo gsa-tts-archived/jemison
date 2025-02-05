@@ -53,6 +53,11 @@ commands:
       - run:
           name: "generate sqlc models"
           command: make generate
+      - run: 
+          name: "create files for embed"
+          command: |
+            cd config
+            make all
 jobs:
   lint:
     docker:

@@ -1,6 +1,7 @@
 local A = import 'admin.libsonnet';
 local C = import 'collect.libsonnet';
-local E = import 'extract.libsonnet';
+local EN = import 'entree.libsonnet';
+local EX = import 'extract.libsonnet';
 local F = import 'fetch.libsonnet';
 local M = import 'migrate.libsonnet';
 local P = import 'pack.libsonnet';
@@ -13,7 +14,8 @@ local W = import 'walk.libsonnet';
   EIGHT_SERVICES: {
     'user-provided': [
       A.cf,
-      E.cf,
+      EN.cf,
+      EX.cf,
       F.cf,
       M.cf,
       P.cf,

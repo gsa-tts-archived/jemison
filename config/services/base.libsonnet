@@ -14,7 +14,7 @@ local parameters = [
   [
     'allowed_hosts',
     {
-      cf: 'all',
+      cf: 'dec15',
       container: 'dec15',
       localhost: 'nih',
     },
