@@ -1,15 +1,13 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
-	"os"
+	"strconv"
+	"strings"
 	"sync"
 
+	"github.com/GSA-TTS/jemison/config"
 	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/GSA-TTS/jemison/internal/env"
 	"github.com/GSA-TTS/jemison/internal/postgres"
@@ -24,10 +22,10 @@ var ThisServiceName = "resultsapi"
 var JDB *postgres.JemisonDB
 
 type PostBody struct {
-	terms     string `json:"terms"`
-	host      string `json:"host"`
-	d64_start int64  `json:"d64_start"`
-	d64_end   int64  `json:"d64_end"`
+	Terms     string `json:"terms"`
+	Host      string `json:"host"`
+	D64_start string `json:"d64_start"`
+	D64_end   string `json:"d64_end"`
 }
 
 func setupQueues() {
@@ -38,58 +36,83 @@ func setupQueues() {
 	go queueing.Enqueue(ChQSHP)
 }
 
-func sendPOST(url string, body PostBody) io.ReadCloser {
-	fmt.Println("in SENDPOST")
-	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(body)
-	req, _ := http.NewRequest("POST", url, payloadBuf)
+func parseAffiliate(affiliate string) (string, string, string) {
+	tld := ""
+	domain := ""
+	subdomain := ""
+	delimiter := "."
+	results := strings.Split(affiliate, delimiter)
+	if len(results) == 3 {
+		subdomain = results[0]
+		domain = results[1]
+		tld = results[2]
+	} else if len(results) == 2 {
+		domain = results[0]
+		tld = results[1]
+	} else {
+		tld = results[0]
+	}
+	return subdomain, domain, tld
+}
 
-	client := &http.Client{}
-	res, e := client.Do(req)
-	if e != nil {
-		// return e
+func getD64(affiliate string) (string, string) {
+	var subdomain, domain, tld string
+	subdomain, domain, tld = parseAffiliate(affiliate)
+	zap.L().Info("PARSED OF "+affiliate+" :",
+		zap.String("subdomain", subdomain),
+		zap.String("domain", domain),
+		zap.String("tld", tld))
+
+	var d64_start, d64_end int64
+
+	// top level domain
+	d64_start, _ = strconv.ParseInt(fmt.Sprintf("%02x00000000000000", tld), 16, 64)
+	d64_end, _ = strconv.ParseInt(fmt.Sprintf("%02xFFFFFFFFFFFF00", tld), 16, 64)
+
+	// domain
+	if domain != "" {
+		start := config.RDomainToDomain64(fmt.Sprintf("%s.%s", tld, domain))
+		d64_start, _ = strconv.ParseInt(fmt.Sprintf("%s00000000", start), 16, 64)
+		d64_end, _ = strconv.ParseInt(fmt.Sprintf("%sFFFFFF00", start), 16, 64)
+	} else {
+		s_d64_start := fmt.Sprintf("%d", d64_start)
+		s_d64_end := fmt.Sprintf("%d", d64_end)
+		return s_d64_start, s_d64_end
 	}
 
-	defer res.Body.Close()
+	//subdomain
+	if subdomain != "" {
+		fqdn := fmt.Sprintf("%s.%s.%s", subdomain, domain, tld)
+		start, _ := config.FQDNToDomain64(fqdn)
+		d64_start = start
+		d64_end = start + 1
+	}
 
-	fmt.Println("response Status:", res.Status)
-	// Print the body to the stdout
-	io.Copy(os.Stdout, res.Body)
-
-	return res.Body
+	s_d64_start := fmt.Sprintf("%d", d64_start)
+	s_d64_end := fmt.Sprintf("%d", d64_end)
+	return s_d64_start, s_d64_end
 }
 
-func getPostURL(scheme string, host string) string {
-	var posturl = scheme + "://www." + host + "/api/search"
-	fmt.Println("in getPostURL: ", posturl)
-	return posturl
-}
+func doTheSearch(affiliate string, searchQuery string) []SearchResult {
+	domain64Start, domain64End := getD64(affiliate + ".gov")
+	zap.L().Info("DOMAIN 64 OF "+affiliate+" :",
+		zap.String("domain64Start", domain64Start),
+		zap.String("domain64End", domain64End))
+	sri := SearchRequestInput{
+		Host:          affiliate + ".gov",
+		Path:          "",
+		Terms:         searchQuery,
+		Domain64Start: domain64Start,
+		Domain64End:   domain64End,
+	}
 
-func getD64() (int64, int64) {
-	return 67, 89
-}
+	rows, duration, err := runQuery(sri)
+	zap.L().Info("Queried Answer:",
+		zap.Any("rows: ", rows),
+		zap.Any("duration", duration),
+		zap.Any("err", err))
 
-func doTheSearch(affiliate string, searchQuery string) {
-	fmt.Println("in DOTHESEARCH")
-	// Makes a fetch (in javascript) query to post_url for a POSt method call with header & JSON body
-
-	// - post_url is "{{.scheme}}://" + host + "/api/search" ==> http://localhost:10000/api/search
-	// - scheme is http from main.go in serve
-	// TODO: where is scheme coming from here?
-	// - host is window.location.host = domain + post number if it exists
-	// TODO: where is host coming from here?
-	var post_url = getPostURL("http", "localhost:10000")
-
-	// - JSON body is stringified data
-	// 	- data is object of terms, host, d64_start & d_64end
-	// TODO get host, d64s
-	var postBody PostBody
-	postBody.terms = searchQuery
-	postBody.host = affiliate
-	postBody.d64_start, postBody.d64_end = getD64()
-	sendPOST(post_url, postBody)
-
-	// - returns a JSON
+	return rows
 }
 
 func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
@@ -103,16 +126,20 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 		//required query parameters
 		affiliate := c.Query("affiliate")
 		searchQuery := c.Query("query")
-		log.Println("affiliate: ", affiliate, " query: ", searchQuery)
+		zap.L().Info("Query Data: ",
+			zap.String("affiliate", affiliate),
+			zap.String("query", searchQuery))
 
-		doTheSearch(affiliate, searchQuery)
+		res := doTheSearch(affiliate, searchQuery)
 		//optional query parameters
 		// enable_highlighting := c.Query("enable_highlighting")
 		// offset := c.Query("offset")
 		// sort_by := c.Query("sort_by")
 		// sitelimit := c.Query("sitelimit")
 
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{})
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"res": res,
+		})
 	})
 
 	v1 := engine.Group("/api")
@@ -133,8 +160,8 @@ func main() {
 
 	JDB = postgres.NewJemisonDB()
 
-	fmt.Println(ThisServiceName, " environment initialized")
-
+	zap.L().Info("environment initialized",
+		zap.String("ThisServiceName", ThisServiceName))
 	engine := setUpEngine(staticFilesPath, templateFilesPath)
 	zap.L().Info("listening from resultsapi",
 		zap.String("port", env.Env.Port))
