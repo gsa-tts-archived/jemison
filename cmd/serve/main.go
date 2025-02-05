@@ -69,6 +69,7 @@ func main() {
 	templateFilesPath := s.GetParamString("template_files_path")
 	staticFilesPath := s.GetParamString("static_files_path")
 
+	externalScheme := s.GetParamString("external_scheme")
 	externalHost := s.GetParamString("external_host")
 	externalPort := s.GetParamInt64("external_port")
 
@@ -97,9 +98,9 @@ func main() {
 	engine.LoadHTMLGlob(templateFilesPath + "/*")
 
 	baseParams := gin.H{
-		"scheme":      "http",
-		"search_host": "localhost",
-		"search_port": "10000",
+		"scheme":      externalScheme,
+		"search_host": externalHost,
+		"search_port": externalPort,
 	}
 
 	engine.GET("/:tld", func(c *gin.Context) {

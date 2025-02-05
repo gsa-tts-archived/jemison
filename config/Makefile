@@ -2,7 +2,9 @@
 all:
 	cd domain64 ; make all
 	cd services ; make all
+	cd hosts ; make all
 	mv services/*.yaml .
+	mv hosts/*.yaml . 
 
 # .PHONY: system
 # system: *.jsonnet

@@ -3,7 +3,7 @@ SOURCES = $(wildcard *.jsonnet)
 all: clean $(patsubst %.jsonnet,%.yaml, ${SOURCES})
 
 clean: 
-	rm -f *.yaml
+	rm -f *.json
 
 %.yaml: %.jsonnet
 	@echo "IN" $<  "OUT" $@
