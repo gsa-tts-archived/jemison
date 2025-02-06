@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,6 +23,7 @@ var ChQSHP = make(chan queueing.QSHP)
 var ThisServiceName = "resultsapi"
 var JDB *postgres.JemisonDB
 
+// ////////// Setup //////////
 func setupQueues() {
 	env.InitGlobalEnv(ThisServiceName)
 
@@ -46,6 +49,7 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 			zap.String("query", searchQuery))
 
 		res := doTheSearch(affiliate, searchQuery)
+		pretty_res := parseTheResults(res)
 		//optional query parameters
 		// enable_highlighting := c.Query("enable_highlighting")
 		// offset := c.Query("offset")
@@ -53,7 +57,8 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 		// sitelimit := c.Query("sitelimit")
 
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"res": res,
+			"res":        res,
+			"pretty_res": pretty_res,
 		})
 	})
 
@@ -65,6 +70,9 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 	return engine
 }
 
+////////////////////
+
+// ////////// Searching //////////
 func doTheSearch(affiliate string, searchQuery string) []SearchResult {
 	domain64Start, domain64End := getD64(affiliate + ".gov")
 
@@ -144,6 +152,53 @@ func parseAffiliate(affiliate string) (string, string, string) {
 
 	return subdomain, domain, tld
 }
+
+////////////////////
+
+// ////////// Returning Results //////////
+func parseTheResults(results []SearchResult) []string {
+
+	//create array of results {JSONResults}
+	var JSONResults []string
+	for _, r := range results {
+		fmt.Println("NEW ENTRY: ")
+		fmt.Println(r.PageTitle)
+		//convert searchresult into a json object that matches result
+		jsonStr, err := structToJSON(r)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("NEW ENTRY JSON: ")
+		fmt.Println(jsonStr)
+		//append to JSONResults
+		JSONResults = append(JSONResults, jsonStr)
+	}
+	return JSONResults
+}
+
+func structToJSON(strc interface{}) (string, error) {
+	//? can I convert a struct to another struct?
+
+	//convert to JSON
+	data, err := json.Marshal(strc)
+	if err != nil {
+		return "", err
+	}
+
+	//from JSON convert to new struct
+	var searchResultJSON SearchResultJSON
+	json.Unmarshal([]byte(data), &searchResultJSON)
+
+	//convert new struct back to JSON
+	j_data, err := json.Marshal(searchResultJSON)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j_data), nil
+}
+
+////////////////////
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)

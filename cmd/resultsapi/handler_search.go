@@ -23,16 +23,23 @@ type SearchRequestInput struct {
 }
 
 type SearchResult struct {
-	Terms      string
-	PathID     int64
-	PageTitle  string
-	Kind       int64
-	Weight     float64
-	Rank       float64
-	Text       string
-	PathString string
-	Snippet    string
-	FQDN       string
+	Terms      string  `json:"terms"`
+	PathID     int64   `json:"pathID"`
+	PageTitle  string  `json:"title"`
+	Kind       int64   `json:"kind"`
+	Weight     float64 `json:"weight"`
+	Rank       float64 `json:"rank"`
+	Text       string  `json:"text"`
+	PathString string  `json:"url"`
+	Snippet    string  `json:"snippet"`
+	FQDN       string  `json:"fqdn"`
+}
+
+type SearchResultJSON struct {
+	PageTitle  string `json:"title"`
+	Text       string `json:"text"`
+	PathString string `json:"url"`
+	Snippet    string `json:"snippet"`
 }
 
 func to64(s string) int64 {
