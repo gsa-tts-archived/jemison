@@ -35,6 +35,32 @@ type optionalQueryParameters struct {
 	sitelimit          int
 }
 
+type QueryWebResultsData struct {
+	Title           string `json:"title"`
+	URL             string `json:"url"`
+	Snippet         string `json:"snippet"`
+	PublicationDate string `json:"publication_date"`
+	ThumbnailURL    string `json:"thumbnail_url"`
+}
+
+type QueryWebData struct {
+	Total              int                   `json:"total"`
+	NextOffset         int                   `json:"next_offset"`
+	SpellingCorrection string                `json:"spelling_correction"`
+	Results            []QueryWebResultsData `json:"results"`
+}
+
+type QueryData struct {
+	SearchedQuery            string       `json:"query"`
+	Web                      QueryWebData `json:"web"`
+	TextBestBets             []string     `json:"text_best_bets"`
+	GraphicBestBets          []string     `json:"graphic_best_bets"`
+	HealthTopics             []string     `json:"health_topics"`
+	JobOpenings              []string     `json:"job_openings"`
+	FederalRegisterDocuments []string     `json:"federal_register_documents"`
+	RelatedSearchTerms       []string     `json:"related_search_terms"`
+}
+
 type WebJSON struct {
 	Total              int      `json:"total"`
 	NextOffset         int      `json:"next_offset"`
@@ -237,36 +263,41 @@ func parseTheResults(results []SearchResult, requiredQueryParams requiredQueryPa
 	return wholeJSON
 }
 
-func createJSONResults(results []SearchResult) []string {
-	var JSONResults []string
+func createJSONResults(results []SearchResult) []QueryWebResultsData {
+	// var JSONResults []string
+	var JSONResults []QueryWebResultsData
 	for _, r := range results {
 		//convert searchresult into a json object that matches current resultAPI
 		jsonStr, err := getJSONString(r)
+		qwrd := createQueryWebResultsData(r)
 		if err != nil {
 			log.Fatal(err)
 		}
 		fmt.Println("NEW ENTRY: " + r.PageTitle + "NEW ENTRY JSON: " + jsonStr)
 		//append to JSONResults
-		JSONResults = append(JSONResults, jsonStr)
+		// JSONResults = append(JSONResults, jsonStr)
+		JSONResults = append(JSONResults, qwrd)
 	}
 	return JSONResults
 }
 
-func createWebResults(jSONResults []string, optionalQueryParams optionalQueryParameters) string {
+func createWebResults(jSONResults []QueryWebResultsData, optionalQueryParams optionalQueryParameters) QueryWebData {
 	total := 5
 	nextOffset := optionalQueryParams.offset
 	spellingCorrections := "null"
 
-	strc := WebJSON{total, nextOffset, spellingCorrections, jSONResults}
-	data, err := json.Marshal(strc)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// strc := WebJSON{total, nextOffset, spellingCorrections, jSONResults}
+	strc := QueryWebData{total, nextOffset, spellingCorrections, jSONResults}
+	// data, err := json.Marshal(strc)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	return string(data)
+	// return string(data)
+	return strc
 }
 
-func createWholeJSON(webResults string, requiredQueryParams requiredQueryParameters) string {
+func createWholeJSON(webResults QueryWebData, requiredQueryParams requiredQueryParameters) string {
 	query := requiredQueryParams.searchQuery
 	var tretBestBets []string
 	var graphicBestBets []string
@@ -275,12 +306,13 @@ func createWholeJSON(webResults string, requiredQueryParams requiredQueryParamet
 	var federalRegisterDocuments []string
 	var relatedSearchTerms []string
 
-	strc := WholeJSON{query, webResults, tretBestBets, graphicBestBets, healthTopics, jobOpenings, federalRegisterDocuments, relatedSearchTerms}
-	data, err := json.Marshal(strc)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	// strc := WholeJSON{query, webResults, tretBestBets, graphicBestBets, healthTopics, jobOpenings, federalRegisterDocuments, relatedSearchTerms}
+	// data, err := json.Marshal(strc)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	strc := QueryData{query, webResults, tretBestBets, graphicBestBets, healthTopics, jobOpenings, federalRegisterDocuments, relatedSearchTerms}
+	data := structToJSON(strc)
 	return string(data)
 }
 
@@ -302,6 +334,19 @@ func getJSONString(strc interface{}) (string, error) {
 	j_data := structToJSON(searchResultJSON)
 
 	return string(j_data), nil
+}
+
+func createQueryWebResultsData(strc interface{}) QueryWebResultsData {
+	//? can I convert a struct to another struct?
+
+	//convert struct to JSON
+	data := structToJSON(strc)
+
+	//from JSON convert to new struct
+	var searchResultJSON QueryWebResultsData
+	json.Unmarshal([]byte(data), &searchResultJSON)
+	return searchResultJSON
+
 }
 
 func structToJSON(strc interface{}) []byte {
