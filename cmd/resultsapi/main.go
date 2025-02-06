@@ -37,7 +37,7 @@ type optionalQueryParameters struct {
 
 type WebJSON struct {
 	Total              int      `json:"total"`
-	NextOffset         string   `json:"next_offset"`
+	NextOffset         int      `json:"next_offset"`
 	SpellingCorrection string   `json:"spelling_correction"`
 	ResultsJSON        []string `json:"results"`
 }
@@ -73,14 +73,14 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 		//required query parameters
 		// affiliate := c.Query("affiliate")
 		// searchQuery := c.Query("query")
-		requiredQueryParams, _ := getQueryParams(c)
+		requiredQueryParams, optionalQueryParams := getQueryParams(c)
 
 		zap.L().Info("Query Data: ",
 			zap.String("affiliate", requiredQueryParams.affiliate),
 			zap.String("query", requiredQueryParams.searchQuery))
 
 		res := doTheSearch(requiredQueryParams.affiliate, requiredQueryParams.searchQuery)
-		pretty_res := parseTheResults(res)
+		pretty_res := parseTheResults(res, requiredQueryParams, optionalQueryParams)
 		//optional query parameters
 		// enable_highlighting := c.Query("enable_highlighting")
 		// offset := c.Query("offset")
@@ -223,16 +223,16 @@ func parseAffiliate(affiliate string) (string, string, string) {
 ////////////////////
 
 // ////////// Returning Results //////////
-func parseTheResults(results []SearchResult) string {
+func parseTheResults(results []SearchResult, requiredQueryParams requiredQueryParameters, optionalQueryParams optionalQueryParameters) string {
 
 	//create array of results {JSONResults}
 	jSONResults := createJSONResults(results)
 
 	//create webJSON
-	webResults := createWebResults(jSONResults)
+	webResults := createWebResults(jSONResults, optionalQueryParams)
 
 	//create wholeJSON
-	wholeJSON := createWholeJSON(webResults)
+	wholeJSON := createWholeJSON(webResults, requiredQueryParams)
 
 	return wholeJSON
 }
@@ -252,9 +252,9 @@ func createJSONResults(results []SearchResult) []string {
 	return JSONResults
 }
 
-func createWebResults(jSONResults []string) string {
+func createWebResults(jSONResults []string, optionalQueryParams optionalQueryParameters) string {
 	total := 5
-	nextOffset := "null"
+	nextOffset := optionalQueryParams.offset
 	spellingCorrections := "null"
 
 	strc := WebJSON{total, nextOffset, spellingCorrections, jSONResults}
@@ -266,8 +266,8 @@ func createWebResults(jSONResults []string) string {
 	return string(data)
 }
 
-func createWholeJSON(webResults string) string {
-	query := "nasa"
+func createWholeJSON(webResults string, requiredQueryParams requiredQueryParameters) string {
+	query := requiredQueryParams.searchQuery
 	var tretBestBets []string
 	var graphicBestBets []string
 	var healthTopics []string
