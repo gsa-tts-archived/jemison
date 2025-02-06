@@ -189,6 +189,10 @@ func structToJSON(strc interface{}) (string, error) {
 	var searchResultJSON SearchResultJSON
 	json.Unmarshal([]byte(data), &searchResultJSON)
 
+	//TODO: get these values
+	searchResultJSON.PublicationDate = "null"
+	searchResultJSON.ThumbnailUrl = "null"
+
 	//convert new struct back to JSON
 	j_data, err := json.Marshal(searchResultJSON)
 	if err != nil {

@@ -36,10 +36,11 @@ type SearchResult struct {
 }
 
 type SearchResultJSON struct {
-	PageTitle  string `json:"title"`
-	Text       string `json:"text"`
-	PathString string `json:"url"`
-	Snippet    string `json:"snippet"`
+	PageTitle       string `json:"title"`
+	PathString      string `json:"url"`
+	Snippet         string `json:"snippet"`
+	PublicationDate string `json:"publication_date"`
+	ThumbnailUrl    string `json:"thumbnail_url"`
 }
 
 func to64(s string) int64 {
