@@ -61,24 +61,6 @@ type QueryData struct {
 	RelatedSearchTerms       []string     `json:"related_search_terms"`
 }
 
-type WebJSON struct {
-	Total              int      `json:"total"`
-	NextOffset         int      `json:"next_offset"`
-	SpellingCorrection string   `json:"spelling_correction"`
-	ResultsJSON        []string `json:"results"`
-}
-
-type WholeJSON struct {
-	Query                    string   `json:"query"`
-	Web                      string   `json:"web"`
-	TextBestBets             []string `json:"text_best_bets"`
-	GraphicBestBets          []string `json:"graphic_best_bets"`
-	HealthTopics             []string `json:"health_topics"`
-	JobOpenings              []string `json:"job_openings"`
-	FederalRegisterDocuments []string `json:"federal_register_documents"`
-	RelatedSearchTerms       []string `json:"related_search_terms"`
-}
-
 // ////////// Setup //////////
 func setupQueues() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -275,7 +257,6 @@ func createJSONResults(results []SearchResult) []QueryWebResultsData {
 		}
 		fmt.Println("NEW ENTRY: " + r.PageTitle + "NEW ENTRY JSON: " + jsonStr)
 		//append to JSONResults
-		// JSONResults = append(JSONResults, jsonStr)
 		JSONResults = append(JSONResults, qwrd)
 	}
 	return JSONResults
@@ -285,15 +266,8 @@ func createWebResults(jSONResults []QueryWebResultsData, optionalQueryParams opt
 	total := 5
 	nextOffset := optionalQueryParams.offset
 	spellingCorrections := "null"
-
-	// strc := WebJSON{total, nextOffset, spellingCorrections, jSONResults}
 	strc := QueryWebData{total, nextOffset, spellingCorrections, jSONResults}
-	// data, err := json.Marshal(strc)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
 
-	// return string(data)
 	return strc
 }
 
@@ -306,11 +280,6 @@ func createWholeJSON(webResults QueryWebData, requiredQueryParams requiredQueryP
 	var federalRegisterDocuments []string
 	var relatedSearchTerms []string
 
-	// strc := WholeJSON{query, webResults, tretBestBets, graphicBestBets, healthTopics, jobOpenings, federalRegisterDocuments, relatedSearchTerms}
-	// data, err := json.Marshal(strc)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
 	strc := QueryData{query, webResults, tretBestBets, graphicBestBets, healthTopics, jobOpenings, federalRegisterDocuments, relatedSearchTerms}
 	data := structToJSON(strc)
 	return string(data)
