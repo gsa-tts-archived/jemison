@@ -1,1 +1,6 @@
 {{ .pretty_res }}
+<script>
+    var jsonString = "{{ .pretty_res }}"
+    const jsonObject = JSON.parse(jsonString);
+    console.log(jsonObject.name); 
+</script>

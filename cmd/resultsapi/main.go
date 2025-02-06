@@ -23,6 +23,24 @@ var ChQSHP = make(chan queueing.QSHP)
 var ThisServiceName = "resultsapi"
 var JDB *postgres.JemisonDB
 
+type WebJSON struct {
+	Total              int      `json:"total"`
+	NextOffset         string   `json:"next_offset"`
+	SpellingCorrection string   `json:"spelling_correction"`
+	ResultsJSON        []string `json:"results"`
+}
+
+type WholeJSON struct {
+	Query                    string   `json:"query"`
+	Web                      string   `json:"web"`
+	TextBestBets             []string `json:"text_best_bets"`
+	GraphicBestBets          []string `json:"graphic_best_bets"`
+	HealthTopics             []string `json:"health_topics"`
+	JobOpenings              []string `json:"job_openings"`
+	FederalRegisterDocuments []string `json:"federal_register_documents"`
+	RelatedSearchTerms       []string `json:"related_search_terms"`
+}
+
 // ////////// Setup //////////
 func setupQueues() {
 	env.InitGlobalEnv(ThisServiceName)
@@ -156,34 +174,72 @@ func parseAffiliate(affiliate string) (string, string, string) {
 ////////////////////
 
 // ////////// Returning Results //////////
-func parseTheResults(results []SearchResult) []string {
+func parseTheResults(results []SearchResult) string {
 
 	//create array of results {JSONResults}
+	jSONResults := createJSONResults(results)
+
+	//create webJSON
+	webResults := createWebResults(jSONResults)
+
+	//create wholeJSON
+	wholeJSON := createWholeJSON(webResults)
+
+	return wholeJSON
+}
+
+func createJSONResults(results []SearchResult) []string {
 	var JSONResults []string
 	for _, r := range results {
-		fmt.Println("NEW ENTRY: ")
-		fmt.Println(r.PageTitle)
-		//convert searchresult into a json object that matches result
-		jsonStr, err := structToJSON(r)
+		//convert searchresult into a json object that matches current resultAPI
+		jsonStr, err := getJSONString(r)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("NEW ENTRY JSON: ")
-		fmt.Println(jsonStr)
+		fmt.Println("NEW ENTRY: " + r.PageTitle + "NEW ENTRY JSON: " + jsonStr)
 		//append to JSONResults
 		JSONResults = append(JSONResults, jsonStr)
 	}
 	return JSONResults
 }
 
-func structToJSON(strc interface{}) (string, error) {
-	//? can I convert a struct to another struct?
+func createWebResults(jSONResults []string) string {
+	total := 5
+	nextOffset := "null"
+	spellingCorrections := "null"
 
-	//convert to JSON
+	strc := WebJSON{total, nextOffset, spellingCorrections, jSONResults}
 	data, err := json.Marshal(strc)
 	if err != nil {
-		return "", err
+		log.Fatal(err)
 	}
+
+	return string(data)
+}
+
+func createWholeJSON(webResults string) string {
+	query := "nasa"
+	var tretBestBets []string
+	var graphicBestBets []string
+	var healthTopics []string
+	var jobOpenings []string
+	var federalRegisterDocuments []string
+	var relatedSearchTerms []string
+
+	strc := WholeJSON{query, webResults, tretBestBets, graphicBestBets, healthTopics, jobOpenings, federalRegisterDocuments, relatedSearchTerms}
+	data, err := json.Marshal(strc)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return string(data)
+}
+
+func getJSONString(strc interface{}) (string, error) {
+	//? can I convert a struct to another struct?
+
+	//convert struct to JSON
+	data := structToJSON(strc)
 
 	//from JSON convert to new struct
 	var searchResultJSON SearchResultJSON
@@ -194,12 +250,17 @@ func structToJSON(strc interface{}) (string, error) {
 	searchResultJSON.ThumbnailUrl = "null"
 
 	//convert new struct back to JSON
-	j_data, err := json.Marshal(searchResultJSON)
-	if err != nil {
-		return "", err
-	}
+	j_data := structToJSON(searchResultJSON)
 
 	return string(j_data), nil
+}
+
+func structToJSON(strc interface{}) []byte {
+	data, err := json.Marshal(strc)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return data
 }
 
 ////////////////////
