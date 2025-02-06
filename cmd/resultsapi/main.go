@@ -23,6 +23,18 @@ var ChQSHP = make(chan queueing.QSHP)
 var ThisServiceName = "resultsapi"
 var JDB *postgres.JemisonDB
 
+type requiredQueryParameters struct {
+	affiliate   string
+	searchQuery string
+}
+
+type optionalQueryParameters struct {
+	enableHighlighting bool
+	offset             int
+	sortBy             int
+	sitelimit          int
+}
+
 type WebJSON struct {
 	Total              int      `json:"total"`
 	NextOffset         string   `json:"next_offset"`
@@ -59,14 +71,15 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 
 	engine.GET("/:search", func(c *gin.Context) {
 		//required query parameters
-		affiliate := c.Query("affiliate")
-		searchQuery := c.Query("query")
+		// affiliate := c.Query("affiliate")
+		// searchQuery := c.Query("query")
+		requiredQueryParams, _ := getQueryParams(c)
 
 		zap.L().Info("Query Data: ",
-			zap.String("affiliate", affiliate),
-			zap.String("query", searchQuery))
+			zap.String("affiliate", requiredQueryParams.affiliate),
+			zap.String("query", requiredQueryParams.searchQuery))
 
-		res := doTheSearch(affiliate, searchQuery)
+		res := doTheSearch(requiredQueryParams.affiliate, requiredQueryParams.searchQuery)
 		pretty_res := parseTheResults(res)
 		//optional query parameters
 		// enable_highlighting := c.Query("enable_highlighting")
@@ -86,6 +99,42 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 	}
 
 	return engine
+}
+
+func getQueryParams(c *gin.Context) (requiredQueryParameters, optionalQueryParameters) {
+	// required query parameters
+	var requiredQueryParas requiredQueryParameters
+	requiredQueryParas.affiliate = c.Query("affiliate")
+	requiredQueryParas.searchQuery = c.Query("query")
+	fmt.Println("affiliate: ", requiredQueryParas.affiliate, " query: ", requiredQueryParas.searchQuery)
+
+	// optional query parameters
+	var optionalQueryParams optionalQueryParameters
+
+	enableHighlighting, err := strconv.ParseBool(c.Query("enable_highlighting"))
+	if err == nil {
+		optionalQueryParams.enableHighlighting = enableHighlighting
+		fmt.Println("enableHighlighting: ", optionalQueryParams.enableHighlighting)
+	}
+
+	offset, err := strconv.Atoi(c.Query("offset"))
+	if err == nil {
+		optionalQueryParams.offset = offset
+		fmt.Println("offset: ", optionalQueryParams.offset)
+	}
+
+	sortBy, err := strconv.Atoi(c.Query("sort_by"))
+	if err == nil {
+		optionalQueryParams.sortBy = sortBy
+		fmt.Println("sortBy: ", optionalQueryParams.sortBy)
+	}
+
+	sitelimit, err := strconv.Atoi(c.Query("sitelimit"))
+	if err == nil {
+		optionalQueryParams.sitelimit = sitelimit
+		fmt.Println("sitelimit: ", optionalQueryParams.sitelimit)
+	}
+	return requiredQueryParas, optionalQueryParams
 }
 
 ////////////////////
