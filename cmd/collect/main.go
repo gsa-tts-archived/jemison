@@ -41,24 +41,28 @@ func setUpEngine() *gin.Engine {
 }
 
 func main() {
+	// Initialize environment for "collect" service
 	env.InitGlobalEnv(ThisServiceName)
+
+	// Initialize JSON schemas
+	if err := InitializeSchemas(); err != nil {
+		zap.L().Fatal("failed to initialize schemas", zap.Error(err))
+	}
+
+	// Initialize worker queues
 	setupQueues()
 
-	fmt.Println("Hello world from collect")
-
+	// Create database connection
 	JDB = postgres.NewJemisonDB()
-
 	fmt.Println(ThisServiceName, " environment initialized")
 
+	// Setting up HTTP engine
 	engine := setUpEngine()
 
-	zap.L().Info("listening from collect",
-		zap.String("port", env.Env.Port))
+	zap.L().Info("listening from collect", zap.String("port", env.Env.Port))
 
-	// Local and Cloud should both get this from the environment.
-	//nolint:gosec
-	err := http.ListenAndServe(":"+env.Env.Port, engine)
-	if err != nil {
+	// Start the service
+	if err := http.ListenAndServe(":"+env.Env.Port, engine); err != nil {
 		zap.Error(err)
 	}
 }

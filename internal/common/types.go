@@ -54,6 +54,15 @@ func (FetchArgs) Kind() string {
 	return "fetch"
 }
 
+type CollectArgs struct {
+	Scheme string `json:"scheme"`
+	Host   string `json:"host"`
+	Path   string `json:"path"`
+	Json   string `json:"json"`
+}
+
+func (CollectArgs) Kind() string { return "collect" }
+
 type PackArgs struct {
 	Scheme      string `json:"scheme"`
 	Host        string `json:"host"`
@@ -94,14 +103,4 @@ type ValidateFetchArgs struct {
 
 func (ValidateFetchArgs) Kind() string {
 	return ValidateFetchQueue
-}
-
-type CollectArgs struct {
-	Scheme string `json:"scheme"`
-	Host   string `json:"host"`
-	Path   string `json:"path"`
-}
-
-func (CollectArgs) Kind() string {
-	return "collect"
 }

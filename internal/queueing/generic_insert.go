@@ -19,6 +19,7 @@ type QSHP struct {
 	IsFull     bool
 	IsHallPass bool
 	Filename   string
+	RawData    string
 }
 
 //nolint:revive
@@ -100,10 +101,17 @@ func Enqueue(chQSHP <-chan QSHP) {
 			commonCommit(qshp, ctx, tx)
 
 		case "collect":
+			zap.L().Debug("handling collect queue insertion",
+				zap.String("scheme", qshp.Scheme),
+				zap.String("host", qshp.Host),
+				zap.String("path", qshp.Path),
+				zap.String("rawData", qshp.RawData))
+
 			_, err := client.InsertTx(ctx, tx, common.CollectArgs{
 				Scheme: qshp.Scheme,
 				Host:   qshp.Host,
 				Path:   qshp.Path,
+				Json:   qshp.RawData,
 			}, &river.InsertOpts{Queue: qshp.Queue})
 			if err != nil {
 				zap.L().Error("cannot insert into queue collect",

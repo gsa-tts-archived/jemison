@@ -21,6 +21,7 @@ type FetchRequestInput struct {
 	Host   string `json:"host" maxLength:"500" doc:"Host of resource"`
 	Path   string `json:"path" maxLength:"1500" doc:"Path to resource"`
 	APIKey string `json:"api-key"`
+	Data   string `json:"data"`
 }
 
 // https://dev.to/kashifsoofi/rest-api-with-go-chi-and-inmemory-store-43ag
@@ -33,13 +34,15 @@ func FetchRequestHandler(c *gin.Context) {
 	if fri.APIKey == os.Getenv("API_KEY") || true {
 		zap.L().Debug("fetch enqueue",
 			zap.String("host", fri.Host),
-			zap.String("path", fri.Path))
+			zap.String("path", fri.Path),
+			zap.String("path", fri.Data))
 
 		ChQSHP <- queueing.QSHP{
-			Queue:  "collect",
-			Scheme: fri.Scheme,
-			Host:   fri.Host,
-			Path:   fri.Path,
+			Queue:   "collect",
+			Scheme:  fri.Scheme,
+			Host:    fri.Host,
+			Path:    fri.Path,
+			RawData: fri.Data,
 		}
 
 		ChQSHP <- queueing.QSHP{
@@ -57,12 +60,15 @@ func FetchRequestHandler(c *gin.Context) {
 func EntreeRequestHandler(c *gin.Context) {
 	var fri FetchRequestInput
 
-	full := c.Param("fullorone")
-	hallPass := c.Param("hallpass")
-
-	if err := c.BindJSON(&fri); err != nil {
+	// Parse and bind JSON into the struct
+	if err := c.ShouldBindJSON(&fri); err != nil {
+		zap.L().Error("failed to bind JSON", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON: " + err.Error()})
 		return
 	}
+
+	full := c.Param("fullorone")
+	hallPass := c.Param("hallpass")
 
 	if fri.APIKey == os.Getenv("API_KEY") || true {
 		hallPassB := false
@@ -78,13 +84,15 @@ func EntreeRequestHandler(c *gin.Context) {
 
 		zap.L().Debug("entree enqueue",
 			zap.String("host", fri.Host),
-			zap.String("path", fri.Path))
+			zap.String("path", fri.Path),
+			zap.String("data", fri.Data))
 
 		ChQSHP <- queueing.QSHP{
-			Queue:  "collect",
-			Scheme: fri.Scheme,
-			Host:   fri.Host,
-			Path:   fri.Path,
+			Queue:   "collect",
+			Scheme:  fri.Scheme,
+			Host:    fri.Host,
+			Path:    fri.Path,
+			RawData: fri.Data,
 		}
 
 		ChQSHP <- queueing.QSHP{
