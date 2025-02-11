@@ -3,8 +3,6 @@
 
 `jemison` is a small, scalable, and maintainable search platform, the foundation for a new Search.gov.
 
-`jemison` is named for the pioneering and innovating explorer of medicine and space, Dr. Mae Jemison, the first African-American woman in space. 
-
 ## running Jemison
 
 In the top directory, first build the base/build container:
