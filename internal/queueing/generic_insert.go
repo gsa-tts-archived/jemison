@@ -101,14 +101,6 @@ func Enqueue(chQSHP <-chan QSHP) {
 			commonCommit(qshp, ctx, tx)
 
 		case "collect":
-			zap.L().Debug("handling collect queue insertion",
-				zap.String("scheme", qshp.Scheme),
-				zap.String("host", qshp.Host),
-				zap.String("path", qshp.Path),
-				zap.String("rawData", qshp.RawData),
-				zap.Bool("full", qshp.IsFull),
-				zap.Bool("hallpass", qshp.IsHallPass))
-
 			_, err := client.InsertTx(ctx, tx, common.CollectArgs{
 				Scheme:    qshp.Scheme,
 				Host:      qshp.Host,
