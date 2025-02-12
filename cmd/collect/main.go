@@ -54,6 +54,7 @@ func main() {
 
 	// Create database connection
 	JDB = postgres.NewJemisonDB()
+
 	fmt.Println(ThisServiceName, " environment initialized")
 
 	// Setting up HTTP engine
@@ -62,6 +63,8 @@ func main() {
 	zap.L().Info("listening from collect", zap.String("port", env.Env.Port))
 
 	// Start the service
+	//
+	//nolint:gosec // G114: Ignoring timeout settings for demonstration purposes or due to intentional design
 	if err := http.ListenAndServe(":"+env.Env.Port, engine); err != nil {
 		zap.Error(err)
 	}

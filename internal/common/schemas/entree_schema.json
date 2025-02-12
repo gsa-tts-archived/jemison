@@ -7,7 +7,16 @@
     "scheme": { "type": "string", "maxLength": 10 },
     "host": { "type": "string", "maxLength": 500 },
     "domain64": { "type": "integer" },
-    "path": { "type": "string", "maxLength": 1500 }
+    "path": { "type": "string", "maxLength": 1500 },
+    "data": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "source": { "type": "string" },
+        "payload": { "type": "string" }
+      },
+      "required": ["id", "source", "payload"]
+    }
   },
-  "required": ["kind", "scheme", "host", "path"]
+  "required": ["scheme", "host", "path", "data"]
 }

@@ -6,7 +6,15 @@
     "host": { "type": "string", "maxLength": 500 },
     "path": { "type": "string", "maxLength": 1500 },
     "api-key": { "type": "string" },
-    "data": { "type": "string" }
+    "data": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "source": { "type": "string" },
+        "payload": { "type": "string" }
+      },
+      "required": ["id", "source", "payload"]
+    }
   },
-  "required": ["scheme", "host", "path", "api-key"]
+  "required": ["scheme", "host", "path", "api-key", "data"]
 }
