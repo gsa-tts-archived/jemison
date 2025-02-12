@@ -300,13 +300,6 @@ func (w *FetchWorker) Work(_ context.Context, job *river.Job[common.FetchArgs]) 
 	fetchCount.Add(1)
 
 	ChQSHP <- queueing.QSHP{
-		Queue:  "collect",
-		Scheme: job.Args.Scheme,
-		Host:   job.Args.Host,
-		Path:   job.Args.Path,
-	}
-
-	ChQSHP <- queueing.QSHP{
 		Queue:  "extract",
 		Scheme: job.Args.Scheme,
 		Host:   job.Args.Host,

@@ -3,50 +3,74 @@ package main
 import (
 	"testing"
 
-	"github.com/GSA-TTS/jemison/internal/common"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
 
-func TestTransformArgumentsToJSON(t *testing.T) {
-	// Sample input
-	args := common.CollectArgs{
-		Scheme: "https",
-		Host:   "www.example.com",
-		Path:   "/test",
-	}
+func TestValidateJSON(t *testing.T) {
+	// Set up valid and invalid JSON examples
+	validJSON := `{"scheme":"https","host":"example.gov","path":"/api/resource","api-key":"key123","data":{"id":"unique-fetch-id-5678","source":"fetch","payload":"some payload"}}` //nolint:lll
+	invalidJSON := `{"scheme":"https","host":"example.gov","path":"/api/resource","data":{"id":"123"}}`
 
-	jsonString, err := TransformArgumentsToJSON(args)
+	// Fetch schema should be already initialized for this test
+	err := InitializeSchemas()
+	assert.NoError(t, err, "Schema initialization should not fail")
 
-	// Validate
-	assert.NoError(t, err, "TransformArgumentsToJSON should not return an error")
-	assert.JSONEq(t, `{"Scheme":"https","Host":"www.example.com","Path":"/test"}`, jsonString, "JSON output is incorrect")
+	// Test valid JSON
+	err = ValidateJSON(fetchSchema, validJSON)
+	assert.NoError(t, err, "Valid JSON should pass validation")
+
+	// Test invalid JSON
+	err = ValidateJSON(fetchSchema, invalidJSON)
+	assert.Error(t, err, "Invalid JSON should fail validation")
 }
 
-func TestHandleBusinessLogic(t *testing.T) {
+func TestInitializeSchemas(t *testing.T) {
+	// First initialization
+	err := InitializeSchemas()
+	assert.NoError(t, err, "First schema initialization should succeed")
+
+	// Subsequent initialization call (idempotency check)
+	err = InitializeSchemas()
+	assert.NoError(t, err, "Subsequent schema initialization should succeed")
+}
+
+func TestSelectSchema(t *testing.T) {
 	// Mock zap logger
 	loggerConfig := zap.NewDevelopmentConfig()
-	loggerConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-
 	logger, _ := loggerConfig.Build()
-
-	defer func() {
-		if err := logger.Sync(); err != nil {
-			t.Logf("failed to sync logger: %v", err)
-		}
-	}()
-
 	zap.ReplaceGlobals(logger)
 
-	// Sample input
-	args := common.CollectArgs{
-		Scheme: "http",
-		Host:   "example.org",
-		Path:   "/example",
+	// Valid entree JSON
+	entreeData := map[string]interface{}{
+		"data": map[string]interface{}{
+			"source": "entree",
+		},
 	}
 
-	err := HandleBusinessLogic(args)
+	// Valid fetch JSON
+	fetchData := map[string]interface{}{
+		"data": map[string]interface{}{
+			"source": "fetch",
+		},
+	}
 
-	// Validate
-	assert.NoError(t, err, "HandleBusinessLogic should not return an error")
+	// Invalid schema JSON
+	invalidData := map[string]interface{}{
+		"data": map[string]interface{}{
+			"source": "unknown",
+		},
+	}
+
+	// Check schema selection
+	schema, err := selectSchema(entreeData)
+	assert.NoError(t, err)
+	assert.Equal(t, entreeSchema, schema)
+
+	schema, err = selectSchema(fetchData)
+	assert.NoError(t, err)
+	assert.Equal(t, fetchSchema, schema)
+
+	_, err = selectSchema(invalidData)
+	assert.Error(t, err, "Unknown source should result in error")
 }

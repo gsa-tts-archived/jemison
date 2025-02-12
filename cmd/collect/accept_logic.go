@@ -1,31 +1,61 @@
 package main
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/GSA-TTS/jemison/internal/common"
+	"github.com/xeipuuv/gojsonschema"
 	"go.uber.org/zap"
 )
 
-func TransformArgumentsToJSON(args common.CollectArgs) (string, error) {
-	jsonData, err := json.Marshal(args)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal CollectArgs to JSON: %w", err)
+var (
+	entreeSchema *gojsonschema.Schema
+	fetchSchema  *gojsonschema.Schema
+	initialized  = false
+)
+
+// InitializeSchemas initializes all necessary schemas (called on startup).
+func InitializeSchemas() error {
+	if initialized {
+		return nil
 	}
 
-	return string(jsonData), nil
+	var err error
+	// Load schemas through embedded filesystem
+	entreeSchema, err = common.LoadEmbeddedSchema("entree_schema.json")
+	if err != nil {
+		return fmt.Errorf("failed to load entree schema: %w", err)
+	}
+
+	fetchSchema, err = common.LoadEmbeddedSchema("fetch_schema.json")
+	if err != nil {
+		return fmt.Errorf("failed to load fetch schema: %w", err)
+	}
+
+	// Mark schemas as initialized
+	initialized = true
+
+	return nil
 }
 
-func HandleBusinessLogic(args common.CollectArgs) error {
-	jsonString, err := TransformArgumentsToJSON(args)
-	if err != nil {
-		zap.L().Error("failed to transform arguments to JSON", zap.Error(err))
+// ValidateJSON validates a JSON object against a schema.
+func ValidateJSON(schema *gojsonschema.Schema, rawJSON string) error {
+	zap.L().Info("Validating JSON", zap.String("json", rawJSON))
+	documentLoader := gojsonschema.NewStringLoader(rawJSON)
 
-		return err
+	result, err := schema.Validate(documentLoader)
+	if err != nil {
+		return fmt.Errorf("schema validation error: %w", err)
 	}
 
-	zap.L().Info("Collect service captured crawl record", zap.String("json", jsonString))
+	if !result.Valid() {
+		for _, desc := range result.Errors() {
+			zap.L().Error("JSON validation error", zap.String("field", desc.Field()), zap.String("description", desc.Description())) //nolint:lll
+		}
+
+		return errors.New("JSON validation failed")
+	}
 
 	return nil
 }
