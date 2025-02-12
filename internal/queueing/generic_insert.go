@@ -102,12 +102,12 @@ func Enqueue(chQSHP <-chan QSHP) {
 
 		case "collect":
 			_, err := client.InsertTx(ctx, tx, common.CollectArgs{
-				Scheme:    qshp.Scheme,
-				Host:      qshp.Host,
-				Path:      qshp.Path,
-				JSON:      qshp.RawData,
-				FullCrawl: qshp.IsFull,
-				HallPass:  qshp.IsHallPass,
+				Scheme:   qshp.Scheme,
+				Host:     qshp.Host,
+				Path:     qshp.Path,
+				JSON:     qshp.RawData,
+				IsFull:   qshp.IsFull,
+				HallPass: qshp.IsHallPass,
 			}, &river.InsertOpts{Queue: qshp.Queue})
 			if err != nil {
 				zap.L().Error("cannot insert into queue collect",

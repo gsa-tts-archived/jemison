@@ -21,20 +21,27 @@ func (w *CollectWorker) Work(ctx context.Context, job *river.Job[common.CollectA
 		return err
 	}
 
-	// Deserialize JSON data
-	rawData, err := deserializeJSON(job.Args.JSON)
+	// Deserialize JSON string into a map
+	jsonData, err := deserializeJSON(job.Args.JSON)
 	if err != nil {
 		return err
 	}
 
 	// Check for `source` field and select schema
-	schema, err := selectSchema(rawData)
+	jsonSchema, err := selectSchema(jsonData)
 	if err != nil {
 		return err
 	}
 
-	// Validate JSON and handle business logic
-	if err := validateAndHandleBusinessLogic(schema, job.Args); err != nil {
+	// Validate JSON
+	if err := validateJSONData(jsonSchema, job.Args.JSON); err != nil {
+		return err
+	}
+
+	// Send the validated data to S3
+	if err := sendToS3(job.Args.JSON); err != nil {
+		zap.L().Error("Failed to send data to S3", zap.Error(err))
+
 		return err
 	}
 
@@ -53,29 +60,28 @@ func ensureSchemasInitialized() error {
 }
 
 func deserializeJSON(jsonString string) (map[string]interface{}, error) {
-	var rawData map[string]interface{}
-	if err := json.Unmarshal([]byte(jsonString), &rawData); err != nil {
-		// Log the error
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonString), &jsonData); err != nil {
 		zap.L().Error("failed to unmarshal JSON", zap.Error(err))
-		// Wrap the error with additional context and return
+
 		return nil, fmt.Errorf("deserializeJSON: failed to unmarshal input JSON: %w", err)
 	}
 
-	// Pull in fullCrawl and hallpass for debugging or processing
-	fullCrawl, _ := rawData["fullCrawl"].(bool)
-	hallPass, _ := rawData["hallpass"].(bool)
+	// Pull in IsFull and hallpass for debugging or processing
+	isFull, _ := jsonData["IsFull"].(bool)
+	hallPass, _ := jsonData["hallpass"].(bool)
 
 	zap.L().Debug("deserialized JSON attributes",
-		zap.Bool("fullCrawl", fullCrawl),
+		zap.Bool("isFull", isFull),
 		zap.Bool("hallPass", hallPass),
-		zap.Any("rawData", rawData))
+		zap.Any("jsonData", jsonData))
 
-	return rawData, nil
+	return jsonData, nil
 }
 
-func selectSchema(rawData map[string]interface{}) (*gojsonschema.Schema, error) {
+func selectSchema(jsonData map[string]interface{}) (*gojsonschema.Schema, error) {
 	// Extract the "data" object
-	data, ok := rawData["data"].(map[string]interface{})
+	data, ok := jsonData["data"].(map[string]interface{})
 	if !ok {
 		return nil, errors.New("missing or invalid `data` object")
 	}
@@ -97,16 +103,22 @@ func selectSchema(rawData map[string]interface{}) (*gojsonschema.Schema, error) 
 	}
 }
 
-func validateAndHandleBusinessLogic(schema *gojsonschema.Schema, args common.CollectArgs) error {
-	if err := ValidateJSON(schema, args.JSON); err != nil {
+// validateJSONData validates the JSON string against the provided schema.
+func validateJSONData(jsonSchema *gojsonschema.Schema, jsonString string) error {
+	if err := ValidateJSON(jsonSchema, jsonString); err != nil {
 		zap.L().Error("JSON validation failed", zap.Error(err))
 
 		return err
 	}
 
-	// Log validation success
-	zap.L().Info("JSON validation passed",
-		zap.String("json", args.JSON))
+	zap.L().Info("JSON validation passed", zap.String("jsonString", jsonString))
+
+	return nil
+}
+
+// Currently, it includes a stubbed-out comment for S3 logic.
+func sendToS3(_ string) error {
+	zap.L().Info("Stub: sendToS3 called.")
 
 	return nil
 }

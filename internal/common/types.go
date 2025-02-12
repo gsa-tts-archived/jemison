@@ -55,12 +55,12 @@ func (FetchArgs) Kind() string {
 }
 
 type CollectArgs struct {
-	Scheme    string `json:"scheme"`
-	Host      string `json:"host"`
-	Path      string `json:"path"`
-	JSON      string `json:"json"`
-	FullCrawl bool   `json:"fullCrawl"`
-	HallPass  bool   `json:"hallpass"`
+	Scheme   string `json:"scheme"`
+	Host     string `json:"host"`
+	Path     string `json:"path"`
+	JSON     string `json:"json"`
+	IsFull   bool   `json:"fullCrawl"`
+	HallPass bool   `json:"hallpass"`
 }
 
 func (CollectArgs) Kind() string { return "collect" }

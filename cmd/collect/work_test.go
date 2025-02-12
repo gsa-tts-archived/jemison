@@ -10,12 +10,47 @@ import (
 	"go.uber.org/zap"
 )
 
-type MockWorker struct{}
+// Test the validateJSONData function with valid input.
+func TestValidateJSONData_ValidInput(t *testing.T) {
+	// Initialize schemas
+	err := InitializeSchemas()
+	assert.NoError(t, err)
 
-func (w *MockWorker) Work(ctx context.Context, job *river.Job[common.CollectArgs]) error {
-	return (&CollectWorker{}).Work(ctx, job)
+	// Valid JSON schema and instance
+	jsonSchema := fetchSchema
+	jsonString := `{
+		"scheme": "https",
+		"host": "example.gov",
+		"path": "/api/resource",
+		"data": { "id": "unique-fetch-id-5678", "source": "fetch", "payload": "example payload" }
+	}`
+
+	// Validate
+	err = validateJSONData(jsonSchema, jsonString)
+	assert.NoError(t, err, "Validation should pass for valid JSON input")
 }
 
+// Test the validateJSONData function with invalid input.
+func TestValidateJSONData_InvalidInput(t *testing.T) {
+	// Initialize schemas
+	err := InitializeSchemas()
+	assert.NoError(t, err)
+
+	// Invalid JSON schema and instance (missing "data.source")
+	jsonSchema := fetchSchema
+	jsonString := `{
+		"scheme": "https",
+		"host": "example.gov",
+		"path": "/api/resource",
+		"data": { "id": "invalid-fetch-id", "payload": "example payload" }
+	}`
+
+	// Validation
+	err = validateJSONData(jsonSchema, jsonString)
+	assert.Error(t, err, "Validation should fail for invalid JSON input")
+}
+
+// Test for validating the Work function with a valid payload.
 func TestWork_ValidFetchPayload(t *testing.T) {
 	// Initialize schemas
 	err := InitializeSchemas()
@@ -50,6 +85,7 @@ func TestWork_ValidFetchPayload(t *testing.T) {
 	assert.NoError(t, err, "Worker should process valid fetch payload successfully")
 }
 
+// Test for invalid schema in payload.
 func TestWork_InvalidSchemaPayload(t *testing.T) {
 	err := InitializeSchemas()
 	assert.NoError(t, err)
@@ -72,6 +108,7 @@ func TestWork_InvalidSchemaPayload(t *testing.T) {
 	assert.Error(t, err, "Worker should return an error for invalid payload schema")
 }
 
+// Test for unknown source value.
 func TestWork_UnknownSource(t *testing.T) {
 	err := InitializeSchemas()
 	assert.NoError(t, err)
