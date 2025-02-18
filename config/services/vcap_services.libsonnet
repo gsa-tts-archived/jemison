@@ -52,6 +52,7 @@ local VCAP_SERVICES(s3_host, db_hosts_and_names) = {
       s3('extract', s3_host),
       s3('fetch', s3_host),
       s3('serve', s3_host),
+      s3('data', s3_host),
     ],
     'aws-rds': [rds(hnp[0], hnp[1], hnp[2],) for hnp in db_hosts_and_names],
 };
