@@ -40,7 +40,7 @@ type SearchResultJSON struct {
 	PathString      string `json:"url"`
 	Snippet         string `json:"snippet"`
 	PublicationDate string `json:"publication_date"`
-	ThumbnailUrl    string `json:"thumbnail_url"`
+	ThumbnailURL    string `json:"thumbnail_url"`
 }
 
 func to64(s string) int64 {

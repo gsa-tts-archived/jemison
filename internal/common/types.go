@@ -113,18 +113,6 @@ type ResultsAPIArgs struct {
 	Path   string `json:"path"`
 }
 
-func (
-
-) Kind() string {
-	return "searchapi"
-}
-
-type CollectArgs struct {
-	Scheme string `json:"scheme"`
-	Host   string `json:"host"`
-	Path   string `json:"path"`
-}
-
-func (CollectArgs) Kind() string {
-	return "collect"
+func (ResultsAPIArgs) Kind() string {
+	return "walk"
 }

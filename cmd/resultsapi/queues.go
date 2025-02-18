@@ -15,8 +15,10 @@ import (
 )
 
 // The work client, doing the work of `ResultsApi`.
-var ResultsAPIPool *pgxpool.Pool
-var ResultsAPIClient *river.Client[pgx.Tx]
+var (
+	ResultsAPIPool   *pgxpool.Pool
+	ResultsAPIClient *river.Client[pgx.Tx]
+)
 
 type ResultsAPIWorker struct {
 	river.WorkerDefaults[common.ResultsAPIArgs]
@@ -46,7 +48,6 @@ func InitializeQueues() {
 		},
 		Workers: workers,
 	})
-
 	if err != nil {
 		zap.L().Error("could not establish worker pool")
 		log.Println(err)

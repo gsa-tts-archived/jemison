@@ -17,10 +17,12 @@ import (
 	"go.uber.org/zap"
 )
 
-var Databases sync.Map
-var ChQSHP = make(chan queueing.QSHP)
-var ThisServiceName = "resultsapi"
-var JDB *postgres.JemisonDB
+var (
+	Databases       sync.Map
+	ChQSHP          = make(chan queueing.QSHP)
+	ThisServiceName = "resultsapi"
+	JDB             *postgres.JemisonDB
+)
 
 type requiredQueryParameters struct {
 	affiliate   string
@@ -60,7 +62,7 @@ type QueryData struct {
 	RelatedSearchTerms       []string     `json:"related_search_terms"`
 }
 
-// ////////// Setup //////////
+// ////////// Setup.
 func setupQueues() {
 	env.InitGlobalEnv(ThisServiceName)
 
@@ -72,7 +74,7 @@ func setupQueues() {
 func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 	engine := gin.Default()
 
-	// TODO: Delete when no longer using ui for debugging
+	// Delete when no longer using ui for debugging.
 	engine.StaticFS("/static", gin.Dir(staticFilesPath, true))
 	engine.LoadHTMLGlob(templateFilesPath + "/*")
 
@@ -84,8 +86,8 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 			zap.String("query", requiredQueryParams.searchQuery))
 
 		res := doTheSearch(requiredQueryParams.affiliate, requiredQueryParams.searchQuery)
-		pretty_res := parseTheResults(res, requiredQueryParams, optionalQueryParams)
-		c.IndentedJSON(http.StatusOK, pretty_res)
+		prettyRes := parseTheResults(res, requiredQueryParams, optionalQueryParams)
+		c.IndentedJSON(http.StatusOK, prettyRes)
 	})
 
 	v1 := engine.Group("/api")
@@ -124,12 +126,13 @@ func getQueryParams(c *gin.Context) (requiredQueryParameters, optionalQueryParam
 	if err == nil {
 		optionalQueryParams.sitelimit = sitelimit
 	}
+
 	return requiredQueryParas, optionalQueryParams
 }
 
 ////////////////////
 
-// ////////// Searching //////////
+// ////////// Searching.
 func doTheSearch(affiliate string, searchQuery string) []SearchResult {
 	domain64Start, domain64End := getD64(affiliate + ".gov")
 
@@ -174,7 +177,7 @@ func getD64(affiliate string) (string, string) {
 		return sD64Start, sD64End
 	}
 
-	//subdomain
+	// subdomain
 	if subdomain != "" {
 		fqdn := fmt.Sprintf("%s.%s.%s", subdomain, domain, tld)
 		start, _ := config.FQDNToDomain64(fqdn)
@@ -196,6 +199,8 @@ func parseAffiliate(affiliate string) (string, string, string) {
 
 	results := strings.Split(affiliate, delimiter)
 
+	// if it has length of 3 it has a subdomain, length of 2 only a domain, length of 1 only a tld
+	//nolint:mnd
 	if len(results) == 3 {
 		subdomain = results[0]
 		domain = results[1]
@@ -212,31 +217,32 @@ func parseAffiliate(affiliate string) (string, string, string) {
 
 ////////////////////
 
-// ////////// Returning Results //////////
-func parseTheResults(results []SearchResult, requiredQueryParams requiredQueryParameters, optionalQueryParams optionalQueryParameters) string {
-
-	//create array of results {JSONResults}
+// ////////// Returning Results.
+func parseTheResults(results []SearchResult, reqQP requiredQueryParameters, optQP optionalQueryParameters) string {
+	// create array of results {JSONResults}
 	jSONResults := createJSONResults(results)
 
-	//create webJSON
-	webResults := createWebResults(jSONResults, optionalQueryParams)
+	// create webJSON
+	webResults := createWebResults(jSONResults, optQP)
 
-	//create wholeJSON
-	wholeJSON := createWholeJSON(webResults, requiredQueryParams)
+	// create wholeJSON
+	wholeJSON := createWholeJSON(webResults, reqQP)
 
 	return wholeJSON
 }
 
 func createJSONResults(results []SearchResult) []QueryWebResultsData {
-	// var JSONResults []string
+	//nolint:prealloc
 	var JSONResults []QueryWebResultsData
+
 	for _, r := range results {
-		//convert searchresult into a json object that matches current resultAPI
+		// convert searchresult into a json object that matches current resultAPI
 		qwrd := createQueryWebResultsData(r)
 
-		//append to JSONResults
+		// append to JSONResults
 		JSONResults = append(JSONResults, qwrd)
 	}
+
 	return JSONResults
 }
 
@@ -251,25 +257,28 @@ func createWebResults(jSONResults []QueryWebResultsData, optionalQueryParams opt
 
 func createWholeJSON(webResults QueryWebData, requiredQueryParams requiredQueryParameters) string {
 	query := requiredQueryParams.searchQuery
-	var tretBestBets []string
-	var graphicBestBets []string
-	var healthTopics []string
-	var jobOpenings []string
-	var federalRegisterDocuments []string
-	var relatedSearchTerms []string
 
-	strc := QueryData{query, webResults, tretBestBets, graphicBestBets, healthTopics, jobOpenings, federalRegisterDocuments, relatedSearchTerms}
+	var tbestBets, gBestBets, healthTopics, jobOpenings, federalRegisDocs, relatedTerms []string
+
+	strc := QueryData{query, webResults, tbestBets, gBestBets, healthTopics, jobOpenings, federalRegisDocs, relatedTerms}
 	data := structToJSON(strc)
+
 	return string(data)
 }
 
 func createQueryWebResultsData(strc interface{}) QueryWebResultsData {
-	//convert struct to JSON
+	// convert struct to JSON
 	data := structToJSON(strc)
 
-	//from JSON convert to new struct
+	// from JSON convert to new struct
 	var searchResultJSON QueryWebResultsData
-	json.Unmarshal([]byte(data), &searchResultJSON)
+
+	err := json.Unmarshal([]byte(data), &searchResultJSON)
+	if err != nil {
+		zap.L().Fatal("Something went fatally wrong",
+			zap.Error(err),
+		)
+	}
 
 	return searchResultJSON
 }
@@ -281,6 +290,7 @@ func structToJSON(strc interface{}) []byte {
 			zap.Error(err),
 		)
 	}
+
 	return data
 }
 
