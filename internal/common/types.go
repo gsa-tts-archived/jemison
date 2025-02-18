@@ -114,5 +114,5 @@ type ResultsAPIArgs struct {
 }
 
 func (ResultsAPIArgs) Kind() string {
-	return "walk"
+	return "resultsapi"
 }
