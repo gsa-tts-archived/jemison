@@ -87,7 +87,16 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 
 		res := doTheSearch(requiredQueryParams.affiliate, requiredQueryParams.searchQuery)
 		prettyRes := parseTheResults(res, requiredQueryParams, optionalQueryParams)
-		c.IndentedJSON(http.StatusOK, prettyRes)
+
+		var qd QueryData
+
+		err := json.Unmarshal([]byte(prettyRes), &qd)
+		if err != nil {
+			zap.L().Fatal("Something went fatally wrong",
+				zap.Error(err),
+			)
+		}
+		c.IndentedJSON(http.StatusOK, qd)
 	})
 
 	v1 := engine.Group("/api")
@@ -218,7 +227,7 @@ func parseAffiliate(affiliate string) (string, string, string) {
 ////////////////////
 
 // ////////// Returning Results.
-func parseTheResults(results []SearchResult, reqQP requiredQueryParameters, optQP optionalQueryParameters) string {
+func parseTheResults(results []SearchResult, reqQP requiredQueryParameters, optQP optionalQueryParameters) []byte {
 	// create array of results {JSONResults}
 	jSONResults := createJSONResults(results)
 
@@ -255,7 +264,7 @@ func createWebResults(jSONResults []QueryWebResultsData, optionalQueryParams opt
 	return strc
 }
 
-func createWholeJSON(webResults QueryWebData, requiredQueryParams requiredQueryParameters) string {
+func createWholeJSON(webResults QueryWebData, requiredQueryParams requiredQueryParameters) []byte {
 	query := requiredQueryParams.searchQuery
 
 	var tbestBets, gBestBets, healthTopics, jobOpenings, federalRegisDocs, relatedTerms []string
@@ -263,7 +272,7 @@ func createWholeJSON(webResults QueryWebData, requiredQueryParams requiredQueryP
 	strc := QueryData{query, webResults, tbestBets, gBestBets, healthTopics, jobOpenings, federalRegisDocs, relatedTerms}
 	data := structToJSON(strc)
 
-	return string(data)
+	return data
 }
 
 func createQueryWebResultsData(strc interface{}) QueryWebResultsData {
