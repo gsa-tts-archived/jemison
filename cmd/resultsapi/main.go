@@ -96,6 +96,7 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 				zap.Error(err),
 			)
 		}
+
 		c.IndentedJSON(http.StatusOK, qd)
 	})
 
