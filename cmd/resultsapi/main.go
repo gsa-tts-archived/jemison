@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -78,9 +77,6 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 	engine.LoadHTMLGlob(templateFilesPath + "/*")
 
 	engine.GET("/:search", func(c *gin.Context) {
-		//required query parameters
-		// affiliate := c.Query("affiliate")
-		// searchQuery := c.Query("query")
 		requiredQueryParams, optionalQueryParams := getQueryParams(c)
 
 		zap.L().Info("Query Data: ",
@@ -89,16 +85,7 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 
 		res := doTheSearch(requiredQueryParams.affiliate, requiredQueryParams.searchQuery)
 		pretty_res := parseTheResults(res, requiredQueryParams, optionalQueryParams)
-		//optional query parameters
-		// enable_highlighting := c.Query("enable_highlighting")
-		// offset := c.Query("offset")
-		// sort_by := c.Query("sort_by")
-		// sitelimit := c.Query("sitelimit")
-
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"res":        res,
-			"pretty_res": pretty_res,
-		})
+		c.IndentedJSON(http.StatusOK, pretty_res)
 	})
 
 	v1 := engine.Group("/api")
@@ -114,7 +101,6 @@ func getQueryParams(c *gin.Context) (requiredQueryParameters, optionalQueryParam
 	var requiredQueryParas requiredQueryParameters
 	requiredQueryParas.affiliate = c.Query("affiliate")
 	requiredQueryParas.searchQuery = c.Query("query")
-	fmt.Println("affiliate: ", requiredQueryParas.affiliate, " query: ", requiredQueryParas.searchQuery)
 
 	// optional query parameters
 	var optionalQueryParams optionalQueryParameters
@@ -122,25 +108,21 @@ func getQueryParams(c *gin.Context) (requiredQueryParameters, optionalQueryParam
 	enableHighlighting, err := strconv.ParseBool(c.Query("enable_highlighting"))
 	if err == nil {
 		optionalQueryParams.enableHighlighting = enableHighlighting
-		fmt.Println("enableHighlighting: ", optionalQueryParams.enableHighlighting)
 	}
 
 	offset, err := strconv.Atoi(c.Query("offset"))
 	if err == nil {
 		optionalQueryParams.offset = offset
-		fmt.Println("offset: ", optionalQueryParams.offset)
 	}
 
 	sortBy, err := strconv.Atoi(c.Query("sort_by"))
 	if err == nil {
 		optionalQueryParams.sortBy = sortBy
-		fmt.Println("sortBy: ", optionalQueryParams.sortBy)
 	}
 
 	sitelimit, err := strconv.Atoi(c.Query("sitelimit"))
 	if err == nil {
 		optionalQueryParams.sitelimit = sitelimit
-		fmt.Println("sitelimit: ", optionalQueryParams.sitelimit)
 	}
 	return requiredQueryParas, optionalQueryParams
 }
@@ -250,12 +232,8 @@ func createJSONResults(results []SearchResult) []QueryWebResultsData {
 	var JSONResults []QueryWebResultsData
 	for _, r := range results {
 		//convert searchresult into a json object that matches current resultAPI
-		jsonStr, err := getJSONString(r)
 		qwrd := createQueryWebResultsData(r)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("NEW ENTRY: " + r.PageTitle + "NEW ENTRY JSON: " + jsonStr)
+
 		//append to JSONResults
 		JSONResults = append(JSONResults, qwrd)
 	}
@@ -285,43 +263,23 @@ func createWholeJSON(webResults QueryWebData, requiredQueryParams requiredQueryP
 	return string(data)
 }
 
-func getJSONString(strc interface{}) (string, error) {
-	//? can I convert a struct to another struct?
-
-	//convert struct to JSON
-	data := structToJSON(strc)
-
-	//from JSON convert to new struct
-	var searchResultJSON SearchResultJSON
-	json.Unmarshal([]byte(data), &searchResultJSON)
-
-	//TODO: get these values
-	searchResultJSON.PublicationDate = "null"
-	searchResultJSON.ThumbnailUrl = "null"
-
-	//convert new struct back to JSON
-	j_data := structToJSON(searchResultJSON)
-
-	return string(j_data), nil
-}
-
 func createQueryWebResultsData(strc interface{}) QueryWebResultsData {
-	//? can I convert a struct to another struct?
-
 	//convert struct to JSON
 	data := structToJSON(strc)
 
 	//from JSON convert to new struct
 	var searchResultJSON QueryWebResultsData
 	json.Unmarshal([]byte(data), &searchResultJSON)
-	return searchResultJSON
 
+	return searchResultJSON
 }
 
 func structToJSON(strc interface{}) []byte {
 	data, err := json.Marshal(strc)
 	if err != nil {
-		log.Fatal(err)
+		zap.L().Fatal("Something went fatally wrong",
+			zap.Error(err),
+		)
 	}
 	return data
 }
