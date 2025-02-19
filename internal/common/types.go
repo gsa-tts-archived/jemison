@@ -106,3 +106,13 @@ type ValidateFetchArgs struct {
 func (ValidateFetchArgs) Kind() string {
 	return ValidateFetchQueue
 }
+
+type ResultsAPIArgs struct {
+	Scheme string `json:"scheme"`
+	Host   string `json:"host"`
+	Path   string `json:"path"`
+}
+
+func (ResultsAPIArgs) Kind() string {
+	return "resultsapi"
+}
