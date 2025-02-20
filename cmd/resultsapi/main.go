@@ -78,18 +78,10 @@ func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 			zap.String("query", requiredQueryParams.searchQuery))
 
 		res := doTheSearch(requiredQueryParams.affiliate, requiredQueryParams.searchQuery)
-		prettyRes := parseTheResults(res, requiredQueryParams, optionalQueryParams)
+		marshalledResults := parseTheResults(res, requiredQueryParams, optionalQueryParams)
+		queryResults := jsonToStruct(marshalledResults)
 
-		var qd QueryData
-
-		err := json.Unmarshal([]byte(prettyRes), &qd)
-		if err != nil {
-			zap.L().Fatal("Something went fatally wrong",
-				zap.Error(err),
-			)
-		}
-
-		c.IndentedJSON(http.StatusOK, qd)
+		c.IndentedJSON(http.StatusOK, queryResults)
 	})
 
 	v1 := engine.Group("/api")
@@ -277,7 +269,7 @@ func createQueryWebResultsData(strc interface{}) QueryWebResultsData {
 
 	err := json.Unmarshal([]byte(data), &searchResultJSON)
 	if err != nil {
-		zap.L().Fatal("Something went fatally wrong",
+		zap.L().Fatal("marshalledResults went fatally wrong",
 			zap.Error(err),
 		)
 	}
@@ -294,6 +286,17 @@ func structToJSON(strc interface{}) []byte {
 	}
 
 	return data
+}
+
+func jsonToStruct(marshalledResults []byte) QueryData {
+	var qd QueryData
+	err := json.Unmarshal([]byte(marshalledResults), &qd)
+	if err != nil {
+		zap.L().Fatal("Something went fatally wrong",
+			zap.Error(err),
+		)
+	}
+	return qd
 }
 
 ////////////////////
