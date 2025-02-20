@@ -63,14 +63,6 @@ type QueryData struct {
 }
 
 // ////////// Setup.
-func setupQueues() {
-	env.InitGlobalEnv(ThisServiceName)
-
-	InitializeQueues()
-
-	go queueing.Enqueue(ChQSHP)
-}
-
 func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 	engine := gin.Default()
 
@@ -308,7 +300,6 @@ func structToJSON(strc interface{}) []byte {
 
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
-	setupQueues()
 
 	s, _ := env.Env.GetUserService(ThisServiceName)
 	templateFilesPath := s.GetParamString("template_files_path")
