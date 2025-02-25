@@ -95,10 +95,16 @@ gov.gsa.libsonnet:
 
   // We can imagine adding per-domain 
   // configuration as needed to this design.
-  ignorePaths: [
-    "/something",
-    "*/another_thing"
-  ]
+  ignorePaths: {
+    "*":   ["/something", "*/another_thing"],
+    "acquisition": ["/lots-of-pdfs", "images"],
+  }
+
+  // There might be paths we *only* crawl.
+  onlyPaths: {
+      "_root": ["/magic"],
+      "acquisition": ["/savings", "/agile"],
+  }
 }
 ```
 

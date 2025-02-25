@@ -1,5 +1,7 @@
 import csv
 import re
+from collections import defaultdict
+from pprint import pprint
 
 # The affiliates list has some domains in the 
 # .cn and .tw space. It is unclear if they are domains
@@ -91,6 +93,7 @@ class AffiliateParser:
             reader = csv.reader(f, delimiter=",")
             next(reader)
             for row_number, line in enumerate(reader):
+                # print(line)
                 self._rows.append(AffiliateRow(row_number, line))
 
 # These could be
@@ -107,18 +110,54 @@ def affiliate_to_tlds(aff):
     # This takes care of trailing commas, which yield empties
     noempty = filter(lambda s: len(s)>0, affiliates)
     # Now, for each, get rid of anything trailing as a path
-    nopaths = map(lambda s: re.sub("\/.*", "", s), noempty)
+    nopaths = map(lambda s: re.sub(r"/.*", "", s), noempty)
     # We should now be able to split on the `.`
     tlds = map(lambda s: list(reversed(s.split(".")))[0], nopaths)
     # Get rid of anything not a-z
     onlyaz = filter(lambda s: re.search("[a-z]+", s), tlds)
     # And, only keep valid TLDs.
     valid = filter(lambda s: s in VALID_TLDS, onlyaz)
-    return valid
+    return list(valid)
 
 class TLDs:
     tlds = set()
     def __init__(self):
         pass
-    def add(site_domains):
-        TLDs.tlds.update(affiliate_to_tlds(site_domains))
+    def extract(site_domains):
+        return affiliate_to_tlds(site_domains)
+
+def andmap(fun, ls):
+    return len(list(filter(lambda v: not v, map(fun, ls)))) == 0
+
+# These could be
+# a.tld
+# a.tld,b.tld
+# a.tld.b.tld,
+# a.b.tld
+# a.b.tld/something
+# a.b.tld/something/else
+# So, to extract the domain, some work is needed.
+class Domains:
+    domains = defaultdict(lambda: defaultdict(list))
+
+    def __init__(self):
+        pass
+
+    def extract(dls):
+        domains = dls.split(",")
+        # Now we have a list. Get rid of any empty strings
+        # This takes care of trailing commas, which yield empties
+        noempty = filter(lambda s: len(s)>0, domains)
+        # Now, for each, get rid of anything trailing as a path
+        nopaths = map(lambda s: re.sub(r"/.*", "", s), noempty)
+        # We should now be able to split on the `.`
+        try:
+            for d in nopaths:
+                rev = list(reversed(d.split(".")))
+                if andmap(lambda d: re.search("[a-z0-9-]+", d), rev):
+                    return rev
+                else:
+                    # print("invalid", rev, d)
+                    pass
+        except:
+            pprint("nopaths", list(nopaths)) 
