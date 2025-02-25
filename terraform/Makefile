@@ -1,6 +1,6 @@
 .PHONY: init
 init:
-	terraform init
+	terraform init -backend-config="./state.config"
 
 .PHONY: clean
 clean:

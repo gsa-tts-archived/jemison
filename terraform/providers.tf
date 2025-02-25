@@ -7,10 +7,12 @@ terraform {
     }
   }
   backend "s3" {
-    bucket  = ""
-    key     = ""
-    region  = ""
-  }
+    bucket      = ""
+    key         = ""
+    access_key  = ""
+    secret_key  = ""
+    region      = ""
+    }
 }
 
 provider "cloudfoundry" {

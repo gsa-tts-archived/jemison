@@ -21,6 +21,19 @@ variable api_key {
   sensitive = true
 }
 
+variable state_bucket {
+  sensitive = true
+}
+variable state_key {
+  sensitive = true
+}
+variable state_secret {
+  sensitive = true
+}
+variable state_region {
+  sensitive = true
+}
+
 variable disk_quota_s {
   default = 256
 }
