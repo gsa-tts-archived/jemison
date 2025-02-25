@@ -65,7 +65,8 @@ func FQDNToDomain64(fqdn string) (int64, error) {
 		return 0, err
 	}
 
-	hex := gjson.GetBytes(cachedFile, tld+".FQDNToDomain64."+escaped).String()
+	jsonKey := tld + ".FQDNToDomain64." + escaped
+	hex := gjson.GetBytes(cachedFile, jsonKey).String()
 
 	value, err := strconv.ParseInt(hex, 16, 64)
 	if err != nil {

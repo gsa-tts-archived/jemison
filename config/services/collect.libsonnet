@@ -1,5 +1,5 @@
 local B = import 'base.libsonnet';
-local service = 'serve';
+local service = 'collect';
 
 local credentials = [
   [
@@ -19,7 +19,7 @@ local parameters = [
   ],
   [
     'external_port',
-    { cf: 443, container: 10000 },
+    { cf: 443, container: 10009 },
   ],
   [
     'external_scheme',
@@ -28,20 +28,6 @@ local parameters = [
   [
     'external_host',
     { cf: 'jemison.app.cloud.gov', container: 'localhost' },
-  ],
-  [
-    'template_files_path',
-    {
-      cf: '/home/vcap/app/templates',
-      container: '/home/vcap/app/cmd/serve/templates',
-    },
-  ],
-  [
-    'static_files_path',
-    {
-      cf: '/home/vcap/app/static',
-      container: '/home/vcap/app/cmd/serve/static',
-    },
   ],
   [
     'database_files_path',
@@ -59,8 +45,7 @@ local parameters = [
 {
   creds:: [[service] + x for x in credentials],
   params:: [[service] + x for x in parameters],
-  cf: { name: service } +
-      B.params('credentials', 'cf', service, self.creds) +
+  cf: B.params('credentials', 'cf', service, self.creds) +
       B.params('parameters', 'cf', service, self.params),
   container: { name: service } +
              B.params('credentials', 'container', service, self.creds) +

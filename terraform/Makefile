@@ -26,7 +26,7 @@ admin: app
 	mkdir -p zips
 	cp ../cmd/admin/service.exe app/admin.exe
 	echo "web: ./admin.exe" > app/Procfile
-	cp ../assets/apt.yml app/apt.yml
+	cp apt.yml app/apt.yml
 	cd app ; zip -r -X ../zips/admin.zip . \
 		-x assets/databases/* \
 		-x assets/static.zip \
@@ -38,11 +38,10 @@ admin: app
 .PHONY: entree
 entree: app
 	mkdir -p zips
-	cp ../cmd/entree/service.exe app/extract.exe
-	cp ../cmd/entree/run.sh app/run.sh
-	echo "web: ./run.sh" > app/Procfile
-	cp ../assets/apt.yml app/apt.yml
+	cp ../cmd/entree/service.exe app/entree.exe
 	cp ../cmd/migrate/service.exe app/migrate.exe
+	echo "web: ./migrate.exe && ./entree.exe" > app/Procfile
+	cp apt.yml app/apt.yml
 	cd app ; zip -r -X ../zips/entree.zip . \
 		-x assets/databases/* \
 		-x assets/static.zip \
@@ -54,7 +53,7 @@ extract: app
 	mkdir -p zips
 	cp ../cmd/extract/service.exe app/extract.exe
 	echo "web: ./extract.exe" > app/Procfile
-	cp ../assets/apt.yml app/apt.yml
+	cp apt.yml app/apt.yml
 	cd app ; zip -r -X ../zips/extract.zip . \
 		-x assets/databases/* \
 		-x assets/static.zip \
@@ -66,7 +65,7 @@ fetch: app
 	mkdir -p zips
 	cp ../cmd/fetch/service.exe app/fetch.exe
 	echo "web: ./fetch.exe" > app/Procfile
-	cp ../assets/apt.yml app/apt.yml
+	cp apt.yml app/apt.yml
 	cd app ; zip -r -X ../zips/fetch.zip . \
 		-x assets/databases/* \
 		-x assets/static.zip \
@@ -77,7 +76,7 @@ fetch: app
 # migrate: app
 # 	cp ../cmd/migrate/service.exe app/migrate.exe
 # 	echo "web: ./migrate.exe" > app/Procfile
-# 	cp ../assets/apt.yml app/apt.yml
+# 	cp apt.yml app/apt.yml
 # 	cd app ; zip -r -X ../zips/migrate.zip . \
 # 		-x assets/databases/* \
 # 		-x assets/static.zip \
@@ -90,7 +89,7 @@ pack: app
 	mkdir -p zips
 	cp ../cmd/pack/service.exe app/pack.exe
 	echo "web: ./pack.exe" > app/Procfile
-	cp ../assets/apt.yml app/apt.yml
+	cp apt.yml app/apt.yml
 	cd app ; zip -r -X ../zips/pack.zip . \
 		-x assets/databases/* \
 		-x assets/static.zip \
@@ -102,22 +101,21 @@ serve: app
 	mkdir -p zips
 	cp ../cmd/serve/service.exe app/serve.exe
 	echo "web: ./serve.exe" > app/Procfile
-	cp ../assets/apt.yml app/apt.yml
-	cp ../assets/static.zip app/static.zip
-	cd app ; unzip -qq static.zip ; rm static.zip 
-	mkdir app/databases ;
-	cp ../assets/static/index.html app/static/index.html
+	cp apt.yml app/apt.yml
+	cp -R ../cmd/serve/static/ app/static/
+	cp -R ../cmd/serve/templates/ app/templates/
 	cd app ; zip -r -X ../zips/serve.zip . \
-		-x assets/databases/*sqlite* \
-		-x assets/static.zip \
 		-x terraform/*
+	rm -rf app/static/
+	rm -rf app/assets/
+	rm -rf app/templates/
 
 .PHONY: walk
 walk: app
 	mkdir -p zips
 	cp ../cmd/walk/service.exe app/walk.exe
 	echo "web: ./walk.exe" > app/Procfile
-	cp ../assets/apt.yml app/apt.yml
+	cp apt.yml app/apt.yml
 	cd app ; zip -r -X ../zips/walk.zip . \
 		-x assets/databases/* \
 		-x assets/static.zip \
@@ -165,7 +163,7 @@ container_build:
 	docker run -v ${PWD}:/app -t jemison/build
 
 .PHONY: plan_all
-plan_all: init admin entree extract fetch pack serve walk
+plan_all: init entree admin extract fetch pack serve walk
 	terraform plan -var-file="terraform.tfvars" -out plans/das.plan
 
 .PHONY: apply
@@ -176,3 +174,10 @@ apply:
 apply_all: clean plan_all apply
 	echo "apply_all"
 
+.PHONY: cfclean
+cfclean:
+	echo "------- CFCLEAN -------"
+	for app in admin entree extract fetch pack serve validate walk ; do cf delete -f -r $${app} ; done
+	# for service in db_queues db_search db_work ; do cf delete-service -f -w $${service} ; done
+	# for service in s3_backup s3_fetch s3_extract s3_meta ; do cf delete-service -f -w $${service} ; done
+	
