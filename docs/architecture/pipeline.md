@@ -14,14 +14,14 @@ flowchart LR
 
 
 1. A URL comes in, perhaps from the `admin` component (which may be reading a config file), or from our link `walk`er.
-2. [entree](entree.md) checks to see if we should fetch this URL. Perhaps it has been fetched recently, and therefore we will quietly ignore this URL. Or, perhaps it is stale, and we need to continue. In which case, the URL is enqueued for `fetch`.
-      1. Entree runs [migrate](migrate.md) before doing anything else. Migrate is not a service; it runs the migrations and exits. 
-3. [fetch](fetch.md) grabs the URL, and copies it to S3. It enqueues a message for `walk` and `extract`.
-4. [walk](walk.md) gets the page from S3, goes through the HTML, and finds all hyperlinks, sending them back to `entree`'s queue.
-5. [extract](extract.md) grabs the page from S3, pulls all of the text from the page, and stores that back into S3. (Any text processing we want to do should happen here.) A message is enqueued to `pack`.
-6. [pack](pack.md) takes the texts and packs it into our database. Any uniqueness constraints, etc. are handled at this point.
+2. [entree](services/entree.md) checks to see if we should fetch this URL. Perhaps it has been fetched recently, and therefore we will quietly ignore this URL. Or, perhaps it is stale, and we need to continue. In which case, the URL is enqueued for `fetch`.
+      1. Entree runs [migrate](services/migrate.md) before doing anything else. Migrate is not a service; it runs the migrations and exits. 
+3. [fetch](services/fetch.md) grabs the URL, and copies it to S3. It enqueues a message for `walk` and `extract`.
+4. [walk](services/walk.md) gets the page from S3, goes through the HTML, and finds all hyperlinks, sending them back to `entree`'s queue.
+5. [extract](services/extract.md) grabs the page from S3, pulls all of the text from the page, and stores that back into S3. (Any text processing we want to do should happen here.) A message is enqueued to `pack`.
+6. [pack](services/pack.md) takes the texts and packs it into our database. Any uniqueness constraints, etc. are handled at this point.
 
-Not shown above is [collect](collect.md) or [validate](validate.md). These two services live "in-between" all the other services.
+Not shown above is [collect](services/collect.md) or [validate](services/validate.md). These two services live "in-between" all the other services.
 
 ## collect
 
