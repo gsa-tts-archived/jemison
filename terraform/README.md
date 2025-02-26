@@ -1,3 +1,12 @@
+# Local config files
+- terraform.tfvars  - contains local values for all items marked "sensitive" in variables.tf
+- state.config - for use by the makefile's calling of terraform init, contains the values for the following variables related to state file management:
+    - bucket
+    - key
+    - access_key
+    - secret_key
+    - region
+
 # deployment
 
 The point of this documentation is to help lay out some of the pieces (Cloud.gov, Cloud Foundry, Terraform, CircleCI) and the way they relate. It suggests a series of steps we can take to iteratively get to a working set of deployments. The steps might not be right: a good DevOps engineer will see other paths, perhaps. But, this provides an example of the kind of thinking that might help us get things stood up quickly.
