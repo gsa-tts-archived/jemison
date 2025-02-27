@@ -130,3 +130,15 @@ func TestWork_UnknownSource(t *testing.T) {
 
 	assert.Error(t, err, "Worker should encounter error for unknown `source` value")
 }
+
+func TestExtractSourceFromJSON(t *testing.T) {
+	validJSON := `{"data": {"source": "fetch"}}`
+	source, err := extractSourceFromJSON(validJSON)
+	assert.NoError(t, err, "Should extract the source successfully for valid JSON")
+	assert.Equal(t, "fetch", source, "Extracted source mismatch")
+
+	invalidJSON := `{"data": {}}`
+	source, err = extractSourceFromJSON(invalidJSON)
+	assert.Equal(t, "unknown", source, "Source should default to unknown if missing")
+	assert.NoError(t, err, "Should not return error for missing source")
+}
