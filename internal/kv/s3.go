@@ -2,6 +2,7 @@ package kv
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -191,4 +192,31 @@ func (s3 *S3) List(prefix string) ([]*ObjInfo, error) {
 	}
 
 	return objects, nil
+}
+
+func (s3 *S3) UploadFromReader(key string, reader io.Reader, size int64, contentType string) error {
+	ctx := context.Background()
+
+	// Upload the object to the S3 data bucket
+	_, err := s3.MinioClient.PutObject(
+		ctx,
+		s3.Bucket.CredentialString("bucket"), // S3 bucket name
+		key,                                  // S3 object/key
+		reader,                               // Reader containing the data
+		size,                                 // Content size
+		minio.PutObjectOptions{
+			ContentType: contentType, // MIME type
+		},
+	)
+	if err != nil {
+		zap.L().Error("Failed to upload object to S3",
+			zap.String("key", key),
+			zap.String("bucket", s3.Bucket.CredentialString("data")),
+			zap.Error(err),
+		)
+
+		return fmt.Errorf("failed to upload object: %w", err)
+	}
+
+	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -130,13 +129,6 @@ func sendToS3(jsonString string) error {
 		return err
 	}
 
-	// Create a temporary file for the JSON
-	tempFilePath, err := createTempFile(jsonString, source)
-	if err != nil {
-		return err
-	}
-	defer cleanupTempFile(tempFilePath)
-
 	// Validate S3 bucket name
 	bucketName := "data"
 	if !env.IsValidBucketName(bucketName) {
@@ -145,9 +137,13 @@ func sendToS3(jsonString string) error {
 		return fmt.Errorf("invalid bucket name: %s", bucketName)
 	}
 
-	// Upload the file to S3
+	// Generate S3 key
 	s3Key := generateS3Key(source)
-	if err := uploadFileToS3(bucketName, tempFilePath, s3Key); err != nil {
+
+	// Upload the JSON string directly to S3
+	if err := uploadFileToS3(bucketName, jsonString, s3Key); err != nil {
+		zap.L().Error("Failed to upload JSON to S3", zap.Error(err))
+
 		return err
 	}
 
@@ -169,52 +165,41 @@ func extractSourceFromJSON(jsonString string) (string, error) {
 	return "unknown", nil
 }
 
-func createTempFile(jsonString, source string) (string, error) {
-	// Generate the file name using the current epoch time and source
-	epochTime := time.Now().Unix()
-	fileName := fmt.Sprintf("%d_%s.json", epochTime, source)
-	tempDir := os.TempDir()
-	tempFilePath := filepath.Join(tempDir, fileName)
-	mode := 0o600
-
-	if err := os.WriteFile(tempFilePath, []byte(jsonString), os.FileMode(mode)); err != nil {
-		zap.L().Error("Failed to write JSON to a temporary file", zap.Error(err), zap.String("filePath", tempFilePath))
-
-		return "", fmt.Errorf("failed to write JSON to temp file: %w", err)
-	}
-
-	zap.L().Info("Temporary file created successfully", zap.String("filePath", tempFilePath))
-
-	return tempFilePath, nil
-}
-
-func cleanupTempFile(tempFilePath string) {
-	if err := os.Remove(tempFilePath); err != nil {
-		zap.L().Warn("Failed to delete temporary file", zap.Error(err), zap.String("filePath", tempFilePath))
-	} else {
-		zap.L().Info("Temporary file deleted successfully", zap.String("filePath", tempFilePath))
-	}
-}
-
 func generateS3Key(source string) string {
 	return filepath.Join(strings.TrimSuffix(source, "/"), fmt.Sprintf("%d_%s.json", time.Now().Unix(), source))
 }
 
-func uploadFileToS3(bucketName, tempFilePath, s3Key string) error {
-	s3Client := kv.NewS3(bucketName)
+//nolint:wsl
+func uploadFileToS3(bucketName, jsonString, s3Key string) error {
+	// Convert the JSON  string to a byte reader
+	reader := strings.NewReader(jsonString)
+	size := int64(len(jsonString)) // calculate the size of the  data
+
+	// MIME type for JSON
 	mimeType := "application/json"
 
-	if err := s3Client.FileToS3Path(s3Key, tempFilePath, mimeType); err != nil {
-		zap.L().Error("Failed to upload file to S3",
-			zap.Error(err),
+	// Initialize S3 client
+	s3Client := kv.NewS3(bucketName)
+
+	// Upload the file directory from memory
+	zap.L().Info("Uploading JSON to S3", zap.String("bucketName", bucketName), zap.String("s3Key", s3Key))
+	err := s3Client.UploadFromReader(s3Key, reader, size, mimeType)
+	if err != nil {
+		zap.L().Error("Failed to upload JSON to S3",
+			zap.String("bucketName", bucketName),
 			zap.String("s3Key", s3Key),
-			zap.String("bucket", bucketName),
+			zap.Error(err),
 		)
 
-		return fmt.Errorf("failed to upload file to S3: %w", err)
+		return fmt.Errorf(
+			"failed to upload JSON to S3: bucketName=%s, s3Key=%s, err=%w",
+			bucketName, s3Key, err,
+		)
 	}
 
-	zap.L().Info("Successfully uploaded file to S3", zap.String("s3Key", s3Key), zap.String("bucket", bucketName))
+	zap.L().Info("Successfully uploaded JSON to S3",
+		zap.String("s3Key", s3Key),
+		zap.String("bucketName", bucketName))
 
 	return nil
 }
