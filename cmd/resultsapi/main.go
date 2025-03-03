@@ -25,10 +25,6 @@ var (
 func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
 	engine := gin.Default()
 
-	// Delete when no longer using ui for debugging.
-	engine.StaticFS("/static", gin.Dir(staticFilesPath, true))
-	engine.LoadHTMLGlob(templateFilesPath + "/*")
-
 	engine.GET("/:search", func(c *gin.Context) {
 		requiredQueryParams, optionalQueryParams := getQueryParams(c)
 
