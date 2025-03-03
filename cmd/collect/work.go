@@ -5,8 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/GSA-TTS/jemison/internal/common"
+	"github.com/GSA-TTS/jemison/internal/env"
+	"github.com/GSA-TTS/jemison/internal/kv"
 	"github.com/riverqueue/river"
 	"github.com/xeipuuv/gojsonschema"
 	"go.uber.org/zap"
@@ -61,13 +66,14 @@ func ensureSchemasInitialized() error {
 
 func deserializeJSON(jsonString string) (map[string]interface{}, error) {
 	var jsonData map[string]interface{}
+
 	if err := json.Unmarshal([]byte(jsonString), &jsonData); err != nil {
 		zap.L().Error("failed to unmarshal JSON", zap.Error(err))
 
 		return nil, fmt.Errorf("deserializeJSON: failed to unmarshal input JSON: %w", err)
 	}
 
-	// Pull in IsFull and hallpass for debugging or processing
+	// Pull in IsFull and hallpass
 	isFull, _ := jsonData["IsFull"].(bool)
 	hallPass, _ := jsonData["hallpass"].(bool)
 
@@ -116,9 +122,84 @@ func validateJSONData(jsonSchema *gojsonschema.Schema, jsonString string) error 
 	return nil
 }
 
-// Currently, it includes a stubbed-out comment for S3 logic.
-func sendToS3(_ string) error {
-	zap.L().Info("Stub: sendToS3 called.")
+func sendToS3(jsonString string) error {
+	// Parse the source from the JSON
+	source, err := extractSourceFromJSON(jsonString)
+	if err != nil {
+		return err
+	}
+
+	// Validate S3 bucket name
+	bucketName := "data"
+	if !env.IsValidBucketName(bucketName) {
+		zap.L().Error("Invalid bucket name", zap.String("bucketName", bucketName))
+
+		return fmt.Errorf("invalid bucket name: %s", bucketName)
+	}
+
+	// Generate S3 key
+	s3Key := generateS3Key(source)
+
+	// Upload the JSON string directly to S3
+	if err := uploadFileToS3(bucketName, jsonString, s3Key); err != nil {
+		zap.L().Error("Failed to upload JSON to S3", zap.Error(err))
+
+		return err
+	}
+
+	return nil
+}
+
+func extractSourceFromJSON(jsonString string) (string, error) {
+	jsonData, err := deserializeJSON(jsonString)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse source from JSON: %w", err)
+	}
+
+	if data, ok := jsonData["data"].(map[string]interface{}); ok {
+		if src, ok := data["source"].(string); ok && src != "" {
+			return src, nil // Return early if we find the `source`
+		}
+	}
+
+	return "unknown", nil
+}
+
+func generateS3Key(source string) string {
+	return filepath.Join(strings.TrimSuffix(source, "/"), fmt.Sprintf("%d_%s.json", time.Now().Unix(), source))
+}
+
+//nolint:wsl
+func uploadFileToS3(bucketName, jsonString, s3Key string) error {
+	// Convert the JSON  string to a byte reader
+	reader := strings.NewReader(jsonString)
+	size := int64(len(jsonString)) // calculate the size of the  data
+
+	// MIME type for JSON
+	mimeType := "application/json"
+
+	// Initialize S3 client
+	s3Client := kv.NewS3(bucketName)
+
+	// Upload the file directory from memory
+	zap.L().Info("Uploading JSON to S3", zap.String("bucketName", bucketName), zap.String("s3Key", s3Key))
+	err := s3Client.UploadFromReader(s3Key, reader, size, mimeType)
+	if err != nil {
+		zap.L().Error("Failed to upload JSON to S3",
+			zap.String("bucketName", bucketName),
+			zap.String("s3Key", s3Key),
+			zap.Error(err),
+		)
+
+		return fmt.Errorf(
+			"failed to upload JSON to S3: bucketName=%s, s3Key=%s, err=%w",
+			bucketName, s3Key, err,
+		)
+	}
+
+	zap.L().Info("Successfully uploaded JSON to S3",
+		zap.String("s3Key", s3Key),
+		zap.String("bucketName", bucketName))
 
 	return nil
 }

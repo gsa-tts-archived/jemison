@@ -42,3 +42,6 @@ terraform.rc
 zips/*
 plans/*
 app/*
+
+# Ignore the state.config file, used for backend config, which will contain secrets and thus should be local
+state.config

@@ -31,6 +31,7 @@ var validBucketNames = []string{
 	"extract",
 	"fetch",
 	"serve",
+	"data",
 }
 
 func IsValidBucketName(name string) bool {
