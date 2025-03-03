@@ -22,7 +22,7 @@ var (
 )
 
 // ////////// Setup.
-func setUpEngine(staticFilesPath string, templateFilesPath string) *gin.Engine {
+func setUpEngine() *gin.Engine {
 	engine := gin.Default()
 
 	engine.GET("/:search", func(c *gin.Context) {
@@ -84,15 +84,11 @@ func getQueryParams(c *gin.Context) (searching.RequiredQueryParameters, searchin
 func main() {
 	env.InitGlobalEnv(ThisServiceName)
 
-	s, _ := env.Env.GetUserService(ThisServiceName)
-	templateFilesPath := s.GetParamString("template_files_path")
-	staticFilesPath := s.GetParamString("static_files_path")
-
 	JDB = postgres.NewJemisonDB()
 
 	zap.L().Info("environment initialized: " + ThisServiceName)
 
-	engine := setUpEngine(staticFilesPath, templateFilesPath)
+	engine := setUpEngine()
 
 	zap.L().Info("listening from resultsapi",
 		zap.String("port", env.Env.Port))
