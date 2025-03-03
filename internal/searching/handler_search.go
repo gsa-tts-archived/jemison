@@ -1,5 +1,5 @@
 //nolint:godox
-package main
+package searching
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GSA-TTS/jemison/config"
+	"github.com/GSA-TTS/jemison/internal/postgres"
 	"github.com/GSA-TTS/jemison/internal/postgres/search_db"
 	"github.com/kljensen/snowball"
 	"go.uber.org/zap"
@@ -53,7 +54,7 @@ func to64(s string) int64 {
 var _stemmed = ":*"
 
 //nolint:funlen
-func runQuery(sri SearchRequestInput) ([]SearchResult, time.Duration, error) {
+func runQuery(sri SearchRequestInput, JDB *postgres.JemisonDB) ([]SearchResult, time.Duration, error) {
 	start := time.Now()
 
 	zap.L().Debug("searching for Domain64 range",

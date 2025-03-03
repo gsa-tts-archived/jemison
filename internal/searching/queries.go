@@ -1,4 +1,4 @@
-package main
+package searching
 
 var _or = " | "
 
