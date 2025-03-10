@@ -313,5 +313,28 @@ func (w *FetchWorker) Work(_ context.Context, job *river.Job[common.FetchArgs]) 
 		Path:   job.Args.Path,
 	}
 
+	collectData := map[string]interface{}{
+		"data": map[string]interface{}{
+			"id":      common.FetchCountSchemaID,
+			"source":  "fetch",
+			"payload": "default-payload",
+			"url":     hostAndPath(job),
+			"count":   fetchCount.Load(),
+		},
+	}
+
+	// Enqueue the data to the `collect` queue
+	ChQSHP <- queueing.QSHP{
+		Queue:   "collect",
+		Scheme:  job.Args.Scheme,
+		Host:    job.Args.Host,
+		Path:    job.Args.Path,
+		RawData: collectData,
+	}
+
+	zap.L().Info("Logged URL to collect service",
+		zap.String("url", hostAndPath(job)),
+		zap.Int64("total_count", fetchCount.Load()))
+
 	return nil
 }
