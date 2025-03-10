@@ -315,7 +315,7 @@ func (w *FetchWorker) Work(_ context.Context, job *river.Job[common.FetchArgs]) 
 
 	collectData := map[string]interface{}{
 		"data": map[string]interface{}{
-			"id":      common.FetchCountSchemaId,
+			"id":      common.FetchCountSchemaID,
 			"source":  "fetch",
 			"payload": "default-payload",
 			"url":     hostAndPath(job),

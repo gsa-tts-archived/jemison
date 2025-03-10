@@ -34,6 +34,7 @@ func FetchRequestHandler(c *gin.Context) {
 	var fri FetchRequestInput
 	if err := c.BindJSON(&fri); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
+
 		return
 	}
 
@@ -42,14 +43,14 @@ func FetchRequestHandler(c *gin.Context) {
 			zap.String("scheme", fri.Scheme),
 			zap.String("host", fri.Host),
 			zap.String("path", fri.Path),
-			zap.String("data_id", fri.Data.ID),
+			zap.String("data_id", common.FetchSchemaID),
 			zap.String("payload", fri.Data.Payload),
 			zap.String("source", fri.Data.Source))
 
 		// Prepare RawData as a map[string]interface{} for the collect queue
 		collectData := map[string]interface{}{
 			"data": map[string]interface{}{
-				"id":      fri.Data.ID,
+				"id":      common.FetchSchemaID,
 				"source":  fri.Data.Source,
 				"payload": fri.Data.Payload,
 			},
@@ -84,10 +85,10 @@ func FetchRequestHandler(c *gin.Context) {
 func EntreeRequestHandler(c *gin.Context) {
 	var fri FetchRequestInput
 
-	// Parse and bind JSON into the struct
 	if err := c.ShouldBindJSON(&fri); err != nil {
 		zap.L().Error("failed to bind JSON", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
+
 		return
 	}
 
@@ -98,10 +99,9 @@ func EntreeRequestHandler(c *gin.Context) {
 		hallPassB := hallPass == "pass"
 		fullB := full == "full"
 
-		// Create RawData including hallPass and full flags
 		collectData := map[string]interface{}{
 			"data": map[string]interface{}{
-				"id":      fri.Data.ID,
+				"id":      common.EntreeSchemaID,
 				"source":  fri.Data.Source,
 				"payload": fri.Data.Payload,
 			},
@@ -116,13 +116,9 @@ func EntreeRequestHandler(c *gin.Context) {
 			zap.String("scheme", fri.Scheme),
 			zap.String("host", fri.Host),
 			zap.String("path", fri.Path),
-			zap.String("data_id", fri.Data.ID),
-			zap.String("payload", fri.Data.Payload),
-			zap.String("source", fri.Data.Source),
 			zap.Bool("fullCrawl", fullB),
 			zap.Bool("hallpass", hallPassB))
 
-		// Enqueue "collect" job
 		ChQSHP <- queueing.QSHP{
 			Queue:      "collect",
 			Scheme:     fri.Scheme,
@@ -133,7 +129,6 @@ func EntreeRequestHandler(c *gin.Context) {
 			RawData:    collectData,
 		}
 
-		// Enqueue "entree" job
 		ChQSHP <- queueing.QSHP{
 			Queue:      "entree",
 			Scheme:     fri.Scheme,

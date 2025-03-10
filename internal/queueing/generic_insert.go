@@ -102,12 +102,10 @@ func Enqueue(chQSHP <-chan QSHP) {
 
 		case "collect":
 			jsonString, err := common.MarshalMapToJSON(qshp.RawData) // Convert map to JSON
-
 			if err != nil {
 				zap.L().Error("cannot marshal map to JSON for queue collect",
 					zap.String("host", qshp.Host), zap.String("path", qshp.Path),
 					zap.String("error", err.Error()))
-				continue
 			}
 
 			qshp.RawData = nil

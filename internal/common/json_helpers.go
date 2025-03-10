@@ -13,7 +13,9 @@ func MarshalMapToJSON(data map[string]interface{}) (string, error) {
 	if err != nil {
 		wrappedErr := fmt.Errorf("failed to marshal map to JSON: %w", err)
 		zap.L().Error(wrappedErr.Error(), zap.Error(err))
+
 		return "", wrappedErr
 	}
+
 	return string(jsonData), nil
 }
