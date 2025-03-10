@@ -19,7 +19,7 @@ type QSHP struct {
 	IsFull     bool
 	IsHallPass bool
 	Filename   string
-	RawData    string
+	RawData    map[string]interface{}
 }
 
 //nolint:revive
@@ -101,11 +101,22 @@ func Enqueue(chQSHP <-chan QSHP) {
 			commonCommit(qshp, ctx, tx)
 
 		case "collect":
-			_, err := client.InsertTx(ctx, tx, common.CollectArgs{
+			jsonString, err := common.MarshalMapToJSON(qshp.RawData) // Convert map to JSON
+
+			if err != nil {
+				zap.L().Error("cannot marshal map to JSON for queue collect",
+					zap.String("host", qshp.Host), zap.String("path", qshp.Path),
+					zap.String("error", err.Error()))
+				continue
+			}
+
+			qshp.RawData = nil
+
+			_, err = client.InsertTx(ctx, tx, common.CollectArgs{
 				Scheme:   qshp.Scheme,
 				Host:     qshp.Host,
 				Path:     qshp.Path,
-				JSON:     qshp.RawData,
+				JSON:     jsonString,
 				IsFull:   qshp.IsFull,
 				HallPass: qshp.IsHallPass,
 			}, &river.InsertOpts{Queue: qshp.Queue})

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -31,10 +30,10 @@ type FetchRequestInput struct {
 	Data   DataField `json:"data"` // Nested struct for data
 }
 
-// https://dev.to/kashifsoofi/rest-api-with-go-chi-and-inmemory-store-43ag
 func FetchRequestHandler(c *gin.Context) {
 	var fri FetchRequestInput
 	if err := c.BindJSON(&fri); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
 		return
 	}
 
@@ -47,21 +46,35 @@ func FetchRequestHandler(c *gin.Context) {
 			zap.String("payload", fri.Data.Payload),
 			zap.String("source", fri.Data.Source))
 
-		rawData, _ := json.Marshal(fri)
+		// Prepare RawData as a map[string]interface{} for the collect queue
+		collectData := map[string]interface{}{
+			"data": map[string]interface{}{
+				"id":      fri.Data.ID,
+				"source":  fri.Data.Source,
+				"payload": fri.Data.Payload,
+			},
+			"scheme": fri.Scheme,
+			"host":   fri.Host,
+			"path":   fri.Path,
+		}
+
+		// Enqueue "collect" job
 		ChQSHP <- queueing.QSHP{
 			Queue:   "collect",
 			Scheme:  fri.Scheme,
 			Host:    fri.Host,
 			Path:    fri.Path,
-			RawData: string(rawData),
+			RawData: collectData,
 		}
 
+		// Enqueue "fetch" job separately
 		ChQSHP <- queueing.QSHP{
 			Queue:  "fetch",
 			Scheme: fri.Scheme,
 			Host:   fri.Host,
 			Path:   fri.Path,
 		}
+
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
@@ -74,8 +87,7 @@ func EntreeRequestHandler(c *gin.Context) {
 	// Parse and bind JSON into the struct
 	if err := c.ShouldBindJSON(&fri); err != nil {
 		zap.L().Error("failed to bind JSON", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON: " + err.Error()})
-
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
 		return
 	}
 
@@ -86,17 +98,19 @@ func EntreeRequestHandler(c *gin.Context) {
 		hallPassB := hallPass == "pass"
 		fullB := full == "full"
 
-		// Create enriched rawData including hallPass and full flags
-		rawDataMap := map[string]interface{}{
+		// Create RawData including hallPass and full flags
+		collectData := map[string]interface{}{
+			"data": map[string]interface{}{
+				"id":      fri.Data.ID,
+				"source":  fri.Data.Source,
+				"payload": fri.Data.Payload,
+			},
 			"scheme":    fri.Scheme,
 			"host":      fri.Host,
 			"path":      fri.Path,
-			"api-key":   fri.APIKey,
-			"data":      fri.Data,
 			"fullCrawl": fullB,
 			"hallpass":  hallPassB,
 		}
-		rawData, _ := json.Marshal(rawDataMap)
 
 		zap.L().Debug("entree enqueue",
 			zap.String("scheme", fri.Scheme),
@@ -116,9 +130,10 @@ func EntreeRequestHandler(c *gin.Context) {
 			Path:       fri.Path,
 			IsFull:     fullB,
 			IsHallPass: hallPassB,
-			RawData:    string(rawData), // Embedded enriched RawData
+			RawData:    collectData,
 		}
 
+		// Enqueue "entree" job
 		ChQSHP <- queueing.QSHP{
 			Queue:      "entree",
 			Scheme:     fri.Scheme,
@@ -127,6 +142,7 @@ func EntreeRequestHandler(c *gin.Context) {
 			IsFull:     fullB,
 			IsHallPass: hallPassB,
 		}
+
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
