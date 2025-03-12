@@ -1,0 +1,73 @@
+[
+    {
+        "query_uuid": "4f7ebebe-f2e4-11ef-bc21-df6c2092c112",
+        "search_query": "passport",
+        "domain": "www.usa.gov",
+        "search": true,
+        "referrer_url": "https://www.usa.gov",
+        "query_duration": 321,
+        "date_of_search": "2025-02-19",
+        "list_of_results": [ {"result_1": "result_a"},{"result_2": "result_b"}]
+    },
+    {
+        "query_uuid": "4f7tftft-f2e4-11ef-bc21-df6c2092c000",
+        "search_query": "test",
+        "domain": "www.example.gov",
+        "search": true,
+        "referrer_url": "https://www.example.gov/page",
+        "query_duration": 123,
+        "date_of_search": "2025-02-19",
+        "list_of_results": [ {"result_1": "result_c"},{"result_2": "result_d"}]
+    },
+    {
+        "query_uuid": "5d7tftft-f2e4-11ef-bc21-df6c2092c626",
+        "search_query": "test",
+        "domain": "www.example.gov",
+        "search": true,
+        "referrer_url": "https://www.example.gov/page",
+        "query_duration": 233,
+        "date_of_search": "2025-02-19",
+        "list_of_results": [ {"result_1": "result_c"},{"result_2": "result_d"}]
+    },
+    {
+        "query_uuid": "9d7tttft-f2e4-11ef-bc21-df6c2092c910",
+        "search_query": "apple",
+        "domain": "www.fruits.gov",
+        "search": true,
+        "referrer_url": "https://www.fruits.gov/trees",
+        "query_duration": 434,
+        "date_of_search": "2025-02-20",
+        "list_of_results": [ {"result_1": "result_e"},{"result_2": "result_f"}]
+    },
+    {
+        "query_uuid": "2d7tttft-f2e4-11ef-bc21-df6c2092c643",
+        "search_query": "peach",
+        "domain": "www.fruits.gov",
+        "search": true,
+        "referrer_url": "https://www.fruits.gov/trees",
+        "query_duration": 626,
+        "date_of_search": "2025-02-20",
+        "list_of_results": [ {"result_1": "result_e"},{"result_2": "result_f"}]
+    },
+    {
+        "query_uuid": "7d7sasft-f2e4-11ef-bc21-df6c2092c699",
+        "search_query": "toast",
+        "domain": "www.bakery.gov",
+        "search": true,
+        "referrer_url": "http://www.bakery.gov",
+        "query_duration": 324,
+        "date_of_search": "2025-02-21",
+        "list_of_results": [ {"result_1": "result_e"},{"result_2": "result_f"}]
+    },
+    {
+        "query_uuid": "1d7sasft-f2e4-11ef-bc21-df6c2092c323",
+        "search_query": "bread",
+        "domain": "www.bakery.gov",
+        "search": true,
+        "referrer_url": "http://www.bakery.gov/oven",
+        "query_duration": 234,
+        "date_of_search": "2025-02-21",
+        "list_of_results": [ {"result_1": "result_e"},{"result_2": "result_f"}]
+    }
+]
+
