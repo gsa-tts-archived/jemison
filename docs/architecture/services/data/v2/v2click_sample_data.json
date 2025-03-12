@@ -1,0 +1,80 @@
+[
+    {
+        "query_uuid": "4f7ebebe-f2e4-11ef-bc21-df6c2092c112",
+        "click": true,
+        "date_of_click": "2025-02-19",
+        "click_url": "https://www.usa.gov/passport",
+        "click_url_hostname": "www.usa.gov",
+        "click_page_position": 1,
+        "device_category": "Desktop",
+        "search_type": "regular",
+        "site_id": 9114
+    },
+    {
+        "query_uuid": "4f7tftft-f2e4-11ef-bc21-df6c2092c000",
+        "click": true,
+        "date_of_click": "2025-02-19",
+        "click_url": "https://www.example.gov/test-page",
+        "click_url_hostname": "www.example.gov",
+        "click_page_position": 4,
+        "device_category": "Mobile",
+        "search_type": "regular",
+        "site_id": 9999
+    },
+    {
+        "query_uuid": "5d7tftft-f2e4-11ef-bc21-df6c2092c626",
+        "click": false,
+        "date_of_click": "2025-02-19",
+        "click_url": null,
+        "click_url_hostname": null,
+        "click_page_position": null,
+        "device_category": "Mobile",
+        "search_type": "regular",
+        "site_id": 9999
+    },
+    {
+        "query_uuid": "9d7tttft-f2e4-11ef-bc21-df6c2092c910",
+        "click": false,
+        "date_of_click": "2025-02-20",
+        "click_url": null,
+        "click_url_hostname": null,
+        "click_page_position": null,
+        "device_category": "Desktop",
+        "search_type": "regular",
+        "site_id": 9996
+    },
+    {
+        "query_uuid": "2d7tttft-f2e4-11ef-bc21-df6c2092c643",
+        "click": false,
+        "date_of_click": "2025-02-20",
+        "click_url": null,
+        "click_url_hostname": null,
+        "click_page_position": null,
+        "device_category": "Mobile",
+        "search_type": "regular",
+        "site_id": 9996
+    },
+    {
+        "query_uuid": "7d7sasft-f2e4-11ef-bc21-df6c2092c699",
+        "click": true,
+        "date_of_click": "2025-02-21",
+        "click_url": "http://www.bakery.gov/toaster",
+        "click_url_hostname": "www.bakery.gov",
+        "click_page_position": 1,
+        "device_category": "Desktop",
+        "search_type": "regular",
+        "site_id": 9990
+    },
+    {
+        "query_uuid": "1d7sasft-f2e4-11ef-bc21-df6c2092c323",
+        "click": false,
+        "date_of_click": "2025-02-21",
+        "click_url": null,
+        "click_url_hostname": null,
+        "click_page_position": null,
+        "device_category": "Mobile",
+        "search_type": "regular",
+        "site_id": 9990
+    }
+]
+
