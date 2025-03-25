@@ -313,17 +313,30 @@ func (w *FetchWorker) Work(_ context.Context, job *river.Job[common.FetchArgs]) 
 		Path:   job.Args.Path,
 	}
 
+	_, err = fetchPageContent(job)
+	if err != nil {
+		zap.L().Error("Failed to fetch page content", zap.Error(err))
+
+		return err
+	}
+
+	start := time.Now()
+
+	queryDuration := time.Since(start).Milliseconds()
+
 	collectData := map[string]interface{}{
 		"data": map[string]interface{}{
-			"id":      common.FetchCountSchemaID,
-			"source":  "fetch",
-			"payload": "default-payload",
-			"url":     hostAndPath(job),
-			"count":   fetchCount.Load(),
+			"id":             common.FetchCountSchemaID,
+			"source":         "fetch",
+			"domain":         job.Args.Host,
+			"referrer_url":   job.Args.Scheme + "://" + job.Args.Host,
+			"page_url":       hostAndPath(job),
+			"query_duration": queryDuration,
+			"date_of_crawl":  time.Now().Format("2006-01-02"),
+			"count":          fetchCount.Load(),
 		},
 	}
 
-	// Enqueue the data to the `collect` queue
 	ChQSHP <- queueing.QSHP{
 		Queue:   "collect",
 		Scheme:  job.Args.Scheme,

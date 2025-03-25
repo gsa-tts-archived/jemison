@@ -7,11 +7,23 @@
       "properties": {
         "id": { "type": "string" },
         "source": { "type": "string" },
-        "payload": { "type": "string" },
-        "url": { "type": "string" },
-        "count": { "type": "integer" }
+        "domain": { "type": "string" },
+        "referrer_url": { "type": "string", "format": "uri" },
+        "page_url": { "type": "string", "format": "uri" },
+        "query_duration": { "type": "integer", "minimum": 0 },
+        "date_of_crawl": { "type": "string", "format": "date" },
+        "count": { "type": "integer", "minimum": 0 }
       },
-      "required": ["id", "source", "payload"]
+      "required": [
+        "id",
+        "source",
+        "domain",
+        "referrer_url",
+        "page_url",
+        "query_duration",
+        "date_of_crawl",
+        "count"
+      ]
     }
   },
   "required": ["data"]
